@@ -28,7 +28,20 @@ NotchAnimationBehavior {
     readonly property int tabSpacing: 8
 
     readonly property int tabWidth: 48
-    readonly property real nonAnimWidth: (state.currentTab === 0 ? 600 : 400) + tabWidth + 16 // unified launcher tab is wider
+    // Per-tab content widths. Tabs 1/2 were designed around the old 900px DashboardView shell.
+    readonly property real contentWidth: {
+        switch (state.currentTab) {
+        case 0:
+            return 760; // widgets: player + controls/calendar + notifications + circulars
+        case 1:
+            return 836; // wallpapers: 7-col grid + filter bar (900 total with chrome)
+        case 2:
+            return 836; // metrics: resources + charts
+        default:
+            return 400;
+        }
+    }
+    readonly property real nonAnimWidth: contentWidth + tabWidth + 16
 
     implicitWidth: nonAnimWidth
     implicitHeight: 430

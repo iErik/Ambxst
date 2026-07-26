@@ -413,6 +413,8 @@ Item {
     }
 
     function formatSingleKey(keyObj) {
+        if (!keyObj || !keyObj.key)
+            return "Not set";
         const mods = formatModifiers(keyObj.modifiers);
         return mods ? mods + " + " + keyObj.key : keyObj.key;
     }
@@ -427,6 +429,8 @@ Item {
             return formatted.join(", ");
         }
         // Old format fallback
+        if (!bind || !bind.key)
+            return "Not set";
         const mods = formatModifiers(bind.modifiers);
         return mods ? mods + " + " + bind.key : bind.key;
     }
@@ -455,12 +459,15 @@ Item {
 
         // System binds
         if (ambxst.system) {
-            const systemKeys = ["overview", "powermenu", "config", "lockscreen", "tools", "screenshot", "screenrecord", "lens", "reload", "quit"];
+            const systemKeys = ["overview", "powermenu", "config", "lockscreen", "tools", "togglebar", "screenshot", "screenrecord", "lens", "reload", "quit"];
+            const systemDisplayNames = {
+                "togglebar": "Toggle Bar"
+            };
             for (const key of systemKeys) {
                 if (ambxst.system[key]) {
                     binds.push({
                         category: "System",
-                        name: key.charAt(0).toUpperCase() + key.slice(1),
+                        name: systemDisplayNames[key] || (key.charAt(0).toUpperCase() + key.slice(1)),
                         path: "ambxst.system." + key,
                         bind: ambxst.system[key]
                     });

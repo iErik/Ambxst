@@ -1560,6 +1560,17 @@ Item {
                         }
 
                         ToggleRow {
+                            label: "Filter to Active Workspace"
+                            checked: Config.dock.filterToActiveWorkspace ?? true
+                            onToggled: value => {
+                                if (value !== Config.dock.filterToActiveWorkspace) {
+                                    GlobalStates.markShellChanged();
+                                    Config.dock.filterToActiveWorkspace = value;
+                                }
+                            }
+                        }
+
+                        ToggleRow {
                             label: "Show Overview Button"
                             visible: (Config.dock.theme ?? "default") !== "integrated"
                             checked: Config.dock.showOverviewButton ?? true

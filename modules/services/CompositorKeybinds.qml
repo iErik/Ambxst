@@ -65,6 +65,7 @@ QtObject {
                 config: cloneKeybind(ambxst.system.config),
                 lockscreen: cloneKeybind(ambxst.system.lockscreen),
                 tools: cloneKeybind(ambxst.system.tools),
+                togglebar: ambxst.system.togglebar ? cloneKeybind(ambxst.system.togglebar) : null,
                 screenshot: cloneKeybind(ambxst.system.screenshot),
                 screenrecord: cloneKeybind(ambxst.system.screenrecord),
                 lens: cloneKeybind(ambxst.system.lens),
@@ -98,10 +99,18 @@ QtObject {
 
     // Build an unbind target object (modifiers + key only).
     function makeUnbindTarget(keybind) {
+        if (!keybind || !keybind.key)
+            return null;
         return {
             modifiers: keybind.modifiers || [],
             key: keybind.key || ""
         };
+    }
+
+    function pushUnbind(payload, keybind) {
+        const target = makeUnbindTarget(keybind);
+        if (target)
+            payload.unbinds.push(target);
     }
 
     // Build a structured bind object from a core keybind (has all fields inline).
@@ -116,6 +125,8 @@ QtObject {
     }
 
     function makeBindFromCore(keybind) {
+        if (!keybind || !keybind.key)
+            return null;
         const resolved = resolveBindAction(keybind.action, keybind);
         if (!resolved) return null;
         return {
@@ -164,28 +175,29 @@ QtObject {
         if (hasPreviousBinds) {
             // Unbind previous ambxst core keybinds
             if (previousAmbxstBinds.ambxst) {
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.launcher));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.dashboard));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.assistant));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.clipboard));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.emoji));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.notes));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.tmux));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.wallpapers));
+                pushUnbind(payload, previousAmbxstBinds.ambxst.launcher);
+                pushUnbind(payload, previousAmbxstBinds.ambxst.dashboard);
+                pushUnbind(payload, previousAmbxstBinds.ambxst.assistant);
+                pushUnbind(payload, previousAmbxstBinds.ambxst.clipboard);
+                pushUnbind(payload, previousAmbxstBinds.ambxst.emoji);
+                pushUnbind(payload, previousAmbxstBinds.ambxst.notes);
+                pushUnbind(payload, previousAmbxstBinds.ambxst.tmux);
+                pushUnbind(payload, previousAmbxstBinds.ambxst.wallpapers);
             }
 
             // Unbind previous ambxst system keybinds
             if (previousAmbxstBinds.system) {
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.overview));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.powermenu));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.config));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.lockscreen));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.tools));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.screenshot));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.screenrecord));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.lens));
-                if (previousAmbxstBinds.system.reload) payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.reload));
-                if (previousAmbxstBinds.system.quit) payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.quit));
+                pushUnbind(payload, previousAmbxstBinds.system.overview);
+                pushUnbind(payload, previousAmbxstBinds.system.powermenu);
+                pushUnbind(payload, previousAmbxstBinds.system.config);
+                pushUnbind(payload, previousAmbxstBinds.system.lockscreen);
+                pushUnbind(payload, previousAmbxstBinds.system.tools);
+                pushUnbind(payload, previousAmbxstBinds.system.togglebar);
+                pushUnbind(payload, previousAmbxstBinds.system.screenshot);
+                pushUnbind(payload, previousAmbxstBinds.system.screenrecord);
+                pushUnbind(payload, previousAmbxstBinds.system.lens);
+                pushUnbind(payload, previousAmbxstBinds.system.reload);
+                pushUnbind(payload, previousAmbxstBinds.system.quit);
             }
 
             // Unbind previous custom keybinds
@@ -193,10 +205,10 @@ QtObject {
                 const prev = previousCustomBinds[i];
                 if (prev.keys) {
                     for (let k = 0; k < prev.keys.length; k++) {
-                        payload.unbinds.push(makeUnbindTarget(prev.keys[k]));
+                        pushUnbind(payload, prev.keys[k]);
                     }
                 } else {
-                    payload.unbinds.push(makeUnbindTarget(prev));
+                    pushUnbind(payload, prev);
                 }
             }
         }
@@ -205,14 +217,14 @@ QtObject {
         const ambxst = Config.keybindsLoader.adapter.ambxst;
 
         // Unbind current core keybinds (ensures clean state before rebinding)
-        payload.unbinds.push(makeUnbindTarget(ambxst.launcher));
-        payload.unbinds.push(makeUnbindTarget(ambxst.dashboard));
-        payload.unbinds.push(makeUnbindTarget(ambxst.assistant));
-        payload.unbinds.push(makeUnbindTarget(ambxst.clipboard));
-        payload.unbinds.push(makeUnbindTarget(ambxst.emoji));
-        payload.unbinds.push(makeUnbindTarget(ambxst.notes));
-        payload.unbinds.push(makeUnbindTarget(ambxst.tmux));
-        payload.unbinds.push(makeUnbindTarget(ambxst.wallpapers));
+        pushUnbind(payload, ambxst.launcher);
+        pushUnbind(payload, ambxst.dashboard);
+        pushUnbind(payload, ambxst.assistant);
+        pushUnbind(payload, ambxst.clipboard);
+        pushUnbind(payload, ambxst.emoji);
+        pushUnbind(payload, ambxst.notes);
+        pushUnbind(payload, ambxst.tmux);
+        pushUnbind(payload, ambxst.wallpapers);
 
         // Bind current core keybinds
         [ambxst.launcher, ambxst.dashboard, ambxst.assistant, ambxst.clipboard, ambxst.emoji, ambxst.notes, ambxst.tmux, ambxst.wallpapers].forEach(bind => {
@@ -224,19 +236,20 @@ QtObject {
         const system = ambxst.system;
 
         // Unbind current system keybinds
-        payload.unbinds.push(makeUnbindTarget(system.overview));
-        payload.unbinds.push(makeUnbindTarget(system.powermenu));
-        payload.unbinds.push(makeUnbindTarget(system.config));
-        payload.unbinds.push(makeUnbindTarget(system.lockscreen));
-        payload.unbinds.push(makeUnbindTarget(system.tools));
-        payload.unbinds.push(makeUnbindTarget(system.screenshot));
-        payload.unbinds.push(makeUnbindTarget(system.screenrecord));
-        payload.unbinds.push(makeUnbindTarget(system.lens));
-        if (system.reload) payload.unbinds.push(makeUnbindTarget(system.reload));
-        if (system.quit) payload.unbinds.push(makeUnbindTarget(system.quit));
+        pushUnbind(payload, system.overview);
+        pushUnbind(payload, system.powermenu);
+        pushUnbind(payload, system.config);
+        pushUnbind(payload, system.lockscreen);
+        pushUnbind(payload, system.tools);
+        pushUnbind(payload, system.togglebar);
+        pushUnbind(payload, system.screenshot);
+        pushUnbind(payload, system.screenrecord);
+        pushUnbind(payload, system.lens);
+        pushUnbind(payload, system.reload);
+        pushUnbind(payload, system.quit);
 
         // Bind current system keybinds
-        [system.overview, system.powermenu, system.config, system.lockscreen, system.tools, system.screenshot, system.screenrecord, system.lens, system.reload, system.quit].forEach(bind => {
+        [system.overview, system.powermenu, system.config, system.lockscreen, system.tools, system.togglebar, system.screenshot, system.screenrecord, system.lens, system.reload, system.quit].forEach(bind => {
             if (!bind) return;
             const resolved = makeBindFromCore(bind);
             if (resolved) payload.binds.push(resolved);

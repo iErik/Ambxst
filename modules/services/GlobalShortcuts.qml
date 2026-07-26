@@ -53,6 +53,7 @@ QtObject {
             case "overview": toggleSimpleModule("overview"); break;
             case "powermenu": toggleSimpleModule("powermenu"); break;
             case "tools": toggleSimpleModule("tools"); break;
+            case "toggle-bar": GlobalStates.toggleBarForceHidden(); break;
             case "config": toggleSettings(); break;
             case "screenshot": Screenshot.initialize(); GlobalStates.screenshotToolVisible = true; break;
             case "screenrecord":

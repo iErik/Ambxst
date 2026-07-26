@@ -165,6 +165,13 @@ Singleton {
     readonly property bool launcherOpen: getActiveLauncher()
     readonly property bool dashboardOpen: getActiveDashboard()
 
+    // Force-hide bar (ignores hover/pin until toggled off)
+    property bool barForceHidden: false
+
+    function toggleBarForceHidden() {
+        barForceHidden = !barForceHidden;
+    }
+
     // Lockscreen state
     property bool lockscreenVisible: false
 
@@ -351,7 +358,7 @@ Singleton {
         "notch": ["theme", "position", "hoverRegionHeight", "keepHidden"],
         "workspaces": ["shown", "showAppIcons", "alwaysShowNumbers", "showNumbers", "dynamic"],
         "overview": ["rows", "columns", "scale", "workspaceSpacing"],
-        "dock": ["enabled", "theme", "position", "height", "iconSize", "spacing", "margin", "hoverRegionHeight", "pinnedOnStartup", "hoverToReveal", "availableOnFullscreen", "showRunningIndicators", "showPinButton", "showOverviewButton", "screenList", "keepHidden"],
+        "dock": ["enabled", "theme", "position", "height", "iconSize", "spacing", "margin", "hoverRegionHeight", "pinnedOnStartup", "hoverToReveal", "availableOnFullscreen", "showRunningIndicators", "showPinButton", "showOverviewButton", "screenList", "keepHidden", "filterToActiveWorkspace"],
         "lockscreen": ["position"],
         "desktop": ["enabled", "iconSize", "spacingVertical", "textColor"],
         "system": ["idle", "ocr"]

@@ -5,15 +5,17 @@ import qs.modules.services
 Item {
     id: root
 
-    implicitWidth: 900
-    implicitHeight: 56 + 48 * 6
+    // Drive notch chrome from the real dashboard size (not stale hardcoded implicits)
+    implicitWidth: dashboardItem.width
+    implicitHeight: dashboardItem.height
     property string screenName: ""
 
     readonly property int leftPanelWidth: 270
 
     Dashboard {
         id: dashboardItem
-        anchors.fill: parent
+        // Dashboard manages its own width/height via animatedWidth/Height.
+        // Do not anchors.fill — that fought explicit sizing and crushed WidgetsTab.
         leftPanelWidth: root.leftPanelWidth
         screenName: root.screenName
 

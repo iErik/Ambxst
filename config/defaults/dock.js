@@ -20,5 +20,6 @@ var data = {
         "xdg-desktop-portal.*"
     ],
     "screenList": [],
-    "keepHidden": false
+    "keepHidden": false,
+    "filterToActiveWorkspace": true
 }

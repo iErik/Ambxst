@@ -41,6 +41,7 @@ var ACTION_CATALOG = [
     { id: "ambxst.overview", label: "Open Overview", category: "Ambxst", dispatcher: "exec", argument: "ambxst run overview" },
     { id: "ambxst.powermenu", label: "Open Power Menu", category: "Ambxst", dispatcher: "exec", argument: "ambxst run powermenu" },
     { id: "ambxst.tools", label: "Open Tools", category: "Ambxst", dispatcher: "exec", argument: "ambxst run tools" },
+    { id: "ambxst.toggle-bar", label: "Toggle Bar Visibility", category: "Ambxst", dispatcher: "exec", argument: "ambxst run toggle-bar" },
     { id: "ambxst.screenshot", label: "Take Screenshot", category: "Ambxst", dispatcher: "exec", argument: "ambxst run screenshot" },
     { id: "ambxst.screenrecord", label: "Screen Record", category: "Ambxst", dispatcher: "exec", argument: "ambxst run screenrecord" },
     { id: "ambxst.lens", label: "Open Lens", category: "Ambxst", dispatcher: "exec", argument: "ambxst run lens" },

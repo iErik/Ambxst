@@ -235,6 +235,202 @@ PanelWindow {
         return "";
     }
 
+    function getWallpaperRoot() {
+        if (!wallpaperDir)
+            return "";
+        return wallpaperDir.endsWith("/") ? wallpaperDir.slice(0, -1) : wallpaperDir;
+    }
+
+    function sanitizeFolderName(name) {
+        if (!name)
+            return "";
+        var safe = String(name).trim().replace(/[\/\\:\0]/g, "");
+        while (safe.startsWith("."))
+            safe = safe.substring(1);
+        if (safe.length > 64)
+            safe = safe.substring(0, 64);
+        return safe.trim();
+    }
+
+    function folderPathFor(name) {
+        var safe = sanitizeFolderName(name);
+        if (!safe)
+            return "";
+        return getWallpaperRoot() + "/" + safe;
+    }
+
+    function remapSavedWallpaperPaths(fromPath, toPath) {
+        if (!fromPath || !toPath || fromPath === toPath)
+            return;
+
+        if (wallpaperConfig.adapter.currentWall === fromPath)
+            wallpaperConfig.adapter.currentWall = toPath;
+
+        var perScreen = Object.assign({}, wallpaperConfig.adapter.perScreenWallpapers || {});
+        var changed = false;
+        var keys = Object.keys(perScreen);
+        for (var i = 0; i < keys.length; i++) {
+            if (perScreen[keys[i]] === fromPath) {
+                perScreen[keys[i]] = toPath;
+                changed = true;
+            }
+        }
+        if (changed)
+            wallpaperConfig.adapter.perScreenWallpapers = perScreen;
+
+        var pathIndex = wallpaperPaths.indexOf(fromPath);
+        if (pathIndex !== -1) {
+            var nextPaths = wallpaperPaths.slice();
+            nextPaths[pathIndex] = toPath;
+            wallpaperPaths = nextPaths;
+            if (currentIndex === pathIndex)
+                currentWallpaper = toPath;
+        }
+    }
+
+    function remapFolderPrefix(oldFolder, newFolder) {
+        var root = getWallpaperRoot();
+        if (!root || !oldFolder)
+            return;
+        var fromPrefix = root + "/" + oldFolder + "/";
+        var toPrefix = newFolder ? (root + "/" + newFolder + "/") : (root + "/");
+
+        if (wallpaperConfig.adapter.currentWall && wallpaperConfig.adapter.currentWall.indexOf(fromPrefix) === 0) {
+            wallpaperConfig.adapter.currentWall = toPrefix + wallpaperConfig.adapter.currentWall.substring(fromPrefix.length);
+        }
+
+        var perScreen = Object.assign({}, wallpaperConfig.adapter.perScreenWallpapers || {});
+        var changed = false;
+        var keys = Object.keys(perScreen);
+        for (var i = 0; i < keys.length; i++) {
+            var p = perScreen[keys[i]];
+            if (p && p.indexOf(fromPrefix) === 0) {
+                perScreen[keys[i]] = toPrefix + p.substring(fromPrefix.length);
+                changed = true;
+            }
+        }
+        if (changed)
+            wallpaperConfig.adapter.perScreenWallpapers = perScreen;
+    }
+
+    function createFolder(name) {
+        if (GlobalStates.wallpaperManager && GlobalStates.wallpaperManager !== wallpaper)
+            return GlobalStates.wallpaperManager.createFolder(name);
+
+        var safe = sanitizeFolderName(name);
+        if (!safe || !wallpaperDir)
+            return false;
+        if (subfolderFilters.indexOf(safe) !== -1)
+            return false;
+
+        folderOpAction = "create";
+        folderOpArg1 = safe;
+        folderOpArg2 = "";
+        folderOpProcess.command = ["mkdir", "-p", "--", folderPathFor(safe)];
+        folderOpProcess.running = true;
+        return true;
+    }
+
+    function renameFolder(oldName, newName) {
+        if (GlobalStates.wallpaperManager && GlobalStates.wallpaperManager !== wallpaper)
+            return GlobalStates.wallpaperManager.renameFolder(oldName, newName);
+
+        var from = sanitizeFolderName(oldName);
+        var to = sanitizeFolderName(newName);
+        if (!from || !to || from === to || !wallpaperDir)
+            return false;
+        if (subfolderFilters.indexOf(from) === -1 || subfolderFilters.indexOf(to) !== -1)
+            return false;
+
+        folderOpAction = "rename";
+        folderOpArg1 = from;
+        folderOpArg2 = to;
+        folderOpProcess.command = ["mv", "--", folderPathFor(from), folderPathFor(to)];
+        folderOpProcess.running = true;
+        return true;
+    }
+
+    function deleteFolder(name) {
+        if (GlobalStates.wallpaperManager && GlobalStates.wallpaperManager !== wallpaper)
+            return GlobalStates.wallpaperManager.deleteFolder(name);
+
+        var safe = sanitizeFolderName(name);
+        if (!safe || !wallpaperDir || subfolderFilters.indexOf(safe) === -1)
+            return false;
+
+        var root = getWallpaperRoot();
+        var dir = folderPathFor(safe);
+        folderOpAction = "delete";
+        folderOpArg1 = safe;
+        folderOpArg2 = "";
+        folderOpProcess.command = ["bash", "-c",
+            'set -euo pipefail\n' +
+            'dir="$1"; root="$2"; name="$3"\n' +
+            '[ "$dir" = "$root/$name" ] || exit 1\n' +
+            'shopt -s nullglob\n' +
+            'for f in "$dir"/*; do\n' +
+            '  [ -e "$f" ] || continue\n' +
+            '  base=$(basename "$f")\n' +
+            '  dest="$root/$base"\n' +
+            '  if [ -e "$dest" ]; then\n' +
+            '    if [ -f "$f" ]; then\n' +
+            '      ext="${base##*.}"; stem="${base%.*}"\n' +
+            '      if [ "$stem" = "$base" ]; then dest="$root/${base}_$name"; else dest="$root/${stem}_$name.$ext"; fi\n' +
+            '    else\n' +
+            '      dest="$root/${name}_$base"\n' +
+            '    fi\n' +
+            '  fi\n' +
+            '  mv -- "$f" "$dest"\n' +
+            'done\n' +
+            'rmdir -- "$dir" 2>/dev/null || rm -rf -- "$dir"\n',
+            "ambxst-rmfolder", dir, root, safe];
+        folderOpProcess.running = true;
+        return true;
+    }
+
+    function moveWallpaperToFolder(filePath, folderName) {
+        if (GlobalStates.wallpaperManager && GlobalStates.wallpaperManager !== wallpaper)
+            return GlobalStates.wallpaperManager.moveWallpaperToFolder(filePath, folderName);
+
+        if (!filePath || !wallpaperDir)
+            return false;
+
+        var root = getWallpaperRoot();
+        if (filePath.indexOf(root + "/") !== 0 && filePath !== root)
+            return false;
+
+        var fileName = filePath.split("/").pop();
+        var safeFolder = sanitizeFolderName(folderName || "");
+        var destDir = safeFolder ? folderPathFor(safeFolder) : root;
+        var destPath = destDir + "/" + fileName;
+        if (destPath === filePath)
+            return false;
+
+        folderOpAction = "move";
+        folderOpArg1 = filePath;
+        folderOpArg2 = destPath;
+        folderOpProcess.command = ["bash", "-c",
+            'set -euo pipefail\n' +
+            'mkdir -p -- "$1"\n' +
+            'src="$2"; dest="$3"\n' +
+            'if [ -e "$dest" ]; then\n' +
+            '  base=$(basename "$dest"); ext="${base##*.}"; stem="${base%.*}"\n' +
+            '  i=1\n' +
+            '  if [ "$stem" = "$base" ]; then\n' +
+            '    while [ -e "$(dirname "$dest")/${base}_$i" ]; do i=$((i+1)); done\n' +
+            '    dest="$(dirname "$dest")/${base}_$i"\n' +
+            '  else\n' +
+            '    while [ -e "$(dirname "$dest")/${stem}_$i.$ext" ]; do i=$((i+1)); done\n' +
+            '    dest="$(dirname "$dest")/${stem}_$i.$ext"\n' +
+            '  fi\n' +
+            'fi\n' +
+            'mv -- "$src" "$dest"\n' +
+            'printf "%s" "$dest"\n',
+            "ambxst-mvwall", destDir, filePath, destPath];
+        folderOpProcess.running = true;
+        return true;
+    }
+
     function scanSubfolders() {
         if (!wallpaperDir)
             return;
@@ -243,6 +439,12 @@ PanelWindow {
         scanSubfoldersProcess.command = cmd;
         scanSubfoldersProcess.running = true;
     }
+
+    property string folderOpAction: ""
+    property string folderOpArg1: ""
+    property string folderOpArg2: ""
+    property string lastCreatedFolder: ""
+    signal folderOperationFinished(string action, bool ok, string arg1, string arg2)
 
     // Update directory watcher when wallpaperDir changes
     onWallpaperDirChanged: {
@@ -910,6 +1112,60 @@ PanelWindow {
             } else {
                 console.warn("⚠️ Lockscreen wallpaper generation failed with code:", exitCode);
             }
+        }
+    }
+
+    Process {
+        id: folderOpProcess
+        running: false
+        command: ["true"]
+
+        stdout: StdioCollector {
+            id: folderOpStdout
+            onStreamFinished: {
+                if (wallpaper.folderOpAction === "move" && text && text.trim().length > 0) {
+                    wallpaper.remapSavedWallpaperPaths(wallpaper.folderOpArg1, text.trim());
+                }
+            }
+        }
+
+        stderr: StdioCollector {
+            onStreamFinished: {
+                if (text.length > 0)
+                    console.warn("Wallpaper folder op error:", text);
+            }
+        }
+
+        onExited: function (exitCode) {
+            var action = wallpaper.folderOpAction;
+            var arg1 = wallpaper.folderOpArg1;
+            var arg2 = wallpaper.folderOpArg2;
+            var ok = exitCode === 0;
+
+            if (ok) {
+                if (action === "create") {
+                    wallpaper.lastCreatedFolder = arg1;
+                } else if (action === "rename") {
+                    wallpaper.remapFolderPrefix(arg1, arg2);
+                    if (wallpaper.lastCreatedFolder === arg1)
+                        wallpaper.lastCreatedFolder = arg2;
+                } else if (action === "delete") {
+                    wallpaper.remapFolderPrefix(arg1, "");
+                    if (wallpaper.lastCreatedFolder === arg1)
+                        wallpaper.lastCreatedFolder = "";
+                }
+                scanWallpapers.running = true;
+                scanSubfolders();
+                if (delayedThumbnailGen.running)
+                    delayedThumbnailGen.restart();
+                else
+                    delayedThumbnailGen.start();
+            }
+
+            wallpaper.folderOperationFinished(action, ok, arg1, arg2);
+            wallpaper.folderOpAction = "";
+            wallpaper.folderOpArg1 = "";
+            wallpaper.folderOpArg2 = "";
         }
     }
 

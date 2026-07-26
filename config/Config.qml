@@ -1104,6 +1104,7 @@ Singleton {
             property list<string> ignoredAppRegexes: ["quickshell.*", "xdg-desktop-portal.*"]
             property list<string> screenList: []
             property bool keepHidden: false
+            property bool filterToActiveWorkspace: true
         }
     }
 
@@ -1363,7 +1364,7 @@ Singleton {
             }
 
             // Check system binds
-            const systemKeys = ["overview", "powermenu", "config", "lockscreen", "tools", "screenshot", "screenrecord", "lens", "reload", "quit"];
+            const systemKeys = ["overview", "powermenu", "config", "lockscreen", "tools", "togglebar", "screenshot", "screenrecord", "lens", "reload", "quit"];
             for (const key of systemKeys) {
                 if (!current.ambxst.system[key] && adapter.ambxst.system && adapter.ambxst.system[key]) {
                     console.log("Adding missing system bind:", key);
@@ -1515,6 +1516,11 @@ Singleton {
                     property string key: "S"
                     property var action: ({ "id": "ambxst.tools", "args": {} })
                 }
+                property JsonObject togglebar: JsonObject {
+                    property list<string> modifiers: []
+                    property string key: ""
+                    property var action: ({ "id": "ambxst.toggle-bar", "args": {} })
+                }
                 property JsonObject screenshot: JsonObject {
                     property list<string> modifiers: ["SUPER", "SHIFT"]
                     property string key: "S"
@@ -1560,6 +1566,7 @@ Singleton {
                     "overview": { "modifiers": ["SUPER"], "key": "TAB", "action": { "id": "ambxst.overview", "args": {} } },
                     "powermenu": { "modifiers": ["SUPER"], "key": "ESCAPE", "action": { "id": "ambxst.powermenu", "args": {} } },
                     "tools": { "modifiers": ["SUPER"], "key": "S", "action": { "id": "ambxst.tools", "args": {} } },
+                    "togglebar": { "modifiers": [], "key": "", "action": { "id": "ambxst.toggle-bar", "args": {} } },
                     "screenshot": { "modifiers": ["SUPER", "SHIFT"], "key": "S", "action": { "id": "ambxst.screenshot", "args": {} } },
                     "screenrecord": { "modifiers": ["SUPER", "SHIFT"], "key": "R", "action": { "id": "ambxst.screenrecord", "args": {} } },
                     "lens": { "modifiers": ["SUPER", "SHIFT"], "key": "A", "action": { "id": "ambxst.lens", "args": {} } },

@@ -252,7 +252,7 @@ PanelWindow {
                 let frameOn = (Config.bar?.frameEnabled ?? false);
                 let frameWrapped = frameOn && GlobalStates.assistantPinned;
                 let margin = (frameOn && !frameWrapped) ? (Config.bar?.frameThickness ?? 6) : 0;
-                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "top" && unifiedPanel.barPinned) {
+                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "top" && unifiedPanel.barPinned && !GlobalStates.barForceHidden) {
                     margin += unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin + (unifiedPanel.containBar ? Config.bar.frameThickness : 0);
                 }
                 return margin;
@@ -262,7 +262,7 @@ PanelWindow {
                 let frameOn = (Config.bar?.frameEnabled ?? false);
                 let frameWrapped = frameOn && GlobalStates.assistantPinned;
                 let margin = (frameOn && !frameWrapped) ? (Config.bar?.frameThickness ?? 6) : 0;
-                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "bottom" && unifiedPanel.barPinned) {
+                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "bottom" && unifiedPanel.barPinned && !GlobalStates.barForceHidden) {
                     margin += unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin + (unifiedPanel.containBar ? Config.bar.frameThickness : 0);
                 } else if (unifiedPanel.dockEnabled && dockContent.dockPosition === "bottom" && dockContent.pinned) {
                     margin += dockContent.dockHeight;
@@ -277,7 +277,7 @@ PanelWindow {
                 let margin = 0;
                 if (sidebarPos === "left" && frameOn && !frameWrapped)
                     margin += (Config.bar?.frameThickness ?? 6);
-                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "left" && unifiedPanel.barPinned)
+                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "left" && unifiedPanel.barPinned && !GlobalStates.barForceHidden)
                     margin += unifiedPanel.barTargetWidth + unifiedPanel.barOuterMargin + (unifiedPanel.containBar ? Config.bar.frameThickness : 0);
                 return margin;
             }
@@ -289,7 +289,7 @@ PanelWindow {
                 let margin = 0;
                 if (sidebarPos === "right" && frameOn && !frameWrapped)
                     margin += (Config.bar?.frameThickness ?? 6);
-                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "right" && unifiedPanel.barPinned)
+                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "right" && unifiedPanel.barPinned && !GlobalStates.barForceHidden)
                     margin += unifiedPanel.barTargetWidth + unifiedPanel.barOuterMargin + (unifiedPanel.containBar ? Config.bar.frameThickness : 0);
                 return margin;
             }

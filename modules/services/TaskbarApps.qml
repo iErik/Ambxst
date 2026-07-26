@@ -51,7 +51,7 @@ Singleton {
     property var _appCache: ({})
     property var _previousKeys: []
 
-    // Combined app list
+    // Combined app list (all workspaces / screens)
     property list<var> apps: []
 
     // Debounce update
@@ -86,6 +86,24 @@ Singleton {
         function onIgnoredAppRegexesChanged() {
             updateTimer.restart();
         }
+        function onFilterToActiveWorkspaceChanged() {
+            updateTimer.restart();
+        }
+    }
+
+    // Workspace / monitor changes (needed for per-screen dock filtering)
+    Connections {
+        target: AxctlService.clients ?? null
+        function onValuesChanged() {
+            updateTimer.restart();
+        }
+    }
+
+    Connections {
+        target: AxctlService.monitors ?? null
+        function onValuesChanged() {
+            updateTimer.restart();
+        }
     }
 
     // Init
@@ -93,15 +111,69 @@ Singleton {
         _updateApps();
     }
 
-    function _updateApps() {
-        var map = new Map();
-
-        // Get config
-        const pinnedApps = Config.pinnedApps?.apps ?? [];
+    function _ignoredRegexes() {
         const ignoredRegexStrings = Config.dock?.ignoredAppRegexes ?? [];
-        const ignoredRegexes = ignoredRegexStrings.map(pattern => new RegExp(pattern, "i"));
+        return ignoredRegexStrings.map(pattern => new RegExp(pattern, "i"));
+    }
 
-        // Add pinned
+    function _matchToplevelForClient(win, allToplevels, usedToplevels) {
+        const cls = win.class || "";
+        if (!cls)
+            return null;
+
+        const candidates = [];
+        for (let i = 0; i < allToplevels.length; i++) {
+            const t = allToplevels[i];
+            if (!t || !t.appId || usedToplevels.has(t))
+                continue;
+            if (t.appId.toLowerCase() === cls.toLowerCase())
+                candidates.push(t);
+        }
+
+        if (candidates.length === 0)
+            return null;
+        if (candidates.length === 1)
+            return candidates[0];
+        return candidates.find(t => t.title === (win.title || "")) || candidates[0];
+    }
+
+    // Toplevels visible on the active workspace of the given screen
+    function toplevelsForScreen(screen) {
+        const mon = AxctlService.monitorFor(screen);
+        if (!mon || !mon.activeWorkspace)
+            return ToplevelManager.toplevels.values;
+
+        const wsId = mon.activeWorkspace.id;
+        const monId = mon.id;
+        const clients = AxctlService.clients.values || [];
+        const allToplevels = ToplevelManager.toplevels.values;
+        const used = new Set();
+        const result = [];
+
+        for (let i = 0; i < clients.length; i++) {
+            const win = clients[i];
+            if (!win)
+                continue;
+            if ((win.workspace?.id ?? -1) !== wsId)
+                continue;
+            if ((win.monitor ?? -1) !== monId)
+                continue;
+
+            const toplevel = _matchToplevelForClient(win, allToplevels, used);
+            if (toplevel) {
+                used.add(toplevel);
+                result.push(toplevel);
+            }
+        }
+
+        return result;
+    }
+
+    function _buildAppsFromToplevels(toplevels) {
+        var map = new Map();
+        const pinnedApps = Config.pinnedApps?.apps ?? [];
+        const ignoredRegexes = _ignoredRegexes();
+
         for (const appId of pinnedApps) {
             const key = appId.toLowerCase();
             if (!map.has(key)) {
@@ -113,22 +185,17 @@ Singleton {
             }
         }
 
-        // Collect unpinned
         var unpinnedRunningApps = [];
-        const toplevels = ToplevelManager.toplevels.values;
         for (let i = 0; i < toplevels.length; i++) {
             const toplevel = toplevels[i];
-            // Skip ignored
-            if (ignoredRegexes.some(re => re.test(toplevel.appId))) continue;
-            
+            if (!toplevel || ignoredRegexes.some(re => re.test(toplevel.appId)))
+                continue;
+
             const key = toplevel.appId.toLowerCase();
-            
-            // Check if pinned
+
             if (map.has(key)) {
-                // Add to pinned app
                 map.get(key).toplevels.push(toplevel);
             } else {
-                // Track unpinned
                 const existing = unpinnedRunningApps.find(app => app.key === key);
                 if (!existing) {
                     unpinnedRunningApps.push({
@@ -142,16 +209,14 @@ Singleton {
             }
         }
 
-        // Add separator if needed
         if (pinnedApps.length > 0 && unpinnedRunningApps.length > 0) {
-            map.set("SEPARATOR", { 
-                appId: "SEPARATOR", 
-                pinned: false, 
-                toplevels: [] 
+            map.set("SEPARATOR", {
+                appId: "SEPARATOR",
+                pinned: false,
+                toplevels: []
             });
         }
 
-        // Add unpinned to map
         for (const app of unpinnedRunningApps) {
             map.set(app.key, {
                 appId: app.appId,
@@ -160,7 +225,51 @@ Singleton {
             });
         }
 
-        // New keys list
+        return map;
+    }
+
+    // Per-screen dock model: pinned apps + apps open on this screen's active workspace
+    function appsForScreen(screen) {
+        const filterEnabled = Config.dock?.filterToActiveWorkspace ?? true;
+
+        // Ensure reactive dependencies for QML bindings
+        void root.apps;
+        void AxctlService.clients.values;
+        void AxctlService.monitors.values;
+
+        if (!filterEnabled || !screen)
+            return root.apps;
+
+        const localToplevels = toplevelsForScreen(screen);
+        const map = _buildAppsFromToplevels(localToplevels);
+
+        // Prefer cached TaskbarAppEntry objects when possible so buttons keep identity,
+        // but always expose filtered toplevels for this screen/workspace.
+        var values = [];
+        for (const [key, value] of map) {
+            if (_appCache[key]) {
+                values.push({
+                    appId: value.appId,
+                    pinned: value.pinned,
+                    toplevels: value.toplevels,
+                    toplevelCount: value.toplevels.length
+                });
+            } else {
+                values.push({
+                    appId: value.appId,
+                    pinned: value.pinned,
+                    toplevels: value.toplevels,
+                    toplevelCount: value.toplevels.length
+                });
+            }
+        }
+        return values;
+    }
+
+    function _updateApps() {
+        const toplevels = ToplevelManager.toplevels.values;
+        const map = _buildAppsFromToplevels(toplevels);
+
         var newKeys = Array.from(map.keys());
 
         // Cleanup entries
@@ -175,16 +284,14 @@ Singleton {
         var values = [];
         for (const [key, value] of map) {
             if (_appCache[key]) {
-                // Update entry
                 _appCache[key].toplevels = value.toplevels;
                 _appCache[key].pinned = value.pinned;
                 values.push(_appCache[key]);
             } else {
-                // Create entry
-                const entry = appEntryComp.createObject(root, { 
-                    appId: value.appId, 
-                    toplevels: value.toplevels, 
-                    pinned: value.pinned 
+                const entry = appEntryComp.createObject(root, {
+                    appId: value.appId,
+                    toplevels: value.toplevels,
+                    pinned: value.pinned
                 });
                 _appCache[key] = entry;
                 values.push(entry);

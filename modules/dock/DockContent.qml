@@ -18,6 +18,9 @@ Item {
 
     required property ShellScreen screen
     property bool unifiedEffectActive: false
+
+    // Apps for this screen's active workspace (falls back to all apps if filtering is off)
+    readonly property var dockApps: TaskbarApps.appsForScreen(screen)
     
     // Pass pinned state from parent or config
     readonly property bool keepHidden: Config.dock?.keepHidden ?? false
@@ -470,7 +473,7 @@ Item {
                 }
 
                 Repeater {
-                    model: TaskbarApps.apps
+                    model: root.dockApps
 
                     DockAppButton {
                         required property var modelData
@@ -604,7 +607,7 @@ Item {
                 }
 
                 Repeater {
-                    model: TaskbarApps.apps
+                    model: root.dockApps
 
                     DockAppButton {
                         required property var modelData

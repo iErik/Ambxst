@@ -14,17 +14,20 @@ import "calendar"
 
 Rectangle {
     color: "transparent"
-    implicitWidth: 600
-    implicitHeight: 750
+    implicitWidth: 760
+    implicitHeight: 430
 
     property int leftPanelWidth: 0
 
     RowLayout {
         anchors.fill: parent
         spacing: 8
+        clip: true
 
         FullPlayer {
             Layout.preferredWidth: 216
+            Layout.minimumWidth: 216
+            Layout.maximumWidth: 216
             Layout.fillHeight: true
         }
 
@@ -32,6 +35,8 @@ Rectangle {
         ClippingRectangle {
             id: widgetsContainer
             Layout.preferredWidth: controlButtonsContainer.implicitWidth
+            Layout.minimumWidth: controlButtonsContainer.implicitWidth
+            Layout.maximumWidth: controlButtonsContainer.implicitWidth
             Layout.fillHeight: true
             radius: Styling.radius(4)
             color: "transparent"
@@ -73,11 +78,16 @@ Rectangle {
         // Notification History
         NotificationHistory {
             Layout.fillWidth: true
+            Layout.minimumWidth: 180
             Layout.fillHeight: true
+            clip: true
         }
 
         // Circular controls column
         ColumnLayout {
+            Layout.preferredWidth: 48
+            Layout.minimumWidth: 48
+            Layout.maximumWidth: 48
             Layout.fillHeight: true
             spacing: 8
 

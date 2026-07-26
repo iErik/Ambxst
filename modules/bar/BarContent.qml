@@ -50,13 +50,23 @@ Item {
     }
 
 
-    // Whether auto-hide should be active (not pinned, or fullscreen forces it)
-    readonly property bool shouldAutoHide: !pinned || activeWindowFullscreen
+    // Whether auto-hide should be active (not pinned, fullscreen, or force-hidden)
+    readonly property bool shouldAutoHide: !pinned || activeWindowFullscreen || GlobalStates.barForceHidden
 
     onShouldAutoHideChanged: {
         if (!shouldAutoHide) {
             hoverActive = false;
             hideDelayTimer.stop();
+        }
+    }
+
+    Connections {
+        target: GlobalStates
+        function onBarForceHiddenChanged() {
+            if (GlobalStates.barForceHidden) {
+                root.hoverActive = false;
+                hideDelayTimer.stop();
+            }
         }
     }
 
@@ -99,6 +109,10 @@ Item {
 
     // Reveal logic
     readonly property bool reveal: {
+        // Completely hide until the toggle is pressed again (no hover/notch reveal)
+        if (GlobalStates.barForceHidden)
+            return false;
+
         // If not auto-hiding, always reveal
         if (!shouldAutoHide)
             return true;
@@ -199,11 +213,24 @@ Item {
     // MouseArea for hover detection - contains bar content (like Dock)
     MouseArea {
         id: barMouseArea
-        hoverEnabled: true
+        hoverEnabled: !GlobalStates.barForceHidden
+        enabled: !GlobalStates.barForceHidden
 
-        // Size includes margins
-        width: root.orientation === "horizontal" ? root.width : (root.reveal ? root.totalBarWidth : Math.max((Config.bar && Config.bar.hoverRegionHeight !== undefined ? Config.bar.hoverRegionHeight : 8), 4) + root.frameOffset)
-        height: root.orientation === "vertical" ? root.height : (root.reveal ? root.totalBarHeight : Math.max((Config.bar && Config.bar.hoverRegionHeight !== undefined ? Config.bar.hoverRegionHeight : 8), 4) + root.frameOffset)
+        // Size includes margins; collapse fully when force-hidden so the edge does not capture input
+        width: {
+            if (GlobalStates.barForceHidden && root.orientation === "vertical")
+                return 0;
+            if (root.orientation === "horizontal")
+                return root.width;
+            return root.reveal ? root.totalBarWidth : Math.max((Config.bar && Config.bar.hoverRegionHeight !== undefined ? Config.bar.hoverRegionHeight : 8), 4) + root.frameOffset;
+        }
+        height: {
+            if (GlobalStates.barForceHidden && root.orientation === "horizontal")
+                return 0;
+            if (root.orientation === "vertical")
+                return root.height;
+            return root.reveal ? root.totalBarHeight : Math.max((Config.bar && Config.bar.hoverRegionHeight !== undefined ? Config.bar.hoverRegionHeight : 8), 4) + root.frameOffset;
+        }
 
 
         // Position using x/y

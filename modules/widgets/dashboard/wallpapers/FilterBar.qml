@@ -6,56 +6,49 @@ import qs.modules.components
 import qs.modules.globals
 import qs.config
 
-// Componente para la barra de filtros de tipo de archivo
+// Folder tabs for grouping wallpapers (All + user folders + create)
 FocusScope {
     id: root
 
-    // Propiedades públicas
-    property var activeFilters: []
+    // "" = All wallpapers; otherwise a folder name under wallPath
+    property string selectedFolder: ""
 
-    // Asegurar que activeFilters siempre sea un array válido
-    readonly property var safeFilters: activeFilters || []
-
-    // Señales
-    signal filterToggled(string filterType)
+    signal folderSelected(string folderName)
+    signal createFolderRequested
+    signal folderMenuRequested(string folderName)
     signal escapePressedOnFilters
     signal shiftTabPressed
     signal tabPressed
 
-    // Propiedad para rastrear si el scrollbar está siendo presionado
     property bool scrollBarPressed: false
-
-    // Propiedad para navegación por teclado
     property int focusedFilterIndex: -1
     property int lastFocusedFilterIndex: 0
     property bool keyboardNavigationActive: false
 
-    // Función para tomar el foco
     function focusFilters() {
         keyboardNavigationActive = true;
-        // Restaurar el último filtro que tuvo foco, o el primero si no hay historial
         focusedFilterIndex = lastFocusedFilterIndex >= 0 && lastFocusedFilterIndex < filterModel.count ? lastFocusedFilterIndex : 0;
         ensureVisible(focusedFilterIndex);
         root.focus = true;
     }
 
-    // Configuración del Flickable
+    function selectFolder(folderName) {
+        folderSelected(folderName);
+    }
+
     height: 32 + (scrollBar.visible ? 4 + scrollBar.implicitHeight : 0)
     implicitWidth: filterRow.width
 
     onActiveFocusChanged: {
         if (!activeFocus) {
             keyboardNavigationActive = false;
-            // Recordar el índice del filtro enfocado antes de perder el foco
-            if (focusedFilterIndex >= 0) {
+            if (focusedFilterIndex >= 0)
                 lastFocusedFilterIndex = focusedFilterIndex;
-            }
             focusedFilterIndex = -1;
         }
     }
 
     Keys.onPressed: event => {
-        // Manejar Shift+Tab para volver al search
         if (event.key === Qt.Key_Tab && (event.modifiers & Qt.ShiftModifier)) {
             keyboardNavigationActive = false;
             focusedFilterIndex = -1;
@@ -64,7 +57,6 @@ FocusScope {
             return;
         }
 
-        // Manejar Tab para avanzar al siguiente elemento
         if (event.key === Qt.Key_Tab) {
             keyboardNavigationActive = false;
             focusedFilterIndex = -1;
@@ -90,15 +82,12 @@ FocusScope {
             event.accepted = true;
         } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
             if (focusedFilterIndex >= 0 && focusedFilterIndex < filterModel.count) {
-                const filterType = filterModel.get(focusedFilterIndex).type;
-                const index = root.activeFilters.indexOf(filterType);
-                if (index > -1) {
-                    root.activeFilters.splice(index, 1);
+                const item = filterModel.get(focusedFilterIndex);
+                if (item.type === "__create__") {
+                    createFolderRequested();
                 } else {
-                    root.activeFilters.push(filterType);
+                    selectFolder(item.type === "__all__" ? "" : item.type);
                 }
-                root.activeFilters = root.activeFilters.slice();
-                root.filterToggled(filterType);
             }
             event.accepted = true;
         } else if (event.key === Qt.Key_Escape) {
@@ -121,22 +110,52 @@ FocusScope {
         const itemWidth = item.width;
         const viewportWidth = flickable.width;
         const contentX = flickable.contentX;
-
-        // Calcular la posición de destino con scroll suave
         let targetX = contentX;
 
-        if (itemX < contentX) {
-            // El elemento está fuera del viewport por la izquierda
+        if (itemX < contentX)
             targetX = itemX;
-        } else if (itemX + itemWidth > contentX + viewportWidth) {
-            // El elemento está fuera del viewport por la derecha
+        else if (itemX + itemWidth > contentX + viewportWidth)
             targetX = itemX + itemWidth - viewportWidth;
-        }
 
-        // Si necesitamos hacer scroll, animarlo
         if (targetX !== contentX) {
             scrollAnimation.to = targetX;
             scrollAnimation.restart();
+        }
+    }
+
+    function updateFilters() {
+        filterModel.clear();
+        filterModel.append({
+            label: "All",
+            type: "__all__"
+        });
+
+        if (GlobalStates.wallpaperManager && GlobalStates.wallpaperManager.subfolderFilters) {
+            const subfolders = GlobalStates.wallpaperManager.subfolderFilters;
+            for (var j = 0; j < subfolders.length; j++) {
+                filterModel.append({
+                    label: subfolders[j],
+                    type: subfolders[j]
+                });
+            }
+        }
+
+        filterModel.append({
+            label: "New",
+            type: "__create__"
+        });
+
+        // If the selected folder was removed, fall back to All
+        if (selectedFolder !== "") {
+            var stillExists = false;
+            for (var i = 0; i < filterModel.count; i++) {
+                if (filterModel.get(i).type === selectedFolder) {
+                    stillExists = true;
+                    break;
+                }
+            }
+            if (!stillExists)
+                folderSelected("");
         }
     }
 
@@ -148,71 +167,27 @@ FocusScope {
         flickableDirection: Flickable.HorizontalFlick
         clip: true
 
-        // Animación suave para el scroll programático
         NumberAnimation on contentX {
             id: scrollAnimation
             duration: Config.animDuration / 2
             easing.type: Easing.OutQuart
         }
 
-        // Modelo de filtros
         ListModel {
             id: filterModel
-            ListElement {
-                label: "Images"
-                type: "image"
-            }
-            ListElement {
-                label: "GIF"
-                type: "gif"
-            }
-            ListElement {
-                label: "Videos"
-                type: "video"
-            }
         }
 
-        // Función para actualizar filtros dinámicamente
-        function updateFilters() {
-            console.log("Updating filters in FilterBar");
-            // Limpiar filtros de subcarpetas existentes
-            for (var i = filterModel.count - 1; i >= 3; i--) {
-                filterModel.remove(i);
-            }
-
-            // Agregar filtros de subcarpetas
-            if (GlobalStates.wallpaperManager && GlobalStates.wallpaperManager.subfolderFilters) {
-                var subfolders = GlobalStates.wallpaperManager.subfolderFilters;
-                console.log("Adding subfolder filters:", subfolders);
-                for (var j = 0; j < subfolders.length; j++) {
-                    filterModel.append({
-                        label: subfolders[j],
-                        type: "subfolder_" + subfolders[j]
-                    });
-                }
-            }
-            console.log("Filter model now has", filterModel.count, "items");
-        }
-
-        // Actualizar filtros cuando cambien las subcarpetas
         Connections {
             target: GlobalStates.wallpaperManager
             function onSubfolderFiltersChanged() {
-                flickable.updateFilters();
+                root.updateFilters();
             }
-        }
-
-        Component.onCompleted: {
-            flickable.updateFilters();
-        }
-
-        // Actualizar filtros cuando cambie el directorio de wallpapers
-        Connections {
-            target: GlobalStates.wallpaperManager
             function onWallpaperDirChanged() {
-                flickable.updateFilters();
+                root.updateFilters();
             }
         }
+
+        Component.onCompleted: root.updateFilters()
 
         Row {
             id: filterRow
@@ -227,11 +202,12 @@ FocusScope {
                     required property string type
                     required property int index
 
-                    property bool isActive: root.activeFilters.includes(type)
+                    readonly property bool isCreate: type === "__create__"
+                    readonly property bool isAll: type === "__all__"
+                    readonly property bool isActive: isCreate ? false : (isAll ? root.selectedFolder === "" : root.selectedFolder === type)
                     property bool hasFocus: root.keyboardNavigationActive && root.focusedFilterIndex === index
                     property bool isHovered: false
 
-                    // Variante dinámica según estado
                     variant: {
                         if (isActive && (hasFocus || isHovered))
                             return "primaryfocus";
@@ -242,8 +218,7 @@ FocusScope {
                         return "common";
                     }
 
-                    // Ancho dinámico: incluye icono solo cuando está activo
-                    width: filterText.width + 24 + (isActive ? filterIcon.width + 4 : 0)
+                    width: filterText.width + 24 + ((isActive || isCreate) ? filterIcon.width + 4 : 0)
                     height: 32
                     radius: isActive ? Styling.radius(0) / 2 : Styling.radius(0)
 
@@ -253,9 +228,8 @@ FocusScope {
 
                         Row {
                             anchors.centerIn: parent
-                            spacing: isActive ? 4 : 0
+                            spacing: (isActive || isCreate) ? 4 : 0
 
-                            // Icono con animación de revelación
                             Item {
                                 width: filterIcon.visible ? filterIcon.width : 0
                                 height: filterIcon.height
@@ -263,12 +237,12 @@ FocusScope {
 
                                 Text {
                                     id: filterIcon
-                                    text: Icons.accept
+                                    text: isCreate ? Icons.plus : Icons.accept
                                     font.family: Icons.font
                                     font.pixelSize: 16
                                     color: filterTag.item
-                                    visible: isActive
-                                    opacity: isActive ? 1 : 0
+                                    visible: isActive || isCreate
+                                    opacity: visible ? 1 : 0
 
                                     Behavior on opacity {
                                         enabled: Config.animDuration > 0
@@ -309,23 +283,28 @@ FocusScope {
                     MouseArea {
                         anchors.fill: parent
                         hoverEnabled: true
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
                         cursorShape: Qt.PointingHandCursor
 
                         onEntered: filterTag.isHovered = true
                         onExited: filterTag.isHovered = false
 
-                        onClicked: {
+                        onClicked: mouse => {
                             root.keyboardNavigationActive = false;
                             root.focusedFilterIndex = -1;
 
-                            const index = root.activeFilters.indexOf(type);
-                            if (index > -1) {
-                                root.activeFilters.splice(index, 1);
-                            } else {
-                                root.activeFilters.push(type);
+                            if (mouse.button === Qt.RightButton) {
+                                if (!filterTag.isCreate && !filterTag.isAll)
+                                    root.folderMenuRequested(filterTag.type);
+                                return;
                             }
-                            root.activeFilters = root.activeFilters.slice();  // Trigger update
-                            root.filterToggled(type);
+
+                            if (filterTag.isCreate) {
+                                root.createFolderRequested();
+                                return;
+                            }
+
+                            root.selectFolder(filterTag.isAll ? "" : filterTag.type);
                         }
                     }
 

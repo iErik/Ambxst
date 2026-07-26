@@ -13,8 +13,8 @@ import qs.config
 Rectangle {
     id: root
     color: "transparent"
-    implicitWidth: 400
-    implicitHeight: 400
+    implicitWidth: 836
+    implicitHeight: 430
 
     property string hostname: ""
     property string osName: ""

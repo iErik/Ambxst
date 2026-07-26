@@ -256,7 +256,7 @@ Singleton {
             const ambxst = adapter.ambxst;
 
             function pushCoreBind(keybind) {
-                if (!keybind)
+                if (!keybind || !keybind.key)
                     return;
                 const resolved = resolveBindAction(keybind.action, keybind);
                 if (!resolved)
@@ -286,6 +286,7 @@ Singleton {
                     pushCoreBind(ambxst.system.config);
                     pushCoreBind(ambxst.system.lockscreen);
                     pushCoreBind(ambxst.system.tools);
+                    if (ambxst.system.togglebar) pushCoreBind(ambxst.system.togglebar);
                     pushCoreBind(ambxst.system.screenshot);
                     pushCoreBind(ambxst.system.screenrecord);
                     pushCoreBind(ambxst.system.lens);

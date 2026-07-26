@@ -93,7 +93,7 @@ ShellRoot {
                     return (!list || list.length === 0 || list.indexOf(screen.name) !== -1);
                 }
                 barPosition: unifiedPanel.barPosition
-                barPinned: unifiedPanel.pinned
+                barPinned: unifiedPanel.pinned && !GlobalStates.barForceHidden
                 barSize: (unifiedPanel.barPosition === "left" || unifiedPanel.barPosition === "right") ? unifiedPanel.barTargetWidth : unifiedPanel.barTargetHeight
                 barOuterMargin: unifiedPanel.barOuterMargin
 

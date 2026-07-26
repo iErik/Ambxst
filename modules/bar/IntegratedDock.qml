@@ -21,6 +21,9 @@ StyledRect {
     readonly property bool isIntegrated: (Config.dock?.theme ?? "default") === "integrated"
     readonly property string dockPosition: Config.dock?.position ?? "center"
 
+    // Apps for this bar's screen active workspace
+    readonly property var dockApps: TaskbarApps.appsForScreen(bar?.screen)
+
     // Compact sizing for integrated dock
     readonly property int iconSize: 18
     readonly property int itemSpacing: 2
@@ -69,7 +72,7 @@ StyledRect {
 
                 // App buttons
                 Repeater {
-                    model: TaskbarApps.apps
+                    model: root.dockApps
 
                     IntegratedDockAppButton {
                         required property var modelData
@@ -96,7 +99,7 @@ StyledRect {
 
                 // App buttons
                 Repeater {
-                    model: TaskbarApps.apps
+                    model: root.dockApps
 
                     IntegratedDockAppButton {
                         required property var modelData

@@ -44,7 +44,12 @@ FocusScope {
         }
     }
 
-    property var activeFilters: []  // Lista de tipos de archivo seleccionados para filtrar
+    property string selectedFolder: ""  // "" = All; otherwise folder name
+    property bool folderDialogVisible: false
+    property string folderDialogMode: "create"  // create | rename
+    property string folderDialogName: ""
+    property string folderDialogTarget: ""
+    property string pendingMovePath: ""
 
     // Configuración interna del grid
     readonly property int gridColumns: 7
@@ -203,14 +208,13 @@ FocusScope {
         }
     }
 
-    // Propiedad calculada que filtra los fondos de pantalla según el texto de búsqueda y tipos activos.
+    // Propiedad calculada que filtra los fondos de pantalla según búsqueda y carpeta activa.
     property var filteredWallpapers: {
         if (!GlobalStates.wallpaperManager)
             return [];
 
         let wallpapers = GlobalStates.wallpaperManager.wallpaperPaths;
 
-        // Filtrar por texto de búsqueda
         if (searchText.length > 0) {
             wallpapers = wallpapers.filter(function (path) {
                 const fileName = path.split('/').pop().toLowerCase();
@@ -218,27 +222,158 @@ FocusScope {
             });
         }
 
-        // Filtrar por tipos activos si hay filtros seleccionados
-        if (activeFilters.length > 0) {
+        if (selectedFolder !== "") {
             wallpapers = wallpapers.filter(function (path) {
-                const fileType = GlobalStates.wallpaperManager.getFileType(path);
-                const subfolder = GlobalStates.wallpaperManager.getSubfolderFromPath(path);
-
-                // Verificar si coincide con algún filtro activo
-                for (var i = 0; i < activeFilters.length; i++) {
-                    var filter = activeFilters[i];
-                    if (filter === fileType) {
-                        return true;
-                    }
-                    if (filter.startsWith("subfolder_") && subfolder === filter.replace("subfolder_", "")) {
-                        return true;
-                    }
-                }
-                return false;
+                return GlobalStates.wallpaperManager.getSubfolderFromPath(path) === selectedFolder;
             });
         }
 
         return wallpapers;
+    }
+
+    function openCreateFolderDialog() {
+        folderDialogMode = "create";
+        folderDialogTarget = "";
+        folderDialogName = "";
+        folderDialogVisible = true;
+        Qt.callLater(() => folderNameField.forceActiveFocus());
+    }
+
+    function openRenameFolderDialog(folderName) {
+        folderDialogMode = "rename";
+        folderDialogTarget = folderName;
+        folderDialogName = folderName;
+        folderDialogVisible = true;
+        Qt.callLater(() => {
+            folderNameField.forceActiveFocus();
+            folderNameField.selectAll();
+        });
+    }
+
+    function closeFolderDialog() {
+        folderDialogVisible = false;
+        folderDialogName = "";
+        folderDialogTarget = "";
+        pendingMovePath = "";
+        focusSearch();
+    }
+
+    function confirmFolderDialog() {
+        if (!GlobalStates.wallpaperManager)
+            return;
+
+        const name = folderDialogName.trim();
+        if (!name)
+            return;
+
+        if (folderDialogMode === "rename") {
+            if (!GlobalStates.wallpaperManager.renameFolder(folderDialogTarget, name))
+                return;
+        } else if (!GlobalStates.wallpaperManager.createFolder(name)) {
+            return;
+        }
+
+        folderDialogVisible = false;
+        folderDialogName = "";
+        folderDialogTarget = "";
+    }
+
+    function openFolderContextMenu(folderName) {
+        if (!Visibilities.contextMenu || !folderName)
+            return;
+
+        Visibilities.contextMenu.openCustomMenu([
+            {
+                text: "Rename",
+                icon: Icons.edit,
+                isSeparator: false,
+                onTriggered: function () {
+                    openRenameFolderDialog(folderName);
+                }
+            },
+            {
+                text: "Delete folder",
+                icon: Icons.trash,
+                textColor: Colors.overError,
+                highlightColor: Colors.error,
+                isSeparator: false,
+                onTriggered: function () {
+                    if (!GlobalStates.wallpaperManager)
+                        return;
+                    if (selectedFolder === folderName)
+                        selectedFolder = "";
+                    GlobalStates.wallpaperManager.deleteFolder(folderName);
+                }
+            }
+        ], 180, 32, "wallpaper-folder");
+    }
+
+    function openWallpaperContextMenu(filePath) {
+        if (!Visibilities.contextMenu || !GlobalStates.wallpaperManager || !filePath)
+            return;
+
+        const folders = GlobalStates.wallpaperManager.subfolderFilters || [];
+        const currentFolder = GlobalStates.wallpaperManager.getSubfolderFromPath(filePath);
+        let items = [];
+
+        items.push({
+            text: "Move to All",
+            icon: Icons.folder,
+            enabled: currentFolder !== "",
+            isSeparator: false,
+            onTriggered: function () {
+                GlobalStates.wallpaperManager.moveWallpaperToFolder(filePath, "");
+            }
+        });
+
+        for (var i = 0; i < folders.length; i++) {
+            (function (folder) {
+                items.push({
+                    text: "Move to " + folder,
+                    icon: Icons.folder,
+                    enabled: currentFolder !== folder,
+                    isSeparator: false,
+                    onTriggered: function () {
+                        GlobalStates.wallpaperManager.moveWallpaperToFolder(filePath, folder);
+                    }
+                });
+            })(folders[i]);
+        }
+
+        items.push({ isSeparator: true, text: "" });
+        items.push({
+            text: "New folder…",
+            icon: Icons.plus,
+            isSeparator: false,
+            onTriggered: function () {
+                pendingMovePath = filePath;
+                openCreateFolderDialog();
+            }
+        });
+
+        Visibilities.contextMenu.openCustomMenu(items, 200, 32, "wallpaper-move");
+    }
+
+    Connections {
+        target: GlobalStates.wallpaperManager
+        function onFolderOperationFinished(action, ok, arg1, arg2) {
+            if (!ok) {
+                pendingMovePath = "";
+                return;
+            }
+            if (action === "create" && arg1) {
+                selectedFolder = arg1;
+                if (pendingMovePath) {
+                    const pathToMove = pendingMovePath;
+                    pendingMovePath = "";
+                    GlobalStates.wallpaperManager.moveWallpaperToFolder(pathToMove, arg1);
+                }
+            } else if (action === "rename" && arg2) {
+                selectedFolder = arg2;
+            } else if (action === "delete" && selectedFolder === arg1) {
+                selectedFolder = "";
+            }
+        }
     }
 
     ColumnLayout {
@@ -812,11 +947,18 @@ FocusScope {
                 id: wallpapersFilterBar
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: Math.min(implicitWidth, parent.width)
-                activeFilters: wallpapersTabRoot.activeFilters
+                selectedFolder: wallpapersTabRoot.selectedFolder
 
-                onActiveFiltersChanged: {
-                    wallpapersTabRoot.activeFilters = activeFilters;
+                onFolderSelected: folderName => {
+                    wallpapersTabRoot.selectedFolder = folderName;
+                    if (filteredWallpapers.length > 0)
+                        setSelectedIndex(0);
+                    else
+                        setSelectedIndex(-1);
                 }
+
+                onCreateFolderRequested: wallpapersTabRoot.openCreateFolderDialog()
+                onFolderMenuRequested: folderName => wallpapersTabRoot.openFolderContextMenu(folderName)
 
                 onEscapePressedOnFilters: {
                     wallpapersTabRoot.focusSearch();
@@ -1134,6 +1276,7 @@ FocusScope {
                     MouseArea {
                         anchors.fill: parent
                         hoverEnabled: !wallpaperGrid.isScrolling
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
                         cursorShape: Qt.PointingHandCursor
 
                         onEntered: {
@@ -1145,15 +1288,21 @@ FocusScope {
                         onExited: {
                             parent.isHovered = false;
                         }
-                        onPressed: {
-                            if (!wallpaperGrid.isScrolling)
+                        onPressed: mouse => {
+                            if (!wallpaperGrid.isScrolling && mouse.button === Qt.LeftButton)
                                 parent.scale = 0.95;
                         }
                         onReleased: parent.scale = 1.0
 
-                        onClicked: {
+                        onClicked: mouse => {
                             if (wallpaperGrid.isScrolling)
                                 return;
+
+                            if (mouse.button === Qt.RightButton) {
+                                wallpapersTabRoot.openWallpaperContextMenu(modelData);
+                                return;
+                            }
+
                             if (GlobalStates.wallpaperManager) {
                                 if (isPerScreen && currentScreenName !== "") {
                                     GlobalStates.wallpaperManager.setWallpaper(modelData, currentScreenName);
@@ -1178,6 +1327,138 @@ FocusScope {
                         NumberAnimation {
                             duration: Config.animDuration / 3
                             easing.type: Easing.OutCubic
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Create / rename folder dialog
+    Rectangle {
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.45)
+        visible: folderDialogVisible
+        z: 2000
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: wallpapersTabRoot.closeFolderDialog()
+        }
+
+        StyledRect {
+            anchors.centerIn: parent
+            width: Math.min(360, parent.width - 48)
+            height: folderDialogColumn.height + 32
+            variant: "popup"
+            radius: Styling.radius(0)
+
+            ColumnLayout {
+                id: folderDialogColumn
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.margins: 16
+                spacing: 12
+
+                Text {
+                    Layout.fillWidth: true
+                    text: folderDialogMode === "rename" ? "Rename folder" : "New folder"
+                    font.family: Config.theme.font
+                    font.pixelSize: Styling.fontSize(1)
+                    font.weight: Font.DemiBold
+                    color: Colors.overBackground
+                }
+
+                StyledRect {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 40
+                    variant: "internalbg"
+                    radius: Styling.radius(-2)
+
+                    TextField {
+                        id: folderNameField
+                        anchors.fill: parent
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 12
+                        text: wallpapersTabRoot.folderDialogName
+                        placeholderText: "Folder name"
+                        color: Colors.overBackground
+                        placeholderTextColor: Colors.overSurfaceVariant
+                        selectionColor: Colors.primary
+                        selectedTextColor: Colors.overPrimary
+                        font.family: Config.theme.font
+                        font.pixelSize: Config.theme.fontSize
+                        background: Item {}
+                        selectByMouse: true
+
+                        onTextChanged: wallpapersTabRoot.folderDialogName = text
+
+                        Keys.onPressed: event => {
+                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                wallpapersTabRoot.confirmFolderDialog();
+                                event.accepted = true;
+                            } else if (event.key === Qt.Key_Escape) {
+                                wallpapersTabRoot.closeFolderDialog();
+                                event.accepted = true;
+                            }
+                        }
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    Item { Layout.fillWidth: true }
+
+                    StyledRect {
+                        Layout.preferredWidth: cancelLabel.width + 24
+                        Layout.preferredHeight: 32
+                        variant: cancelArea.containsMouse ? "focus" : "common"
+                        radius: Styling.radius(-2)
+
+                        Text {
+                            id: cancelLabel
+                            anchors.centerIn: parent
+                            text: "Cancel"
+                            font.family: Config.theme.font
+                            font.pixelSize: Config.theme.fontSize
+                            color: parent.item
+                        }
+
+                        MouseArea {
+                            id: cancelArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: wallpapersTabRoot.closeFolderDialog()
+                        }
+                    }
+
+                    StyledRect {
+                        Layout.preferredWidth: confirmLabel.width + 24
+                        Layout.preferredHeight: 32
+                        variant: confirmArea.containsMouse ? "primaryfocus" : "primary"
+                        radius: Styling.radius(-2)
+                        opacity: folderDialogName.trim().length > 0 ? 1 : 0.5
+
+                        Text {
+                            id: confirmLabel
+                            anchors.centerIn: parent
+                            text: folderDialogMode === "rename" ? "Rename" : "Create"
+                            font.family: Config.theme.font
+                            font.pixelSize: Config.theme.fontSize
+                            color: parent.item
+                        }
+
+                        MouseArea {
+                            id: confirmArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: folderDialogName.trim().length > 0
+                            onClicked: wallpapersTabRoot.confirmFolderDialog()
                         }
                     }
                 }
