@@ -44,10 +44,10 @@ An <i><b>Ax</b>tremely</i> customizable shell.
 <h2><sub><img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Package.png" alt="Package" width="32" height="32" /></sub> Installation</h2>
 
 ```bash
-curl -L get.axeni.de/ambxst | sh
+curl -L https://raw.githubusercontent.com/iErik/Ambxst/erik/install.sh | sh
 ```
 
-This will install Ambxst and its dependencies. You will have the `ambxst` command available in your terminal, which you can use to start the shell.
+This will install Ambxst from this fork and its dependencies. You will have the `ambxst` command available in your terminal, which you can use to start the shell.
 
 ### Hyprland (more compositors coming soon!)
 

@@ -224,8 +224,9 @@ restart_ambxst() {
 
 case "${1:-}" in
 update)
-	echo "Updating Ambxst..."
-	curl -fsSL get.axeni.de/ambxst | sh
+	echo "Updating Ambxst from local fork installer..."
+	# Never hit get.axeni.de — use this tree's install.sh (REPO_URL = iErik/Ambxst)
+	bash "${SCRIPT_DIR}/install.sh"
 	restart_ambxst
 	;;
 refresh)

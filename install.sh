@@ -2,10 +2,12 @@
 set -e
 
 # === Configuration ===
-REPO_URL="https://github.com/Axenide/Ambxst.git"
+# Personal fork — install/update stay on this repo, not Axenide upstream.
+REPO_URL="https://github.com/iErik/Ambxst.git"
 INSTALL_PATH="$HOME/.local/src/ambxst"
 BIN_DIR="/usr/local/bin"
 QUICKSHELL_REPO="https://git.outfoxxed.me/outfoxxed/quickshell"
+DEFAULT_BRANCH="main"
 
 # === Helpers ===
 GREEN='\033[0;32m' BLUE='\033[0;34m' YELLOW='\033[1;33m' RED='\033[0;31m' NC='\033[0m'
@@ -94,7 +96,7 @@ filter_packages() {
 install_dependencies() {
   case "$DISTRO" in
   nixos)
-    local FLAKE_URI="${1:-github:Axenide/Ambxst}"
+    local FLAKE_URI="${1:-github:iErik/Ambxst}"
     nix profile list | grep -q "ddcutil" && nix profile remove ddcutil 2>/dev/null || true
 
     if nix profile list | grep -q "Ambxst"; then
@@ -309,23 +311,43 @@ setup_repo() {
     rm -rf "$TMP_DIR"
   fi
 
+  # Point origin at this fork if it still tracks Axenide upstream
+  local CURRENT_ORIGIN
+  CURRENT_ORIGIN=$(git -C "$INSTALL_PATH" remote get-url origin 2>/dev/null || true)
+  if [[ "$CURRENT_ORIGIN" == *"Axenide/Ambxst"* ]]; then
+    log_info "Retargeting origin to fork: $REPO_URL"
+    git -C "$INSTALL_PATH" remote set-url origin "$REPO_URL"
+  elif [[ -z "$CURRENT_ORIGIN" ]]; then
+    git -C "$INSTALL_PATH" remote add origin "$REPO_URL"
+  fi
+
   log_info "Checking repository status..."
   git -C "$INSTALL_PATH" fetch origin
 
   local BRANCH
   BRANCH=$(git -C "$INSTALL_PATH" rev-parse --abbrev-ref HEAD)
 
-  if [[ "$BRANCH" != "main" ]]; then
-    log_warn "On branch '$BRANCH', not 'main'. Skipping update."
+  # Feature/personal branches: fast-forward only (never hard-reset)
+  if [[ "$BRANCH" != "$DEFAULT_BRANCH" ]]; then
+    log_info "On branch '$BRANCH'. Fast-forwarding from origin/$BRANCH..."
+    if git -C "$INSTALL_PATH" rev-parse --verify "origin/$BRANCH" >/dev/null 2>&1; then
+      if git -C "$INSTALL_PATH" pull --ff-only origin "$BRANCH"; then
+        log_success "Synced branch '$BRANCH' with origin"
+      else
+        log_warn "Could not fast-forward '$BRANCH' (local commits or conflicts). Skipping code sync."
+      fi
+    else
+      log_warn "Remote branch origin/$BRANCH not found. Skipping code sync."
+    fi
     return
   fi
 
   local HAS_CHANGES=0
   [[ -n "$(git -C "$INSTALL_PATH" status --porcelain)" ]] && HAS_CHANGES=1
-  [[ -n "$(git -C "$INSTALL_PATH" log origin/main..HEAD)" ]] && HAS_CHANGES=1
+  [[ -n "$(git -C "$INSTALL_PATH" log "origin/$DEFAULT_BRANCH"..HEAD 2>/dev/null)" ]] && HAS_CHANGES=1
 
   if [[ "$HAS_CHANGES" -eq 1 ]]; then
-    echo -e "${YELLOW}⚠  Local changes detected on 'main'.${NC}"
+    echo -e "${YELLOW}⚠  Local changes detected on '$DEFAULT_BRANCH'.${NC}"
     echo -e "${RED}This will DISCARD all local changes.${NC}"
     read -r -p "Continue? [y/N] " response </dev/tty
     [[ ! "$response" =~ ^[Yy]$ ]] && {
@@ -335,7 +357,7 @@ setup_repo() {
   fi
 
   log_info "Syncing with remote..."
-  git -C "$INSTALL_PATH" reset --hard origin/main
+  git -C "$INSTALL_PATH" reset --hard "origin/$DEFAULT_BRANCH"
 }
 
 # === Quickshell Build ===
