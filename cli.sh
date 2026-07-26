@@ -203,23 +203,45 @@ find_ambxst_pid_cached() {
 	echo "$pid"
 }
 
-restart_ambxst() {
-	# Kill axctl processes first (they survive parent death when forked/detached)
+stop_ambxst_helpers() {
+	# Helpers / IPC readers can outlive qs across reloads and break the next session
 	pkill -f "axctl.*daemon" 2>/dev/null || true
 	pkill -f "axctl subscribe" 2>/dev/null || true
+	pkill -f "${SCRIPT_DIR}/scripts/loginlock.sh" 2>/dev/null || true
+	pkill -f "${SCRIPT_DIR}/scripts/sleep_monitor.sh" 2>/dev/null || true
+	pkill -f "${SCRIPT_DIR}/scripts/daemon_priority.sh" 2>/dev/null || true
+	pkill -f "tail -f /tmp/ambxst_ipc.pipe" 2>/dev/null || true
+	rm -f /tmp/ambxst_loginlock.lock /tmp/ambxst_sleep_monitor.lock
+	# Recreate a clean IPC fifo so orphaned readers cannot keep the old one
+	rm -f /tmp/ambxst_ipc.pipe
+}
 
+restart_ambxst() {
 	PID=$(find_ambxst_pid_cached)
 	if [ -n "$PID" ]; then
 		echo "Stopping Ambxst (PID $PID)..."
-		kill "$PID"
-		# Wait for process to exit
-		while kill -0 "$PID" 2>/dev/null; do
+		kill "$PID" 2>/dev/null || true
+		# Wait for process to exit (cap wait so we never hang)
+		local waited=0
+		while kill -0 "$PID" 2>/dev/null && [ "$waited" -lt 50 ]; do
 			sleep 0.1
+			waited=$((waited + 1))
 		done
+		kill -9 "$PID" 2>/dev/null || true
 	fi
+
+	stop_ambxst_helpers
+
+	# Also clear any leftover qs instances launched from this tree
+	pkill -f "qs -p ${SCRIPT_DIR}/shell.qml" 2>/dev/null || true
+	rm -f /tmp/ambxst.pid
+
 	echo "Starting Ambxst..."
-	# Relaunch the script in background
-	nohup "$0" >/dev/null 2>&1 &
+	local log_file="${XDG_STATE_HOME:-$HOME/.local/state}/ambxst/reload.log"
+	mkdir -p "$(dirname "$log_file")"
+	# Relaunch via this tree's cli.sh (not $0), keep env, log errors
+	nohup bash "${SCRIPT_DIR}/cli.sh" >>"$log_file" 2>&1 &
+	echo "Ambxst relaunched (log: $log_file)"
 }
 
 case "${1:-}" in
@@ -275,17 +297,18 @@ reload)
 	restart_ambxst
 	;;
 quit)
-	# Kill axctl processes first
-	pkill -f "axctl.*daemon" 2>/dev/null || true
-	pkill -f "axctl subscribe" 2>/dev/null || true
-
 	PID=$(find_ambxst_pid_cached)
 	if [ -n "$PID" ]; then
 		echo "Stopping Ambxst (PID $PID)..."
-		kill "$PID"
+		kill "$PID" 2>/dev/null || true
+		sleep 0.2
+		kill -9 "$PID" 2>/dev/null || true
 	else
 		echo "Ambxst is not running"
 	fi
+	stop_ambxst_helpers
+	pkill -f "qs -p ${SCRIPT_DIR}/shell.qml" 2>/dev/null || true
+	rm -f /tmp/ambxst.pid
 	;;
 screen)
 	SUB="${2:-}"
