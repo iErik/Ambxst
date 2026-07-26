@@ -39,7 +39,7 @@ Item {
     readonly property string barPosition: Config.bar.position
     readonly property var barPanel: monitor ? Visibilities.getBarPanelForScreen(monitor.name) : null
     readonly property bool isBarPinned: barPanel ? barPanel.pinned : (Config.bar.pinnedOnStartup ?? true)
-    readonly property int barReserved: isBarPinned ? (Config.showBackground ? 44 : 40) : 0
+    readonly property int barReserved: (isBarPinned && !GlobalStates.barForceHidden) ? (Config.showBackground ? 44 : 40) : 0
 
     // Search functionality (controlled from parent)
     property string searchQuery: ""
@@ -144,7 +144,7 @@ Item {
         // Close overview and focus the matched window
         Visibilities.setActiveModule("", true);
         Qt.callLater(() => {
-            AxctlService.dispatch(`focuswindow address:${win.address}`);
+            AxctlService.focusWindowPreserveCursor(win.address, win?.workspace?.id);
         });
     }
 
@@ -264,15 +264,16 @@ Item {
                                 acceptedButtons: Qt.LeftButton
                                 onClicked: {
                                     if (overviewRoot.draggingTargetWorkspace === -1) {
-                                        // Only switch workspace, don't close overview
-                                        AxctlService.dispatch(`workspace ${workspaceValue}`);
+                                        // Only switch workspace, don't close overview.
+                                        // Preserve cursor so compositor warp doesn't jump the pointer.
+                                        AxctlService.switchWorkspacePreserveCursor(workspaceValue);
                                     }
                                 }
                                 onDoubleClicked: {
                                     if (overviewRoot.draggingTargetWorkspace === -1) {
                                         // Double click closes overview and switches workspace
                                         Visibilities.setActiveModule("");
-                                        AxctlService.dispatch(`workspace ${workspaceValue}`);
+                                        AxctlService.switchWorkspacePreserveCursor(workspaceValue);
                                     }
                                 }
                             }
@@ -362,7 +363,7 @@ Item {
                         // Skip generic focus restoration since we're handling it specifically
                         Visibilities.setActiveModule("", true);
                         Qt.callLater(() => {
-                            AxctlService.dispatch(`focuswindow address:${windowData.address}`);
+                            AxctlService.focusWindowPreserveCursor(windowData.address, windowData?.workspace?.id);
                         });
                     }
                     onWindowClosed: {

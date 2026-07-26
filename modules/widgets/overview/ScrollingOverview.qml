@@ -31,7 +31,7 @@ Item {
     readonly property string barPosition: Config.bar.position
     readonly property var barPanel: monitor ? Visibilities.getBarPanelForScreen(monitor.name) : null
     readonly property bool isBarPinned: barPanel ? barPanel.pinned : (Config.bar.pinnedOnStartup ?? true)
-    readonly property int barReserved: isBarPinned ? (Config.showBackground ? 44 : 40) : 0
+    readonly property int barReserved: (isBarPinned && !GlobalStates.barForceHidden) ? (Config.showBackground ? 44 : 40) : 0
 
     // Window data
     readonly property var windowList: CompositorData.windowList

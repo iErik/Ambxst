@@ -73,6 +73,65 @@ Singleton {
         proc.running = true;
     }
 
+    // Switch/focus without warping the pointer.
+    //
+    // Important: do NOT "save cursor → act → restore". That causes a visible
+    // twitch (and fights the user if they move the mouse right after click).
+    // On Hyprland 0.56+ (Lua config), use dispatchers that leave the cursor alone.
+    function switchWorkspacePreserveCursor(workspaceId) {
+        if (workspaceId === undefined || workspaceId === null || workspaceId === "")
+            return;
+        const ws = String(workspaceId);
+        let proc = Qt.createQmlObject('import Quickshell.Io; Process {}', root);
+        if (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE")) {
+            // hl.dsp.focus({ workspace }) switches without restoring last-ws cursor.
+            proc.command = [
+                "bash", "-c",
+                `hyprctl repl 'hl.dispatch(hl.dsp.focus({ workspace = "${ws}" }))' >/dev/null 2>&1 || axctl workspace switch "${ws}"`
+            ];
+        } else {
+            proc.command = ["axctl", "workspace", "switch", ws];
+        }
+        proc.onExited.connect(() => proc.destroy());
+        proc.running = true;
+    }
+
+    // Focus a window without warping into it. Optional workspaceId avoids a
+    // cross-workspace focus warp by switching the workspace first (no-warp),
+    // then focusing under cursor:no_warps.
+    function focusWindowPreserveCursor(address, workspaceId) {
+        if (!address)
+            return;
+        let addr = String(address).replace(/^address:/, "");
+        let ws = workspaceId !== undefined && workspaceId !== null && workspaceId !== ""
+            ? String(workspaceId)
+            : "";
+        if (!ws) {
+            let clients = root.clients.values || [];
+            for (let i = 0; i < clients.length; i++) {
+                if (clients[i].address === addr) {
+                    ws = String(clients[i].workspace?.id || "");
+                    break;
+                }
+            }
+        }
+
+        let proc = Qt.createQmlObject('import Quickshell.Io; Process {}', root);
+        if (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE")) {
+            proc.command = [
+                "bash", "-c",
+                (ws ? `hyprctl repl 'hl.dispatch(hl.dsp.focus({ workspace = "${ws}" }))' >/dev/null 2>&1 || true\n` : "") +
+                'hyprctl repl \'hl.config({ cursor = { no_warps = true } })\' >/dev/null 2>&1 || true\n' +
+                `hyprctl repl 'hl.dispatch(hl.dsp.focus({ window = "${addr}" }))' >/dev/null 2>&1 || axctl window focus "${addr}" >/dev/null 2>&1 || true\n` +
+                'hyprctl repl \'hl.config({ cursor = { no_warps = false } })\' >/dev/null 2>&1 || true\n'
+            ];
+        } else {
+            proc.command = ["axctl", "window", "focus", addr];
+        }
+        proc.onExited.connect(() => proc.destroy());
+        proc.running = true;
+    }
+
     function monitorFor(screen) {
         if (!screen) return null;
         let screenName = screen.name || screen;
@@ -143,6 +202,10 @@ Singleton {
                 height: mon.height,
                 refreshRate: mon.refresh_rate,
                 scale: mon.scale,
+                // Layout position / rotation — required by Overview window placement
+                x: mon.metadata ? (mon.metadata.x || 0) : 0,
+                y: mon.metadata ? (mon.metadata.y || 0) : 0,
+                transform: mon.metadata ? (mon.metadata.transform || 0) : 0,
                 activeWorkspace: { id: parseInt(mon.metadata ? mon.metadata.active_workspace : 0) || 0, name: mon.metadata ? mon.metadata.active_workspace : "" }
             }));
             root.monitors.values = mappedMonitors;

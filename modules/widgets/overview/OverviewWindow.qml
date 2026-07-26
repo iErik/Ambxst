@@ -247,20 +247,7 @@ Item {
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
         drag.target: parent
 
-        onEntered: {
-            root.hovered = true;
-            // Only focus window on hover if it's in the current workspace
-            if (root.windowData) {
-                // Get current active workspace from AxctlService
-                let currentWorkspace = AxctlService.focusedMonitor?.activeWorkspace?.id;
-                let windowWorkspace = root.windowData?.workspace?.id;
-
-                // Only focus if the window is in the current workspace
-                if (currentWorkspace && windowWorkspace && currentWorkspace === windowWorkspace) {
-                    AxctlService.dispatch(`focuswindow address:${windowData.address}`);
-                }
-            }
-        }
+        onEntered: root.hovered = true
         onExited: root.hovered = false
 
         onPressed: mouse => {
@@ -371,8 +358,9 @@ Item {
                 return;
 
             if (mouse.button === Qt.LeftButton) {
-                // Single click just focuses the window without closing overview
-                AxctlService.dispatch(`focuswindow address:${windowData.address}`);
+                // Single click focuses without closing overview or warping the pointer
+                // into the real window (which looks like preview→desktop mapping).
+                AxctlService.focusWindowPreserveCursor(windowData.address, windowData?.workspace?.id);
             } else if (mouse.button === Qt.MiddleButton) {
                 root.windowClosed();
             }

@@ -266,7 +266,7 @@ Item {
             TapHandler {
                 acceptedButtons: Qt.LeftButton
                 onDoubleTapped: {
-                    AxctlService.dispatch(`workspace ${root.workspaceId}`);
+                    AxctlService.switchWorkspacePreserveCursor(root.workspaceId);
                     Visibilities.setActiveModule("", true);
                 }
             }
@@ -687,7 +687,7 @@ Item {
                             if (!windowDelegate.windowData)
                                 return;
                             if (mouse.button === Qt.LeftButton && !windowDelegate.dragging) {
-                                AxctlService.dispatch(`focuswindow address:${windowDelegate.windowData.address}`);
+                                AxctlService.focusWindowPreserveCursor(windowDelegate.windowData.address, windowDelegate.windowData?.workspace?.id);
                             } else if (mouse.button === Qt.MiddleButton) {
                                 AxctlService.dispatch(`closewindow address:${windowDelegate.windowData.address}`);
                             }
@@ -699,7 +699,7 @@ Item {
                             if (mouse.button === Qt.LeftButton) {
                                 Visibilities.setActiveModule("", true);
                                 Qt.callLater(() => {
-                                    AxctlService.dispatch(`focuswindow address:${windowDelegate.windowData.address}`);
+                                    AxctlService.focusWindowPreserveCursor(windowDelegate.windowData.address, windowDelegate.windowData?.workspace?.id);
                                 });
                             }
                         }
