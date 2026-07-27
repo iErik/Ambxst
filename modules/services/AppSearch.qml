@@ -178,11 +178,15 @@ Singleton {
     
 
     function launchApp(app) {
-        const path = app.fileName || app.path || app.filePath;
-        
-        if (path && path.toString().endsWith('.desktop')) {
-            const escapedPath = path.toString().replace(/'/g, "'\\''");
-            runInActiveWorkspace("gio launch '" + escapedPath + "'");
+        if (!app)
+            return;
+
+        // Prefer launching by desktop id so gtk/gio apply the full entry
+        // (StartupWMClass, field codes, wrapper scripts, etc.).
+        // DesktopEntry has no file path property in Quickshell 0.3.
+        if (app.id) {
+            const id = String(app.id).replace(/'/g, "'\\''");
+            runInActiveWorkspace("gtk-launch '" + id + "'");
             return;
         }
 
@@ -190,8 +194,9 @@ Singleton {
             const safeArgs = [];
             for (let i = 0; i < app.command.length; i++) {
                 const arg = app.command[i];
-                if (/^%[fFuUijkc]$/.test(arg)) continue;
-                safeArgs.push("'" + arg.replace(/'/g, "'\\''") + "'");
+                if (/^%[fFuUijkc]$/.test(arg))
+                    continue;
+                safeArgs.push("'" + String(arg).replace(/'/g, "'\\''") + "'");
             }
 
             if (safeArgs.length > 0) {
@@ -200,12 +205,17 @@ Singleton {
             }
         }
 
-        app.execute();
+        if (typeof app.execute === "function")
+            app.execute();
     }
 
     function runInActiveWorkspace(command) {
         const p = Qt.createQmlObject('import Quickshell.Io; Process { }', root);
-        p.command = ["bash", "-c", "cd ~ && env -u HL_INITIAL_WORKSPACE_TOKEN setsid " + command + " < /dev/null > /dev/null 2>&1 &"];
+        // Drop compositor/editor env that breaks spawned apps:
+        // - HL_INITIAL_WORKSPACE_TOKEN: Hyprland one-shot workspace binding
+        // - ELECTRON_RUN_AS_NODE / ELECTRON_NO_ATTACH_CONSOLE: inherited from
+        //   Cursor/VS Code; makes Electron AppImages exit without a window
+        p.command = ["bash", "-c", "mkdir -p \"${XDG_STATE_HOME:-$HOME/.local/state}/ambxst\" && cd ~ && env -u HL_INITIAL_WORKSPACE_TOKEN -u ELECTRON_RUN_AS_NODE -u ELECTRON_NO_ATTACH_CONSOLE setsid " + command + " </dev/null >/dev/null 2>>\"${XDG_STATE_HOME:-$HOME/.local/state}/ambxst/launch.log\" &"];
         p.onExited.connect(() => p.destroy());
         p.running = true;
     }

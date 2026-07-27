@@ -682,6 +682,11 @@ help | --help | -h)
 	# Force Qt6CT
 	export QT_QPA_PLATFORMTHEME=qt6ct
 	unset HL_INITIAL_WORKSPACE_TOKEN
+	# Cursor/VS Code set these when spawning terminals; if Ambxst inherits them,
+	# every Electron app launched from the shell (Hydra, Discord, …) starts as
+	# Node and exits immediately instead of opening a window.
+	unset ELECTRON_RUN_AS_NODE
+	unset ELECTRON_NO_ATTACH_CONSOLE
 
 	# Cache this script's PID before exec (for fast PID lookups in future CLI calls)
 	echo $$ >/tmp/ambxst.pid

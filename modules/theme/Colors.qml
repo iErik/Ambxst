@@ -71,6 +71,14 @@ FileView {
         }
     }
 
+    property Connections cursorThemeWatcher: Connections {
+        target: Config
+        function onCursorThemeChanged() {
+            if (Config.cursorTheme)
+                colors.applyCursorTheme(Config.cursorTheme);
+        }
+    }
+
     property Timer generationTimer: Timer {
         id: generationTimer
         interval: 100
@@ -146,6 +154,77 @@ update_qtct_icon "${qt6Conf}" "$theme_id"
         iconThemeProcess.running = true;
     }
 
+    function applyCursorTheme(themeId) {
+        if (!themeId)
+            return;
+
+        const home = Quickshell.env("HOME");
+        const gtk3Ini = home + "/.config/gtk-3.0/settings.ini";
+        const gtk4Ini = home + "/.config/gtk-4.0/settings.ini";
+        const qt5Conf = home + "/.config/qt5ct/qt5ct.conf";
+        const qt6Conf = home + "/.config/qt6ct/qt6ct.conf";
+
+        const cmd = `
+theme_id=${JSON.stringify(themeId)}
+
+cursor_size=""
+if command -v gsettings >/dev/null 2>&1; then
+    gsettings set org.gnome.desktop.interface cursor-theme "$theme_id" || true
+    cursor_size=$(gsettings get org.gnome.desktop.interface cursor-size 2>/dev/null | tr -d "'" || true)
+fi
+if [ -z "$cursor_size" ] || [ "$cursor_size" = "0" ]; then
+    cursor_size=24
+fi
+
+update_ini_key() {
+    file="$1"
+    key="$2"
+    val="$3"
+    mkdir -p "$(dirname "$file")"
+    if [ ! -f "$file" ]; then
+        printf '[Settings]\\n%s=%s\\n' "$key" "$val" > "$file"
+        return
+    fi
+    if grep -q "^\${key}=" "$file"; then
+        sed -i "s|^\${key}=.*|\${key}=\${val}|" "$file"
+    elif grep -q '^\\[Settings\\]' "$file"; then
+        sed -i "/^\\[Settings\\]/a \${key}=\${val}" "$file"
+    else
+        printf '\\n[Settings]\\n%s=%s\\n' "$key" "$val" >> "$file"
+    fi
+}
+
+update_qtct_cursor() {
+    conf="$1"
+    val="$2"
+    mkdir -p "$(dirname "$conf")"
+    if [ ! -f "$conf" ]; then
+        printf '[Appearance]\\ncursor_theme=%s\\ncustom_palette=true\\nstyle=Fusion\\n' "$val" > "$conf"
+        return
+    fi
+    if grep -q '^cursor_theme=' "$conf"; then
+        sed -i "s|^cursor_theme=.*|cursor_theme=\${val}|" "$conf"
+    elif grep -q '^\\[Appearance\\]' "$conf"; then
+        sed -i "/^\\[Appearance\\]/a cursor_theme=\${val}" "$conf"
+    else
+        printf '\\n[Appearance]\\ncursor_theme=%s\\n' "$val" >> "$conf"
+    fi
+}
+
+update_ini_key "${gtk3Ini}" "gtk-cursor-theme-name" "$theme_id"
+update_ini_key "${gtk4Ini}" "gtk-cursor-theme-name" "$theme_id"
+update_qtct_cursor "${qt5Conf}" "$theme_id"
+update_qtct_cursor "${qt6Conf}" "$theme_id"
+
+# Apply immediately on Hyprland (and similar) when available
+if command -v hyprctl >/dev/null 2>&1; then
+    hyprctl setcursor "$theme_id" "$cursor_size" >/dev/null 2>&1 || true
+fi
+`
+        cursorThemeProcess.command = ["sh", "-c", cmd];
+        cursorThemeProcess.running = true;
+    }
+
     property Process iconThemeProcess: Process {
         id: iconThemeProcess
         running: false
@@ -160,13 +239,29 @@ update_qtct_icon "${qt6Conf}" "$theme_id"
         }
     }
 
-    // Keep OS color-scheme / icon theme aligned with Ambxst even if colors.json was unchanged.
+    property Process cursorThemeProcess: Process {
+        id: cursorThemeProcess
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: console.log("Colors: Cursor theme applied.")
+        }
+        stderr: StdioCollector {
+            onStreamFinished: err => {
+                if (err)
+                    console.error("Colors cursor theme error:", err);
+            }
+        }
+    }
+
+    // Keep OS color-scheme / icon / cursor theme aligned with Ambxst even if colors.json was unchanged.
     Component.onCompleted: {
         Qt.callLater(() => {
             gtkGenerator.syncSystemScheme();
             qtCtGenerator.ensurePlatformTheme();
             if (Config.iconTheme)
                 colors.applyIconTheme(Config.iconTheme);
+            if (Config.cursorTheme)
+                colors.applyCursorTheme(Config.cursorTheme);
         });
     }
 

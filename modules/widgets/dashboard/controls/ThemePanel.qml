@@ -254,6 +254,10 @@ Item {
                             sectionId: "icons"
                         }
                         SectionButton {
+                            text: "Cursors"
+                            sectionId: "cursors"
+                        }
+                        SectionButton {
                             text: "Shadow"
                             sectionId: "shadow"
                         }
@@ -834,6 +838,35 @@ Item {
                             }
 
                             IconThemeSelector {
+                                Layout.fillWidth: true
+                            }
+                        }
+                    }
+
+                    // Cursors section
+                    Item {
+                        visible: root.currentSection === "cursors"
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: cursorsContent.implicitHeight
+                        property string settingsSection: "cursors"
+
+                        ColumnLayout {
+                            id: cursorsContent
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            spacing: 8
+
+                            Text {
+                                text: "Cursor Theme"
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(-1)
+                                font.weight: Font.Medium
+                                color: Colors.overSurfaceVariant
+                                Layout.bottomMargin: -4
+                            }
+
+                            CursorThemeSelector {
                                 Layout.fillWidth: true
                             }
                         }

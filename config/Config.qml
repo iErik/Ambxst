@@ -142,6 +142,7 @@ Singleton {
             property int monoFontSize: 14
             property bool tintIcons: false
             property string iconTheme: ""
+            property string cursorTheme: ""
             property bool enableCorners: true
             property int animDuration: 300
             property real shadowOpacity: 0.5
@@ -3423,6 +3424,7 @@ Singleton {
     property int animDuration: Services.GameModeService.toggled ? 0 : theme.animDuration
     property bool tintIcons: theme.tintIcons
     property string iconTheme: theme.iconTheme
+    property string cursorTheme: theme.cursorTheme
 
     // Handle lightMode changes
     onLightModeChanged: {

@@ -41,6 +41,9 @@ QtObject {
         // Theme > Icons
         { label: "Icon Theme", keywords: "icons papirus breeze adwaita system theme", section: 5, subSection: "icons", subLabel: "Theme > Icons", icon: Icons.apps, isIcon: true },
         { label: "Tint Icons", keywords: "color icons tint monochrome", section: 5, subSection: "icons", subLabel: "Theme > Icons", icon: Icons.palette, isIcon: true },
+
+        // Theme > Cursors
+        { label: "Cursor Theme", keywords: "cursors mouse pointer bibata breeze xcursor", section: 5, subSection: "cursors", subLabel: "Theme > Cursors", icon: Icons.cursor, isIcon: true },
         
         // Theme > Shadow
         { label: "Shadow Opacity", keywords: "darkness alpha transparency", section: 5, subSection: "shadow", subLabel: "Theme > Shadow", icon: Icons.drop, isIcon: true },

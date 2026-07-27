@@ -10,6 +10,7 @@ var data = {
     "monoFontSize": 14,
     "tintIcons": false,
     "iconTheme": "",
+    "cursorTheme": "",
     "enableCorners": true,
     "animDuration": 300,
     "shadowOpacity": 0.5,
