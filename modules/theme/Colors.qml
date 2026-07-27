@@ -53,6 +53,16 @@ FileView {
         id: discordGenerator
     }
 
+    // Apply system-wide color-scheme immediately when light/dark toggles,
+    // without waiting for matugen to rewrite colors.json.
+    property Connections lightModeWatcher: Connections {
+        target: Config
+        function onLightModeChanged() {
+            gtkGenerator.syncSystemScheme();
+            qtCtGenerator.ensurePlatformTheme();
+        }
+    }
+
     property Timer generationTimer: Timer {
         id: generationTimer
         interval: 100
@@ -65,6 +75,14 @@ FileView {
             nvChadGenerator.generate(colors);
             discordGenerator.generate(colors);
         }
+    }
+
+    // Keep OS color-scheme aligned with Ambxst even if colors.json was unchanged.
+    Component.onCompleted: {
+        Qt.callLater(() => {
+            gtkGenerator.syncSystemScheme();
+            qtCtGenerator.ensurePlatformTheme();
+        });
     }
 
     adapter: JsonAdapter {
