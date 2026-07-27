@@ -63,6 +63,14 @@ FileView {
         }
     }
 
+    property Connections iconThemeWatcher: Connections {
+        target: Config
+        function onIconThemeChanged() {
+            if (Config.iconTheme)
+                colors.applyIconTheme(Config.iconTheme);
+        }
+    }
+
     property Timer generationTimer: Timer {
         id: generationTimer
         interval: 100
@@ -77,11 +85,88 @@ FileView {
         }
     }
 
-    // Keep OS color-scheme aligned with Ambxst even if colors.json was unchanged.
+    function applyIconTheme(themeId) {
+        if (!themeId)
+            return;
+
+        const home = Quickshell.env("HOME");
+        const gtk3Ini = home + "/.config/gtk-3.0/settings.ini";
+        const gtk4Ini = home + "/.config/gtk-4.0/settings.ini";
+        const qt5Conf = home + "/.config/qt5ct/qt5ct.conf";
+        const qt6Conf = home + "/.config/qt6ct/qt6ct.conf";
+
+        const cmd = `
+theme_id=${JSON.stringify(themeId)}
+
+if command -v gsettings >/dev/null 2>&1; then
+    gsettings set org.gnome.desktop.interface icon-theme "$theme_id" || true
+fi
+
+update_ini_key() {
+    file="$1"
+    key="$2"
+    val="$3"
+    mkdir -p "$(dirname "$file")"
+    if [ ! -f "$file" ]; then
+        printf '[Settings]\\n%s=%s\\n' "$key" "$val" > "$file"
+        return
+    fi
+    if grep -q "^\${key}=" "$file"; then
+        sed -i "s|^\${key}=.*|\${key}=\${val}|" "$file"
+    elif grep -q '^\\[Settings\\]' "$file"; then
+        sed -i "/^\\[Settings\\]/a \${key}=\${val}" "$file"
+    else
+        printf '\\n[Settings]\\n%s=%s\\n' "$key" "$val" >> "$file"
+    fi
+}
+
+update_qtct_icon() {
+    conf="$1"
+    val="$2"
+    mkdir -p "$(dirname "$conf")"
+    if [ ! -f "$conf" ]; then
+        printf '[Appearance]\\nicon_theme=%s\\ncustom_palette=true\\nstyle=Fusion\\n' "$val" > "$conf"
+        return
+    fi
+    if grep -q '^icon_theme=' "$conf"; then
+        sed -i "s|^icon_theme=.*|icon_theme=\${val}|" "$conf"
+    elif grep -q '^\\[Appearance\\]' "$conf"; then
+        sed -i "/^\\[Appearance\\]/a icon_theme=\${val}" "$conf"
+    else
+        printf '\\n[Appearance]\\nicon_theme=%s\\n' "$val" >> "$conf"
+    fi
+}
+
+update_ini_key "${gtk3Ini}" "gtk-icon-theme-name" "$theme_id"
+update_ini_key "${gtk4Ini}" "gtk-icon-theme-name" "$theme_id"
+update_qtct_icon "${qt5Conf}" "$theme_id"
+update_qtct_icon "${qt6Conf}" "$theme_id"
+`
+        iconThemeProcess.command = ["sh", "-c", cmd];
+        iconThemeProcess.running = true;
+    }
+
+    property Process iconThemeProcess: Process {
+        id: iconThemeProcess
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: console.log("Colors: Icon theme applied.")
+        }
+        stderr: StdioCollector {
+            onStreamFinished: err => {
+                if (err)
+                    console.error("Colors icon theme error:", err);
+            }
+        }
+    }
+
+    // Keep OS color-scheme / icon theme aligned with Ambxst even if colors.json was unchanged.
     Component.onCompleted: {
         Qt.callLater(() => {
             gtkGenerator.syncSystemScheme();
             qtCtGenerator.ensurePlatformTheme();
+            if (Config.iconTheme)
+                colors.applyIconTheme(Config.iconTheme);
         });
     }
 

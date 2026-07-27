@@ -141,6 +141,7 @@ Singleton {
             property string monoFont: "Iosevka Nerd Font Mono"
             property int monoFontSize: 14
             property bool tintIcons: false
+            property string iconTheme: ""
             property bool enableCorners: true
             property int animDuration: 300
             property real shadowOpacity: 0.5
@@ -3421,6 +3422,7 @@ Singleton {
     property string defaultFont: theme.font
     property int animDuration: Services.GameModeService.toggled ? 0 : theme.animDuration
     property bool tintIcons: theme.tintIcons
+    property string iconTheme: theme.iconTheme
 
     // Handle lightMode changes
     onLightModeChanged: {

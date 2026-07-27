@@ -13,11 +13,20 @@ import qs.config
 import "calendar"
 
 Rectangle {
+    id: root
     color: "transparent"
     implicitWidth: 760
-    implicitHeight: 430
+    // Collapsed quick-controls (5×48 + gaps + padding) + gap + square calendar.
+    // Keep this explicit — binding through nested Layout geometry collapsed the notch.
+    readonly property int controlsButtonSize: 48
+    readonly property int controlsButtonGap: 4
+    readonly property int controlsButtonCount: 5
+    readonly property int controlsWidth: controlsButtonCount * controlsButtonSize + (controlsButtonCount - 1) * controlsButtonGap + 16
+    readonly property int controlsCollapsedHeight: controlsButtonSize + 16
+    implicitHeight: controlsCollapsedHeight + 8 + controlsWidth
 
     property int leftPanelWidth: 0
+    property string screenName: ""
 
     RowLayout {
         anchors.fill: parent
@@ -34,9 +43,9 @@ Rectangle {
         // Widgets column
         ClippingRectangle {
             id: widgetsContainer
-            Layout.preferredWidth: controlButtonsContainer.implicitWidth
-            Layout.minimumWidth: controlButtonsContainer.implicitWidth
-            Layout.maximumWidth: controlButtonsContainer.implicitWidth
+            Layout.preferredWidth: root.controlsWidth
+            Layout.minimumWidth: root.controlsWidth
+            Layout.maximumWidth: root.controlsWidth
             Layout.fillHeight: true
             radius: Styling.radius(4)
             color: "transparent"
@@ -64,12 +73,6 @@ Rectangle {
                     Calendar {
                         Layout.fillWidth: true
                         Layout.preferredHeight: width
-                    }
-
-                    StyledRect {
-                        variant: "pane"
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 150
                     }
                 }
             }
@@ -255,19 +258,19 @@ Rectangle {
 
                         property real brightnessValue: 0
                         property var currentMonitor: {
-                            if (Brightness.monitors.length > 0) {
-                                let focusedName = AxctlService.focusedMonitor?.name ?? "";
-                                let found = null;
+                            if (Brightness.monitors.length === 0)
+                                return null;
+
+                            // Prefer the screen this Notch/dashboard instance is on
+                            const targetName = root.screenName || (AxctlService.focusedMonitor?.name ?? "");
+                            if (targetName) {
                                 for (let i = 0; i < Brightness.monitors.length; i++) {
                                     let mon = Brightness.monitors[i];
-                                    if (mon && mon.screen && mon.screen.name === focusedName) {
-                                        found = mon;
-                                        break;
-                                    }
+                                    if (mon && mon.screen && mon.screen.name === targetName)
+                                        return mon;
                                 }
-                                return found || Brightness.monitors[0];
                             }
-                            return null;
+                            return Brightness.monitors[0];
                         }
 
                         Component.onCompleted: {

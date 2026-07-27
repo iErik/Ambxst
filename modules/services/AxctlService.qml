@@ -230,7 +230,11 @@ Singleton {
             }
         }
         onExited: (code) => {
-            console.warn("axctl daemon exited with code:", code)
+            console.warn("axctl daemon exited with code:", code);
+            // Another instance may already own the socket (common after messy
+            // reloads). Prefer re-subscribing over restarting into a crash loop.
+            if (!reconnectTimer.running)
+                reconnectTimer.restart();
         }
     }
 
@@ -242,11 +246,23 @@ Singleton {
         onTriggered: axctlSubscribe.running = true
     }
 
-    // Auto-reconnect on unexpected subscribe exit
+    // Auto-reconnect on unexpected subscribe/daemon exit.
+    // Only relaunch the daemon if subscribe keeps failing and no daemon is alive.
+    property int _subscribeFailCount: 0
     Timer {
         id: reconnectTimer
         interval: 1000
-        onTriggered: axctlSubscribe.running = true
+        onTriggered: {
+            root._subscribeFailCount += 1;
+            if (!axctlProcess.running && root._subscribeFailCount >= 2) {
+                console.warn("axctl: relaunching daemon after repeated subscribe failures");
+                root._subscribeFailCount = 0;
+                axctlProcess.running = true;
+                subscribeDelay.restart();
+            } else {
+                axctlSubscribe.running = true;
+            }
+        }
     }
 
     property Process axctlSubscribe: Process {
@@ -257,6 +273,9 @@ Singleton {
                 if (!data) return;
                 try {
                     let parsedJson = JSON.parse(data);
+
+                    // Successful traffic — reset fail streak
+                    root._subscribeFailCount = 0;
 
                     // Apply inline state immediately (every event carries full state)
                     if (parsedJson.state) {
@@ -280,6 +299,7 @@ Singleton {
 
     Component.onDestruction: {
         reconnectTimer.running = false
+        subscribeDelay.running = false
         axctlProcess.running = false
         axctlSubscribe.running = false
     }

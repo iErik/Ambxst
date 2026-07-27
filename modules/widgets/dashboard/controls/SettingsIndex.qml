@@ -11,7 +11,7 @@ QtObject {
     // it will try to guess what users would want to search, not the feature name only
 
     // Main Sections:
-    // 0: Network, 1: Bluetooth, 2: Mixer, 3: Effects, 4: Theme, 5: Binds, 6: System, 7: Compositor, 8: Ambxst
+    // 0: Network, 1: Bluetooth, 2: Mixer, 3: AI, 4: Effects, 5: Theme, 6: Binds, 7: System, 8: Compositor, 9: Ambxst
     
     property var dynamicItems: []
 
@@ -29,35 +29,38 @@ QtObject {
         { label: "Audio Effects", keywords: "equalizer bass treble easyeffects", section: 3, subSection: "", subLabel: "", icon: Icons.waveform, isIcon: true },
         
         // --- Theme ---
-        { label: "Theme", keywords: "appearance look style customize", section: 4, subSection: "", subLabel: "Theme", icon: Icons.paintBrush, isIcon: true },
+        { label: "Theme", keywords: "appearance look style customize", section: 5, subSection: "", subLabel: "Theme", icon: Icons.paintBrush, isIcon: true },
         
         // Theme > General
-        { label: "Wallpapers", keywords: "background image picture desktop", section: 4, subSection: "general", subLabel: "Theme > General", icon: Icons.image, isIcon: true },
-        { label: "Tint Icons", keywords: "color icons tint monochrome", section: 4, subSection: "general", subLabel: "Theme > General", icon: Icons.palette, isIcon: true },
-        { label: "Enable Corners", keywords: "rounded corners radius screen", section: 4, subSection: "general", subLabel: "Theme > General", icon: Icons.cornersOut, isIcon: true },
-        { label: "Animation Duration", keywords: "speed fast slow transition", section: 4, subSection: "general", subLabel: "Theme > General", icon: Icons.clock, isIcon: true },
-        { label: "UI Font", keywords: "typography text family size", section: 4, subSection: "general", subLabel: "Theme > General", icon: Icons.textT, isIcon: true },
-        { label: "Roundness", keywords: "radius border curve", section: 4, subSection: "general", subLabel: "Theme > General", icon: Icons.circle, isIcon: true },
+        { label: "Wallpapers", keywords: "background image picture desktop", section: 5, subSection: "general", subLabel: "Theme > General", icon: Icons.image, isIcon: true },
+        { label: "Enable Corners", keywords: "rounded corners radius screen", section: 5, subSection: "general", subLabel: "Theme > General", icon: Icons.cornersOut, isIcon: true },
+        { label: "Animation Duration", keywords: "speed fast slow transition", section: 5, subSection: "general", subLabel: "Theme > General", icon: Icons.clock, isIcon: true },
+        { label: "UI Font", keywords: "typography text family size", section: 5, subSection: "general", subLabel: "Theme > General", icon: Icons.textT, isIcon: true },
+        { label: "Roundness", keywords: "radius border curve", section: 5, subSection: "general", subLabel: "Theme > General", icon: Icons.circle, isIcon: true },
+
+        // Theme > Icons
+        { label: "Icon Theme", keywords: "icons papirus breeze adwaita system theme", section: 5, subSection: "icons", subLabel: "Theme > Icons", icon: Icons.apps, isIcon: true },
+        { label: "Tint Icons", keywords: "color icons tint monochrome", section: 5, subSection: "icons", subLabel: "Theme > Icons", icon: Icons.palette, isIcon: true },
         
         // Theme > Shadow
-        { label: "Shadow Opacity", keywords: "darkness alpha transparency", section: 4, subSection: "shadow", subLabel: "Theme > Shadow", icon: Icons.drop, isIcon: true },
-        { label: "Shadow Blur", keywords: "softness diffusion", section: 4, subSection: "shadow", subLabel: "Theme > Shadow", icon: Icons.drop, isIcon: true },
-        { label: "Shadow Offset", keywords: "position x y direction", section: 4, subSection: "shadow", subLabel: "Theme > Shadow", icon: Icons.arrowsOutSimple, isIcon: true },
+        { label: "Shadow Opacity", keywords: "darkness alpha transparency", section: 5, subSection: "shadow", subLabel: "Theme > Shadow", icon: Icons.drop, isIcon: true },
+        { label: "Shadow Blur", keywords: "softness diffusion", section: 5, subSection: "shadow", subLabel: "Theme > Shadow", icon: Icons.drop, isIcon: true },
+        { label: "Shadow Offset", keywords: "position x y direction", section: 5, subSection: "shadow", subLabel: "Theme > Shadow", icon: Icons.arrowsOutSimple, isIcon: true },
 
         // Theme > Colors
-        { label: "Color Scheme", keywords: "palette variant light dark", section: 4, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
-        { label: "Color Variant", keywords: "background popup internal bar pane", section: 4, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
-        { label: "Background Variant", keywords: "wallpaper desktop color", section: 4, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
-        { label: "Popup Variant", keywords: "dialog modal color", section: 4, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
-        { label: "Internal BG Variant", keywords: "inside background color", section: 4, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
-        { label: "Bar BG Variant", keywords: "taskbar panel color", section: 4, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
-        { label: "Pane Variant", keywords: "sidebar panel color", section: 4, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
-        { label: "Gradient Mode", keywords: "linear radial halftone", section: 4, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
-        { label: "Item Color", keywords: "overbackground surface", section: 4, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
-        { label: "Color Opacity", keywords: "alpha transparency", section: 4, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
-        { label: "Color Border", keywords: "stroke outline", section: 4, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
-        { label: "Gradient Stops", keywords: "color position stops", section: 4, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
-        { label: "Gradient Angle", keywords: "direction rotation degrees", section: 4, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
+        { label: "Color Scheme", keywords: "palette variant light dark", section: 5, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
+        { label: "Color Variant", keywords: "background popup internal bar pane", section: 5, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
+        { label: "Background Variant", keywords: "wallpaper desktop color", section: 5, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
+        { label: "Popup Variant", keywords: "dialog modal color", section: 5, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
+        { label: "Internal BG Variant", keywords: "inside background color", section: 5, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
+        { label: "Bar BG Variant", keywords: "taskbar panel color", section: 5, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
+        { label: "Pane Variant", keywords: "sidebar panel color", section: 5, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
+        { label: "Gradient Mode", keywords: "linear radial halftone", section: 5, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
+        { label: "Item Color", keywords: "overbackground surface", section: 5, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
+        { label: "Color Opacity", keywords: "alpha transparency", section: 5, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
+        { label: "Color Border", keywords: "stroke outline", section: 5, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
+        { label: "Gradient Stops", keywords: "color position stops", section: 5, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
+        { label: "Gradient Angle", keywords: "direction rotation degrees", section: 5, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
 
         // --- Binds ---
         { label: "Key Bindings", keywords: "shortcuts keyboard hotkeys", section: 5, subSection: "", subLabel: "", icon: Icons.keyboard, isIcon: true },

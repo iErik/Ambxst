@@ -42,9 +42,11 @@ NotchAnimationBehavior {
         }
     }
     readonly property real nonAnimWidth: contentWidth + tabWidth + 16
+    // Widgets tab: controls + calendar (344). Other tabs keep the taller shell.
+    readonly property real contentHeight: state.currentTab === 0 ? 344 : 430
 
     implicitWidth: nonAnimWidth
-    implicitHeight: 430
+    implicitHeight: contentHeight
 
     // Track which tabs have been loaded (for lazy loading)
     property var loadedTabs: ({0: true}) // Tab 0 (widgets) loaded by default
@@ -581,6 +583,7 @@ NotchAnimationBehavior {
         id: unifiedLauncherComponent
         WidgetsTab {
             leftPanelWidth: root.leftPanelWidth
+            screenName: root.screenName
         }
     }
 

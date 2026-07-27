@@ -250,6 +250,10 @@ Item {
                             sectionId: "general"
                         }
                         SectionButton {
+                            text: "Icons"
+                            sectionId: "icons"
+                        }
+                        SectionButton {
                             text: "Shadow"
                             sectionId: "shadow"
                         }
@@ -330,75 +334,6 @@ Item {
                                             }
                                         }
                                     }
-                                }
-                            }
-
-                            // Tint Icons toggle
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 8
-
-                                Text {
-                                    text: "Tint Icons"
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    Layout.fillWidth: true
-                                }
-
-                                Switch {
-                                    id: tintIconsSwitch
-                                    checked: Config.theme.tintIcons
-
-                                    readonly property bool configValue: Config.theme.tintIcons
-
-                                    onConfigValueChanged: {
-                                        if (checked !== configValue) {
-                                            checked = configValue;
-                                        }
-                                    }
-
-                                    onCheckedChanged: {
-                                        if (checked !== Config.theme.tintIcons) {
-                                            GlobalStates.markThemeChanged();
-                                            Config.theme.tintIcons = checked;
-                                        }
-                                    }
-
-                                    indicator: Rectangle {
-                                        implicitWidth: 40
-                                        implicitHeight: 20
-                                        x: tintIconsSwitch.leftPadding
-                                        y: parent.height / 2 - height / 2
-                                        radius: height / 2
-                                        color: tintIconsSwitch.checked ? Styling.srItem("overprimary") : Colors.surfaceBright
-                                        border.color: tintIconsSwitch.checked ? Styling.srItem("overprimary") : Colors.outline
-
-                                        Behavior on color {
-                                            enabled: Config.animDuration > 0
-                                            ColorAnimation {
-                                                duration: Config.animDuration / 2
-                                            }
-                                        }
-
-                                        Rectangle {
-                                            x: tintIconsSwitch.checked ? parent.width - width - 2 : 2
-                                            y: 2
-                                            width: parent.height - 4
-                                            height: width
-                                            radius: width / 2
-                                            color: tintIconsSwitch.checked ? Colors.background : Colors.overSurfaceVariant
-
-                                            Behavior on x {
-                                                enabled: Config.animDuration > 0
-                                                NumberAnimation {
-                                                    duration: Config.animDuration / 2
-                                                    easing.type: Easing.OutCubic
-                                                }
-                                            }
-                                        }
-                                    }
-                                    background: null
                                 }
                             }
 
@@ -790,6 +725,116 @@ Item {
                                     horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 24
                                 }
+                            }
+                        }
+                    }
+
+                    // Icons section
+                    Item {
+                        visible: root.currentSection === "icons"
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: iconsContent.implicitHeight
+                        property string settingsSection: "icons"
+
+                        ColumnLayout {
+                            id: iconsContent
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            spacing: 8
+
+                            Text {
+                                text: "Icons"
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(-1)
+                                font.weight: Font.Medium
+                                color: Colors.overSurfaceVariant
+                                Layout.bottomMargin: -4
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                Text {
+                                    text: "Tint Icons"
+                                    font.family: Config.theme.font
+                                    font.pixelSize: Styling.fontSize(0)
+                                    color: Colors.overBackground
+                                    Layout.fillWidth: true
+                                }
+
+                                Switch {
+                                    id: tintIconsSwitch
+                                    checked: Config.theme.tintIcons
+
+                                    readonly property bool configValue: Config.theme.tintIcons
+
+                                    onConfigValueChanged: {
+                                        if (checked !== configValue) {
+                                            checked = configValue;
+                                        }
+                                    }
+
+                                    onCheckedChanged: {
+                                        if (checked !== Config.theme.tintIcons) {
+                                            GlobalStates.markThemeChanged();
+                                            Config.theme.tintIcons = checked;
+                                        }
+                                    }
+
+                                    indicator: Rectangle {
+                                        implicitWidth: 40
+                                        implicitHeight: 20
+                                        x: tintIconsSwitch.leftPadding
+                                        y: parent.height / 2 - height / 2
+                                        radius: height / 2
+                                        color: tintIconsSwitch.checked ? Styling.srItem("overprimary") : Colors.surfaceBright
+                                        border.color: tintIconsSwitch.checked ? Styling.srItem("overprimary") : Colors.outline
+
+                                        Behavior on color {
+                                            enabled: Config.animDuration > 0
+                                            ColorAnimation {
+                                                duration: Config.animDuration / 2
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            x: tintIconsSwitch.checked ? parent.width - width - 2 : 2
+                                            y: 2
+                                            width: parent.height - 4
+                                            height: width
+                                            radius: width / 2
+                                            color: tintIconsSwitch.checked ? Colors.background : Colors.overSurfaceVariant
+
+                                            Behavior on x {
+                                                enabled: Config.animDuration > 0
+                                                NumberAnimation {
+                                                    duration: Config.animDuration / 2
+                                                    easing.type: Easing.OutCubic
+                                                }
+                                            }
+                                        }
+                                    }
+                                    background: null
+                                }
+                            }
+
+                            Separator {
+                                Layout.fillWidth: true
+                            }
+
+                            Text {
+                                text: "Icon Theme"
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(-1)
+                                font.weight: Font.Medium
+                                color: Colors.overSurfaceVariant
+                                Layout.bottomMargin: -4
+                            }
+
+                            IconThemeSelector {
+                                Layout.fillWidth: true
                             }
                         }
                     }

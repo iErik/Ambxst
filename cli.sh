@@ -204,12 +204,21 @@ find_ambxst_pid_cached() {
 }
 
 stop_ambxst_helpers() {
-	# Helpers / IPC readers can outlive qs across reloads and break the next session
+	# Helpers / IPC readers can outlive qs across reloads and break the next session.
+	# Match both the symlink path (~/.config/ambxst-src) and the realpath (~/.local/src/ambxst).
+	local real_dir
+	real_dir=$(readlink -f "${SCRIPT_DIR}" 2>/dev/null || echo "${SCRIPT_DIR}")
 	pkill -f "axctl.*daemon" 2>/dev/null || true
 	pkill -f "axctl subscribe" 2>/dev/null || true
 	pkill -f "${SCRIPT_DIR}/scripts/loginlock.sh" 2>/dev/null || true
 	pkill -f "${SCRIPT_DIR}/scripts/sleep_monitor.sh" 2>/dev/null || true
 	pkill -f "${SCRIPT_DIR}/scripts/daemon_priority.sh" 2>/dev/null || true
+	if [ -n "$real_dir" ] && [ "$real_dir" != "$SCRIPT_DIR" ]; then
+		pkill -f "${real_dir}/scripts/loginlock.sh" 2>/dev/null || true
+		pkill -f "${real_dir}/scripts/sleep_monitor.sh" 2>/dev/null || true
+		pkill -f "${real_dir}/scripts/daemon_priority.sh" 2>/dev/null || true
+		pkill -f "qs -p ${real_dir}/shell.qml" 2>/dev/null || true
+	fi
 	pkill -f "tail -f /tmp/ambxst_ipc.pipe" 2>/dev/null || true
 	rm -f /tmp/ambxst_loginlock.lock /tmp/ambxst_sleep_monitor.lock
 	# Recreate a clean IPC fifo so orphaned readers cannot keep the old one

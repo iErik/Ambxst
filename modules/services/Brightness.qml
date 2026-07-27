@@ -57,14 +57,18 @@ Singleton {
     }
 
     function increaseBrightness(): void {
-        const focusedName = AxctlService.focusedMonitor.name;
+        const focusedName = AxctlService.focusedMonitor?.name ?? "";
+        if (!focusedName)
+            return;
         const monitor = monitors.find(m => focusedName === m.screen.name);
         if (monitor)
             monitor.setBrightness(monitor.brightness + 0.05);
     }
 
     function decreaseBrightness(): void {
-        const focusedName = AxctlService.focusedMonitor.name;
+        const focusedName = AxctlService.focusedMonitor?.name ?? "";
+        if (!focusedName)
+            return;
         const monitor = monitors.find(m => focusedName === m.screen.name);
         if (monitor)
             monitor.setBrightness(monitor.brightness - 0.05);
@@ -84,6 +88,7 @@ Singleton {
         repeat: false
         onTriggered: {
             if (!SuspendManager.isSuspending) {
+                root.ddcMonitors = [];
                 ddcProc.running = true;
             }
         }
@@ -110,6 +115,17 @@ Singleton {
                 if (!busNum)
                     return;
 
+                // Prefer DRM connector (card1-DP-2 → DP-2) — reliable with identical monitors
+                const drmLine = lines.find(l => {
+                    const lower = l.toLowerCase();
+                    return lower.startsWith("drm connector:") || lower.startsWith("drm_connector:");
+                });
+                let connector = "";
+                if (drmLine) {
+                    const raw = drmLine.split(":").slice(1).join(":").trim();
+                    connector = raw.replace(/^card\d+-/, "");
+                }
+
                 const modelLine = lines.find(l => l.startsWith("Model:"));
                 const monitorLine = lines.find(l => l.startsWith("Monitor:"));
                 const manufacturerLine = lines.find(l => l.startsWith("Mfg id:"));
@@ -118,18 +134,25 @@ Singleton {
                 if (modelLine) {
                     model = modelLine.split(":").slice(1).join(":").trim();
                 } else if (monitorLine) {
-                    model = monitorLine.split(":").slice(1).join(":").trim();
+                    // Brief format: "SAM:LF27T35:SERIAL" → use middle token when present
+                    const monitor = monitorLine.split(":").slice(1).join(":").trim();
+                    const parts = monitor.split(":").map(p => p.trim()).filter(p => p.length > 0);
+                    if (parts.length >= 2)
+                        model = parts[1];
+                    else
+                        model = monitor;
                 }
 
                 if (manufacturerLine && model) {
                     const manufacturer = manufacturerLine.split(":").slice(1).join(":").trim();
-                    if (manufacturer && !model.startsWith(manufacturer))
+                    if (manufacturer && !model.toLowerCase().includes(manufacturer.toLowerCase()))
                         model = `${manufacturer} ${model}`;
                 }
 
                 root.ddcMonitors.push({
                     model,
-                    busNum
+                    busNum,
+                    connector
                 });
             }
         }
@@ -150,18 +173,44 @@ Singleton {
             if (useBrightnessctl || root.ddcMonitors.length === 0)
                 return null;
 
+            const screenName = screen && screen.name ? screen.name : "";
+
+            // Prefer DRM connector ↔ Wayland output (unique even with identical monitors).
+            // Do not consult other monitors here — that created cascading binding updates.
+            if (screenName) {
+                for (let i = 0; i < root.ddcMonitors.length; ++i) {
+                    const entry = root.ddcMonitors[i];
+                    if (entry && entry.connector === screenName)
+                        return entry;
+                }
+            }
+
+            // Fallback: model match / next free bus (may be wrong with duplicate models)
             const usedBuses = [];
-            for (let i = 0; i < monitorIndex; ++i) {
+            for (let i = 0; i < root.monitors.length; ++i) {
+                if (i === monitorIndex)
+                    continue;
                 const mon = root.monitors[i];
-                if (mon && mon.ddcEntry && mon.ddcEntry.busNum && !usedBuses.includes(mon.ddcEntry.busNum))
-                    usedBuses.push(mon.ddcEntry.busNum);
+                const name = mon && mon.screen ? mon.screen.name : "";
+                if (!name)
+                    continue;
+                for (let j = 0; j < root.ddcMonitors.length; ++j) {
+                    const entry = root.ddcMonitors[j];
+                    if (entry && entry.connector === name && entry.busNum)
+                        usedBuses.push(entry.busNum);
+                }
             }
 
             const screenModel = screen && screen.model ? screen.model.toLowerCase() : "";
             if (screenModel) {
-                const modelMatch = root.ddcMonitors.find(entry => entry.model && entry.model.toLowerCase() === screenModel && !usedBuses.includes(entry.busNum));
-                if (modelMatch)
-                    return modelMatch;
+                for (let i = 0; i < root.ddcMonitors.length; ++i) {
+                    const entry = root.ddcMonitors[i];
+                    if (!entry || !entry.model || usedBuses.includes(entry.busNum))
+                        continue;
+                    const entryModel = entry.model.toLowerCase();
+                    if (entryModel === screenModel || entryModel.includes(screenModel) || screenModel.includes(entryModel))
+                        return entry;
+                }
             }
 
             for (let i = 0; i < root.ddcMonitors.length; ++i) {
