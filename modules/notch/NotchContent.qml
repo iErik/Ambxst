@@ -74,9 +74,12 @@ Item {
     }
 
     // Should auto-hide logic:
-    // 1. If notch and bar are on different sides: hide if keepHidden is ON, OR if windows/fullscreen are present
-    // 2. If notch and bar are on same side: hide only if bar is unpinned OR if fullscreen is present
+    // 1. Force-hide bar toggle also drives the notch
+    // 2. If notch and bar are on different sides: hide if keepHidden is ON, OR if windows/fullscreen are present
+    // 3. If notch and bar are on same side: hide only if bar is unpinned OR if fullscreen is present
     readonly property bool shouldAutoHide: {
+        if (GlobalStates.barForceHidden)
+            return true;
         if (barPosition !== notchPosition) {
             if ((Config.notch && Config.notch.keepHidden !== undefined) ? Config.notch.keepHidden : false) return true;
             return hasWindows || activeWindowFullscreen;
@@ -99,6 +102,12 @@ Item {
 
     // Reveal logic:
     readonly property bool reveal: {
+        // Match bar force-hide: stay hidden (no hover) until SUPER+SHIFT+B again.
+        // Still allow open modules / notification popups so keybinds remain usable.
+        if (GlobalStates.barForceHidden) {
+            return screenNotchOpen || hasActiveNotifications;
+        }
+
         // If keepHidden is true, ONLY show on interaction
         // UNLESS notch and bar are on same side (e.g. both top), then keepHidden is IGNORED for sync consistency
         if (((Config.notch && Config.notch.keepHidden !== undefined) ? Config.notch.keepHidden : false) && barPosition !== notchPosition) {
@@ -123,6 +132,16 @@ Item {
         return false;
     }
 
+    Connections {
+        target: GlobalStates
+        function onBarForceHiddenChanged() {
+            if (GlobalStates.barForceHidden) {
+                root.hoverActive = false;
+                hideDelayTimer.stop();
+            }
+        }
+    }
+
     // Timer to delay hiding the notch after mouse leaves
     Timer {
         id: hideDelayTimer
@@ -137,6 +156,8 @@ Item {
 
     // Watch for mouse state changes
     onIsMouseOverNotchChanged: {
+        if (GlobalStates.barForceHidden)
+            return;
         if (isMouseOverNotch) {
             // Immediately show when mouse enters any notch area
             hideDelayTimer.stop();
@@ -195,7 +216,11 @@ Item {
 
         // Width follows the notch, height is small hover region when hidden
         width: notchRegionContainer.width + 20
-        height: root.reveal ? notchRegionContainer.height : Math.max((Config.notch && Config.notch.hoverRegionHeight !== undefined) ? Config.notch.hoverRegionHeight : 8, 8)
+        height: {
+            if (GlobalStates.barForceHidden)
+                return 0;
+            return root.reveal ? notchRegionContainer.height : Math.max((Config.notch && Config.notch.hoverRegionHeight !== undefined) ? Config.notch.hoverRegionHeight : 8, 8);
+        }
 
         x: (parent.width - width) / 2
         y: root.notchPosition === "top" ? 0 : parent.height - height
@@ -211,7 +236,7 @@ Item {
         // HoverHandler doesn't block mouse events
         HoverHandler {
             id: notchMouseAreaHover
-            enabled: true
+            enabled: !GlobalStates.barForceHidden
         }
     }
 
@@ -227,7 +252,7 @@ Item {
         // HoverHandler to detect when mouse is over the revealed notch
         HoverHandler {
             id: notchRegionHover
-            enabled: true
+            enabled: !GlobalStates.barForceHidden
         }
 
         // Animation container for reveal/hide
