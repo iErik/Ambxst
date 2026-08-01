@@ -52,27 +52,8 @@ Singleton {
         if (!className || className.length === 0) return null;
 
         const normalizedClassName = className.toLowerCase();
-
-        for (let i = 0; i < list.length; i++) {
-            const app = list[i];
-            if (app.command && app.command.length > 0) {
-                const executableLower = app.command[0].toLowerCase();
-                if (executableLower === normalizedClassName) {
-                    return app.icon || "application-x-executable";
-                }
-            }
-            if (app.name && app.name.toLowerCase() === normalizedClassName) {
-                return app.icon || "application-x-executable";
-            }
-            if (app.keywords && app.keywords.length > 0) {
-                for (let j = 0; j < app.keywords.length; j++) {
-                    if (app.keywords[j].toLowerCase() === normalizedClassName) {
-                        return app.icon || "application-x-executable";
-                    }
-                }
-            }
-        }
-        return null;
+        const icon = iconLookup[normalizedClassName];
+        return icon !== undefined ? icon : null;
     }
 
     function guessIcon(str) {
@@ -137,29 +118,68 @@ Singleton {
 
 
     
-    readonly property list<DesktopEntry> list: Array.from(DesktopEntries.applications.values)
-        .sort((a, b) => a.name.localeCompare(b.name))
-    
+    // DesktopEntries populates one entry at a time and emits a change per
+    // insert (~276 on a typical install). Binding `list` straight to it made
+    // every consumer — including the icon binding on each dock button — re-run
+    // once per entry, costing ~33s of CPU before the shell drew anything.
+    // Coalesce the churn into a single update once the scan settles.
+    readonly property var rawApplications: DesktopEntries.applications.values
+    onRawApplicationsChanged: listRebuildTimer.restart()
+
+    property list<DesktopEntry> list: []
+
+    Timer {
+        id: listRebuildTimer
+        interval: 50
+        onTriggered: root.list = Array.from(root.rawApplications)
+            .sort((a, b) => a.name.localeCompare(b.name))
+    }
+
     // Index structure: [{ name: "lower", command: "lower", keywords: ["lower"], original: appObject }, ...]
     property var searchIndex: []
-    
+
+    // Lowercased executable/name/keyword -> icon, so getIconFromDesktopEntry
+    // is a hash lookup instead of a scan over every entry. Earlier entries win,
+    // matching the first-match-in-list-order behaviour of the old scan.
+    // Prototype-less so a class name like "constructor" can't resolve to an
+    // inherited Object member instead of missing.
+    property var iconLookup: Object.create(null)
+
     function buildIndex() {
         const newIndex = [];
+        const newIconLookup = Object.create(null);
+
+        const claim = (key, icon) => {
+            if (key && newIconLookup[key] === undefined)
+                newIconLookup[key] = icon;
+        };
+
         for (let i = 0; i < list.length; i++) {
             const app = list[i];
+            const executable = (app.command && app.command.length > 0) ? app.command[0].toLowerCase() : "";
+            const name = app.name ? app.name.toLowerCase() : "";
+            const keywords = (app.keywords || []).map(k => k.toLowerCase());
+
             newIndex.push({
                 name: app.name.toLowerCase(),
                 command: (app.command && app.command.length > 0) ? app.command.join(' ').toLowerCase() : "",
-                executable: (app.command && app.command.length > 0) ? app.command[0].toLowerCase() : "",
+                executable: executable,
                 comment: (app.comment || "").toLowerCase(),
                 genericName: (app.genericName || "").toLowerCase(),
-                keywords: (app.keywords || []).map(k => k.toLowerCase()),
+                keywords: keywords,
                 original: app
             });
+
+            const icon = app.icon || "application-x-executable";
+            claim(executable, icon);
+            claim(name, icon);
+            for (let j = 0; j < keywords.length; j++)
+                claim(keywords[j], icon);
         }
         searchIndex = newIndex;
+        iconLookup = newIconLookup;
     }
-    
+
     property var allAppsCache: null
 
     function invalidateCache() {
