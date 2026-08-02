@@ -116,9 +116,7 @@ Item {
             progressColor: Audio.source?.audio?.muted ? Colors.outline : Styling.srItem("overprimary")
 
             onValueChanged: {
-                if (Audio.source?.audio) {
-                    Audio.source.audio.volume = value;
-                }
+                Audio.setMicVolume(value);
             }
 
             onIconClicked: {

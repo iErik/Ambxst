@@ -17,6 +17,12 @@ StyledRect {
     required property bool isToggleable
     required property bool isToggled
 
+    property real maximum: 1.0
+    readonly property real progressRatio: {
+        const max = Math.max(root.maximum, 0.0001);
+        return Math.max(0, Math.min(1, root.value / max));
+    }
+
     signal controlValueChanged(real newValue)
     signal toggled
     signal draggingChanged(bool isDragging)
@@ -72,7 +78,7 @@ StyledRect {
                     root.draggingChanged(true);
                 }
                 let deltaValue = deltaY / 100.0;
-                let newValue = Math.round(Math.max(0, Math.min(1, dragStartValue + deltaValue)) * 100) / 100;
+                let newValue = Math.round(Math.max(0, Math.min(root.maximum, dragStartValue + deltaValue)) * 100) / 100;
                 root.controlValueChanged(newValue);
             }
         }
@@ -86,7 +92,7 @@ StyledRect {
 
         onWheel: wheel => {
             if (wheel.angleDelta.y > 0) {
-                let newValue = Math.round(Math.min(1, root.value + 0.1) * 100) / 100;
+                let newValue = Math.round(Math.min(root.maximum, root.value + 0.1) * 100) / 100;
                 root.controlValueChanged(newValue);
             } else {
                 let newValue = Math.round(Math.max(0, root.value - 0.1) * 100) / 100;
@@ -101,7 +107,7 @@ StyledRect {
         width: 48
         height: 48
 
-        property real angle: root.value * (360 - 2 * root.gapAngle)
+        property real angle: root.progressRatio * (360 - 2 * root.gapAngle)
         property real radius: 16
 
         Canvas {
@@ -178,6 +184,12 @@ StyledRect {
             Connections {
                 target: root
                 function onAccentColorChanged() {
+                    canvas.requestPaint();
+                }
+                function onValueChanged() {
+                    canvas.requestPaint();
+                }
+                function onMaximumChanged() {
                     canvas.requestPaint();
                 }
             }

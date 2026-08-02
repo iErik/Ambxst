@@ -22,11 +22,15 @@ Item {
 
     // Popup visibility state (tracks intent, not animation)
     property bool popupOpen: controlsPopup.isOpen
+    property bool clusterVisible: true
 
-    Layout.preferredWidth: 36
-    Layout.preferredHeight: 36
-    Layout.fillWidth: vertical
-    Layout.fillHeight: !vertical
+    visible: clusterVisible
+    Layout.preferredWidth: clusterVisible ? 36 : 0
+    Layout.preferredHeight: clusterVisible ? 36 : 0
+    Layout.maximumWidth: clusterVisible ? 36 : 0
+    Layout.maximumHeight: clusterVisible ? 36 : 0
+    Layout.fillWidth: clusterVisible && vertical
+    Layout.fillHeight: clusterVisible && !vertical
 
     StyledToolTip {
         show: root.isHovered && !root.popupOpen
@@ -35,6 +39,16 @@ Item {
 
     HoverHandler {
         onHoveredChanged: root.isHovered = hovered
+    }
+
+    function closePopup() {
+        if (controlsPopup.isOpen)
+            controlsPopup.close();
+    }
+
+    onClusterVisibleChanged: {
+        if (!clusterVisible)
+            closePopup();
     }
 
     // Main button
@@ -124,15 +138,20 @@ Item {
                     return Icons.speakerHigh;
                 }
                 sliderValue: Audio.sink?.audio?.volume ?? 0
-                progressColor: Audio.sink?.audio?.muted ? Colors.outline : Styling.srItem("overprimary")
+                maximum: Audio.maxVolume
+                progressColor: {
+                    if (Audio.sink?.audio?.muted)
+                        return Colors.outline;
+                    if ((Audio.sink?.audio?.volume ?? 0) > 1)
+                        return Colors.warning;
+                    return Styling.srItem("overprimary");
+                }
                 wavy: true
-                wavyAmplitude: Audio.sink?.audio?.muted ? 0.5 : 1.5 * sliderValue
-                wavyFrequency: Audio.sink?.audio?.muted ? 1.0 : 8.0 * sliderValue
+                wavyAmplitude: Audio.sink?.audio?.muted ? 0.5 : 1.5 * Math.min(1, sliderValue)
+                wavyFrequency: Audio.sink?.audio?.muted ? 1.0 : 8.0 * Math.min(1, sliderValue)
 
                 onValueChanged: newValue => {
-                    if (Audio.sink?.audio) {
-                        Audio.sink.audio.volume = newValue;
-                    }
+                    Audio.setVolume(newValue);
                 }
 
                 onIconClicked: {
@@ -167,9 +186,7 @@ Item {
                 wavyFrequency: Audio.source?.audio?.muted ? 1.0 : 8.0 * sliderValue
 
                 onValueChanged: newValue => {
-                    if (Audio.source?.audio) {
-                        Audio.source.audio.volume = newValue;
-                    }
+                    Audio.setMicVolume(newValue);
                 }
 
                 onIconClicked: {

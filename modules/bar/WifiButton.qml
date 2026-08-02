@@ -25,6 +25,8 @@ Item {
     property var passwordTarget: null
 
     readonly property bool shown: (Config.bar?.showWifi ?? true) && NetworkService.available
+    property bool clusterVisible: true
+    readonly property bool inBar: shown && clusterVisible
 
     readonly property string buttonIcon: {
         if (!NetworkService.wifiEnabled)
@@ -47,14 +49,14 @@ Item {
         });
     }
 
-    visible: shown
-    opacity: shown ? 1 : 0
-    Layout.preferredWidth: shown ? 36 : 0
-    Layout.preferredHeight: shown ? 36 : 0
-    Layout.maximumWidth: shown ? 36 : 0
-    Layout.maximumHeight: shown ? 36 : 0
-    Layout.fillWidth: shown && vertical
-    Layout.fillHeight: shown && !vertical
+    visible: inBar
+    opacity: inBar ? 1 : 0
+    Layout.preferredWidth: inBar ? 36 : 0
+    Layout.preferredHeight: inBar ? 36 : 0
+    Layout.maximumWidth: inBar ? 36 : 0
+    Layout.maximumHeight: inBar ? 36 : 0
+    Layout.fillWidth: inBar && vertical
+    Layout.fillHeight: inBar && !vertical
 
     Behavior on opacity {
         enabled: (Config.animDuration ?? 0) > 0
@@ -72,6 +74,16 @@ Item {
         NetworkService.rescanWifi();
         wifiPopup.open();
         Qt.callLater(() => searchField.focusInput());
+    }
+
+    function closePopup() {
+        if (wifiPopup.isOpen)
+            wifiPopup.close();
+    }
+
+    onClusterVisibleChanged: {
+        if (!clusterVisible)
+            closePopup();
     }
 
     function resetPasswordUi() {

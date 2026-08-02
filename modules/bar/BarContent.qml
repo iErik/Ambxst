@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
@@ -207,6 +206,56 @@ Item {
     // Shadow logic for bar components
     readonly property bool shadowsEnabled: Config.showBackground && (!actualContainBar || (Config.bar && Config.bar.keepBarShadow !== undefined ? Config.bar.keepBarShadow : false))
 
+    // Per-monitor utility cluster collapse (Presets→Battery). Persisted via StateService.
+    property bool utilityCollapsed: false
+    property bool utilityCollapsedSynced: false
+    readonly property bool utilityClusterVisible: !utilityCollapsed
+
+    readonly property string utilityCollapsedStateKey: "barUtilityCollapsedByScreen"
+
+    function persistUtilityCollapsed() {
+        if (!StateService.initialized || !screen)
+            return;
+        const prev = StateService.get(utilityCollapsedStateKey, {}) || {};
+        const map = Object.assign({}, prev);
+        map[screen.name] = utilityCollapsed;
+        StateService.set(utilityCollapsedStateKey, map);
+    }
+
+    function loadUtilityCollapsed() {
+        if (!StateService.initialized || !screen)
+            return;
+        // Keep a pre-init toggle and write it once state is ready.
+        if (utilityCollapsedSynced) {
+            persistUtilityCollapsed();
+            return;
+        }
+        const map = StateService.get(utilityCollapsedStateKey, {}) || {};
+        utilityCollapsed = !!map[screen.name];
+        utilityCollapsedSynced = true;
+    }
+
+    function setUtilityCollapsed(collapsed) {
+        if (!screen)
+            return;
+        utilityCollapsed = !!collapsed;
+        utilityCollapsedSynced = true;
+        persistUtilityCollapsed();
+    }
+
+    function toggleUtilityCollapsed() {
+        setUtilityCollapsed(!utilityCollapsed);
+    }
+
+    Connections {
+        target: StateService
+        function onStateLoaded() {
+            root.loadUtilityCollapsed();
+        }
+    }
+
+    Component.onCompleted: loadUtilityCollapsed()
+
     // The hitbox for the mask
     property alias barHitbox: barMouseArea
 
@@ -413,26 +462,34 @@ Item {
                             endRadius: (root.pinButtonVisible) ? root.innerRadius : (root.dockAtStart ? root.innerRadius : root.outerRadius)
                         }
 
-                        // Pin button (horizontal)
+                        // Pin button (horizontal) — match LayoutSelectorButton sizing
                         Loader {
                             active: (Config.bar && Config.bar.showPinButton !== undefined ? Config.bar.showPinButton : true)
                             visible: active
-                            Layout.alignment: Qt.AlignVCenter
+                            Layout.preferredWidth: 36
+                            Layout.preferredHeight: 36
+                            Layout.maximumWidth: 36
+                            Layout.maximumHeight: 36
+                            Layout.fillHeight: true
 
-                            sourceComponent: Button {
+                            sourceComponent: Item {
                                 id: pinButton
-                                implicitWidth: 36
-                                implicitHeight: 36
+                                property bool isHovered: false
 
-                                background: StyledRect {
+                                HoverHandler {
+                                    onHoveredChanged: pinButton.isHovered = hovered
+                                }
+
+                                StyledRect {
                                     id: pinButtonBg
+                                    anchors.fill: parent
                                     variant: root.pinned ? "primary" : "bg"
                                     enableShadow: root.shadowsEnabled
-                                    
+
                                     // PinButton is typically last in group 1 (unless IntegratedDock follows at start)
                                     property real startRadius: root.innerRadius
                                     property real endRadius: root.dockAtStart ? root.innerRadius : root.outerRadius
-                                    
+
                                     topLeftRadius: startRadius
                                     bottomLeftRadius: startRadius
                                     topRightRadius: endRadius
@@ -441,7 +498,7 @@ Item {
                                     Rectangle {
                                         anchors.fill: parent
                                         color: Styling.srItem("overprimary")
-                                        opacity: root.pinned ? 0 : (pinButton.pressed ? 0.5 : (pinButton.hovered ? 0.25 : 0))
+                                        opacity: root.pinned ? 0 : (pinButton.isHovered ? 0.25 : 0)
                                         radius: (parent.radius !== undefined ? parent.radius : 0)
 
                                         Behavior on opacity {
@@ -451,37 +508,41 @@ Item {
                                             }
                                         }
                                     }
-                                }
 
-                                contentItem: Text {
-                                    text: Icons.pin
-                                    font.family: Icons.font
-                                    font.pixelSize: 18
-                                    color: root.pinned ? pinButtonBg.item : (pinButton.pressed ? Colors.background : (Styling.srItem("overprimary") || Colors.foreground))
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: Icons.pin
+                                        font.family: Icons.font
+                                        font.pixelSize: 18
+                                        color: root.pinned ? pinButtonBg.item : (Styling.srItem("overprimary") || Colors.foreground)
 
-                                    rotation: root.pinned ? 0 : 45
-                                    Behavior on rotation {
-                                        enabled: (Config.animDuration !== undefined ? Config.animDuration : 0) > 0
-                                        NumberAnimation {
-                                            duration: (Config.animDuration !== undefined ? Config.animDuration : 0) / 2
+                                        rotation: root.pinned ? 0 : 45
+                                        Behavior on rotation {
+                                            enabled: (Config.animDuration !== undefined ? Config.animDuration : 0) > 0
+                                            NumberAnimation {
+                                                duration: (Config.animDuration !== undefined ? Config.animDuration : 0) / 2
+                                            }
+                                        }
+
+                                        Behavior on color {
+                                            enabled: (Config.animDuration !== undefined ? Config.animDuration : 0) > 0
+                                            ColorAnimation {
+                                                duration: (Config.animDuration !== undefined ? Config.animDuration : 0) / 2
+                                            }
                                         }
                                     }
 
-                                    Behavior on color {
-                                        enabled: (Config.animDuration !== undefined ? Config.animDuration : 0) > 0
-                                        ColorAnimation {
-                                            duration: (Config.animDuration !== undefined ? Config.animDuration : 0) / 2
-                                        }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        hoverEnabled: false
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.pinned = !root.pinned
                                     }
-                                }
 
-                                onClicked: root.pinned = !root.pinned
-
-                                StyledToolTip {
-                                    show: pinButton.hovered
-                                    tooltipText: root.pinned ? "Unpin bar" : "Pin bar"
+                                    StyledToolTip {
+                                        show: pinButton.isHovered
+                                        tooltipText: root.pinned ? "Unpin bar" : "Pin bar"
+                                    }
                                 }
                             }
                         }
@@ -526,15 +587,29 @@ Item {
                             visible: !(root.orientation === "horizontal" && integratedDockEnabled)
                         }
 
+                        // Toggle sits on the left edge of the utility cluster (before Presets).
+                        // Collapses Presets→Battery; SysTray/Clock/Power stay visible.
+                        Bar.UtilityClusterToggle {
+                            id: utilityClusterToggle
+                            bar: root
+                            collapsed: root.utilityCollapsed
+                            layerEnabled: root.shadowsEnabled
+                            startRadius: root.dockAtEnd ? root.innerRadius : root.outerRadius
+                            endRadius: root.innerRadius
+                            onToggled: root.toggleUtilityCollapsed()
+                        }
+
                         PresetsButton {
                             id: presetsButton
-                            startRadius: root.dockAtEnd ? root.innerRadius : root.outerRadius
+                            clusterVisible: root.utilityClusterVisible
+                            startRadius: root.innerRadius
                             endRadius: root.innerRadius
                             enableShadow: root.shadowsEnabled
                         }
 
                         ToolsButton {
                             id: toolsButton
+                            clusterVisible: root.utilityClusterVisible
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
                             enableShadow: root.shadowsEnabled
@@ -543,6 +618,7 @@ Item {
                         Bar.WifiButton {
                             id: wifiButton
                             bar: root
+                            clusterVisible: root.utilityClusterVisible
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
@@ -551,6 +627,7 @@ Item {
                         Bar.BluetoothButton {
                             id: bluetoothButton
                             bar: root
+                            clusterVisible: root.utilityClusterVisible
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
@@ -559,6 +636,7 @@ Item {
                         Bar.NordVpnButton {
                             id: nordVpnButton
                             bar: root
+                            clusterVisible: root.utilityClusterVisible
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
@@ -567,6 +645,7 @@ Item {
                         Bar.PcloudButton {
                             id: pcloudButton
                             bar: root
+                            clusterVisible: root.utilityClusterVisible
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
@@ -575,6 +654,7 @@ Item {
                         Bar.SoundButton {
                             id: soundButton
                             bar: root
+                            clusterVisible: root.utilityClusterVisible
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
@@ -583,6 +663,7 @@ Item {
                         ControlsButton {
                             id: controlsButton
                             bar: root
+                            clusterVisible: root.utilityClusterVisible
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
@@ -591,6 +672,7 @@ Item {
                         Bar.BatteryIndicator {
                             id: batteryIndicator
                             bar: root
+                            clusterVisible: root.utilityClusterVisible
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
@@ -636,8 +718,20 @@ Item {
                             enableShadow: root.shadowsEnabled
                         }
 
+                        // Left/top edge of the vertical utility cluster (before Tools).
+                        Bar.UtilityClusterToggle {
+                            id: utilityClusterToggleVert
+                            bar: root
+                            collapsed: root.utilityCollapsed
+                            layerEnabled: root.shadowsEnabled
+                            startRadius: root.innerRadius
+                            endRadius: root.innerRadius
+                            onToggled: root.toggleUtilityCollapsed()
+                        }
+
                         ToolsButton {
                             id: toolsButtonVert
+                            clusterVisible: root.utilityClusterVisible
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
                             vertical: true
@@ -647,6 +741,7 @@ Item {
                         Bar.WifiButton {
                             id: wifiButtonVert
                             bar: root
+                            clusterVisible: root.utilityClusterVisible
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
@@ -655,6 +750,7 @@ Item {
                         Bar.BluetoothButton {
                             id: bluetoothButtonVert
                             bar: root
+                            clusterVisible: root.utilityClusterVisible
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
@@ -663,6 +759,7 @@ Item {
                         Bar.NordVpnButton {
                             id: nordVpnButtonVert
                             bar: root
+                            clusterVisible: root.utilityClusterVisible
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
@@ -671,6 +768,7 @@ Item {
                         Bar.PcloudButton {
                             id: pcloudButtonVert
                             bar: root
+                            clusterVisible: root.utilityClusterVisible
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
@@ -678,6 +776,7 @@ Item {
 
                         PresetsButton {
                             id: presetsButtonVert
+                            clusterVisible: root.utilityClusterVisible
                             startRadius: root.innerRadius
                             endRadius: root.outerRadius
                             vertical: true
@@ -732,26 +831,35 @@ Item {
                                     endRadius: root.innerRadius
                                 }
 
-                                // Pin button (vertical)
+                                // Pin button (vertical) — match LayoutSelectorButton sizing
                                 Loader {
                                     active: (Config.bar && Config.bar.showPinButton !== undefined ? Config.bar.showPinButton : true)
                                     visible: active
+                                    Layout.preferredWidth: 36
+                                    Layout.preferredHeight: 36
+                                    Layout.maximumWidth: 36
+                                    Layout.maximumHeight: 36
+                                    Layout.fillWidth: true
                                     Layout.alignment: Qt.AlignHCenter
-                            
-                                    sourceComponent: Button {
+
+                                    sourceComponent: Item {
                                         id: pinButtonV
-                                        implicitWidth: 36
-                                        implicitHeight: 36
-                            
-                                        background: StyledRect {
+                                        property bool isHovered: false
+
+                                        HoverHandler {
+                                            onHoveredChanged: pinButtonV.isHovered = hovered
+                                        }
+
+                                        StyledRect {
                                             id: pinButtonVBg
+                                            anchors.fill: parent
                                             variant: root.pinned ? "primary" : "bg"
                                             enableShadow: root.shadowsEnabled
-                                        
+
                                             property real startRadius: root.innerRadius
                                             // In vertical, dock is always appended to this group if enabled
                                             property real endRadius: root.integratedDockEnabled ? root.innerRadius : root.outerRadius
-                                        
+
                                             topLeftRadius: startRadius
                                             topRightRadius: startRadius
                                             bottomLeftRadius: endRadius
@@ -760,7 +868,7 @@ Item {
                                             Rectangle {
                                                 anchors.fill: parent
                                                 color: Styling.srItem("overprimary")
-                                                opacity: root.pinned ? 0 : (pinButtonV.pressed ? 0.5 : (pinButtonV.hovered ? 0.25 : 0))
+                                                opacity: root.pinned ? 0 : (pinButtonV.isHovered ? 0.25 : 0)
                                                 radius: (parent.radius !== undefined ? parent.radius : 0)
 
                                                 Behavior on opacity {
@@ -770,37 +878,41 @@ Item {
                                                     }
                                                 }
                                             }
-                                        }
 
-                                        contentItem: Text {
-                                            text: Icons.pin
-                                            font.family: Icons.font
-                                            font.pixelSize: 18
-                                            color: root.pinned ? pinButtonVBg.item : (pinButtonV.pressed ? Colors.background : (Styling.srItem("overprimary") || Colors.foreground))
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: Icons.pin
+                                                font.family: Icons.font
+                                                font.pixelSize: 18
+                                                color: root.pinned ? pinButtonVBg.item : (Styling.srItem("overprimary") || Colors.foreground)
 
-                                            rotation: root.pinned ? 0 : 45
-                                            Behavior on rotation {
-                                                enabled: (Config.animDuration !== undefined ? Config.animDuration : 0) > 0
-                                                NumberAnimation {
-                                                    duration: (Config.animDuration !== undefined ? Config.animDuration : 0) / 2
+                                                rotation: root.pinned ? 0 : 45
+                                                Behavior on rotation {
+                                                    enabled: (Config.animDuration !== undefined ? Config.animDuration : 0) > 0
+                                                    NumberAnimation {
+                                                        duration: (Config.animDuration !== undefined ? Config.animDuration : 0) / 2
+                                                    }
+                                                }
+
+                                                Behavior on color {
+                                                    enabled: (Config.animDuration !== undefined ? Config.animDuration : 0) > 0
+                                                    ColorAnimation {
+                                                        duration: (Config.animDuration !== undefined ? Config.animDuration : 0) / 2
+                                                    }
                                                 }
                                             }
 
-                                            Behavior on color {
-                                                enabled: (Config.animDuration !== undefined ? Config.animDuration : 0) > 0
-                                                ColorAnimation {
-                                                    duration: (Config.animDuration !== undefined ? Config.animDuration : 0) / 2
-                                                }
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                hoverEnabled: false
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: root.pinned = !root.pinned
                                             }
-                                        }
 
-                                        onClicked: root.pinned = !root.pinned
-
-                                        StyledToolTip {
-                                            show: pinButtonV.hovered
-                                            tooltipText: root.pinned ? "Unpin bar" : "Pin bar"
+                                            StyledToolTip {
+                                                show: pinButtonV.isHovered
+                                                tooltipText: root.pinned ? "Unpin bar" : "Pin bar"
+                                            }
                                         }
                                     }
                                 }
@@ -822,6 +934,7 @@ Item {
                         Bar.SoundButton {
                             id: soundButtonVert
                             bar: root
+                            clusterVisible: root.utilityClusterVisible
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.outerRadius
                             endRadius: root.innerRadius
@@ -830,6 +943,7 @@ Item {
                         ControlsButton {
                             id: controlsButtonVert
                             bar: root
+                            clusterVisible: root.utilityClusterVisible
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
@@ -838,6 +952,7 @@ Item {
                         Bar.BatteryIndicator {
                             id: batteryIndicatorVert
                             bar: root
+                            clusterVisible: root.utilityClusterVisible
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius

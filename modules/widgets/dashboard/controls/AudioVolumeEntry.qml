@@ -25,6 +25,8 @@ Item {
 
     readonly property bool isMuted: root.node?.audio?.muted ?? false
     readonly property real volume: root.node?.audio?.volume ?? 0
+    readonly property bool isOutputNode: root.node?.isSink === true
+    readonly property real volumeMaximum: isOutputNode ? Audio.maxVolume : 1
     property real lastSetVolume: volume
 
     ColumnLayout {
@@ -92,11 +94,14 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 20
                 value: root.volume
+                maximum: root.volumeMaximum
                 scroll: false
                 progressColor: {
                     if (root.isMuted)
                         return Colors.outline;
                     if (Audio.protectionTriggered && root.isMainDevice)
+                        return Colors.warning;
+                    if (root.isOutputNode && root.volume > 1)
                         return Colors.warning;
                     return Styling.srItem("overprimary");
                 }
@@ -159,7 +164,9 @@ Item {
                 text: `${Math.round(root.volume * 100)}%`
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
-                color: Colors.overSurfaceVariant
+                color: (!root.isMuted && root.isOutputNode && root.volume > 1)
+                    ? Colors.warning
+                    : Colors.overSurfaceVariant
                 horizontalAlignment: Text.AlignRight
             }
         }

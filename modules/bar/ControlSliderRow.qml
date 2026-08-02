@@ -14,6 +14,7 @@ Item {
 
     property string icon: ""
     property real sliderValue: 0
+    property real maximum: 1.0
     property color progressColor: Styling.srItem("overprimary")
     property bool wavy: false
     property real wavyAmplitude: 0.8
@@ -111,7 +112,10 @@ Item {
             Layout.preferredHeight: 20
             Layout.alignment: Qt.AlignVCenter
 
-            property real animatedProgress: root.sliderValue
+            property real animatedProgress: {
+                const max = Math.max(root.maximum, 0.0001);
+                return Math.max(0, Math.min(1, root.sliderValue / max));
+            }
 
             Behavior on animatedProgress {
                 enabled: Config.animDuration > 0
@@ -206,7 +210,8 @@ Item {
                 preventStealing: true
 
                 function calculateValue(mouseX: real): real {
-                    return Math.max(0, Math.min(1, mouseX / sliderContainer.width));
+                    const ratio = Math.max(0, Math.min(1, mouseX / sliderContainer.width));
+                    return ratio * root.maximum;
                 }
 
                 onPressed: mouse => {
@@ -224,7 +229,7 @@ Item {
                 onWheel: wheel => {
                     const step = 0.05;
                     if (wheel.angleDelta.y > 0) {
-                        root.sliderValue = Math.min(1, root.sliderValue + step);
+                        root.sliderValue = Math.min(root.maximum, root.sliderValue + step);
                     } else {
                         root.sliderValue = Math.max(0, root.sliderValue - step);
                     }

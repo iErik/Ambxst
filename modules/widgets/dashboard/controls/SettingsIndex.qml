@@ -23,7 +23,7 @@ QtObject {
         { label: "Bluetooth", keywords: "devices pairing connect", section: 1, subSection: "", subLabel: "", icon: Icons.bluetooth, isIcon: true },
         
         // --- Mixer ---
-        { label: "Audio Mixer", keywords: "sound volume output input mic speaker", section: 2, subSection: "", subLabel: "", icon: Icons.faders, isIcon: true },
+        { label: "Audio Mixer", keywords: "sound volume output input mic speaker over amplification amplify boost", section: 2, subSection: "", subLabel: "", icon: Icons.faders, isIcon: true },
         
         // --- Effects ---
         { label: "Audio Effects", keywords: "equalizer bass treble easyeffects", section: 3, subSection: "", subLabel: "", icon: Icons.waveform, isIcon: true },

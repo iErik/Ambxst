@@ -88,7 +88,7 @@ Item {
             onWheel: wheel => {
                 if (root.isExpanded) {
                     if (wheel.angleDelta.y > 0) {
-                        volumeSlider.value = Math.min(1, volumeSlider.value + 0.1);
+                        volumeSlider.value = Math.min(Audio.maxVolume, volumeSlider.value + 0.1);
                     } else {
                         volumeSlider.value = Math.max(0, volumeSlider.value - 0.1);
                     }
@@ -106,13 +106,14 @@ Item {
             // size: (root.isHovered || volumeSlider.isDragging) ? 128 : 80ered || volumeSlider.isDragging) ? 128 : 80
             smoothDrag: true
             value: 0
+            maximum: Audio.maxVolume
             resizeParent: false
             wavy: true
             scroll: root.isExpanded
             iconClickable: root.isExpanded
             sliderVisible: root.isExpanded || volumeSlider.isDragging || root.externalVolumeChange
-            wavyAmplitude: (root.isExpanded || volumeSlider.isDragging || root.externalVolumeChange) ? (Audio.sink?.audio?.muted ? 0.5 : 1.5 * value) : 0
-            wavyFrequency: (root.isExpanded || volumeSlider.isDragging || root.externalVolumeChange) ? (Audio.sink?.audio?.muted ? 1.0 : 8.0 * value) : 0
+            wavyAmplitude: (root.isExpanded || volumeSlider.isDragging || root.externalVolumeChange) ? (Audio.sink?.audio?.muted ? 0.5 : 1.5 * Math.min(1, value)) : 0
+            wavyFrequency: (root.isExpanded || volumeSlider.isDragging || root.externalVolumeChange) ? (Audio.sink?.audio?.muted ? 1.0 : 8.0 * Math.min(1, value)) : 0
             iconPos: root.vertical ? "end" : "start"
             icon: {
                 if (Audio.sink?.audio?.muted)
@@ -126,12 +127,16 @@ Item {
                     return Icons.speakerLow;
                 return Icons.speakerHigh;
             }
-            progressColor: Audio.sink?.audio?.muted ? Colors.outline : Styling.srItem("overprimary")
+            progressColor: {
+                if (Audio.sink?.audio?.muted)
+                    return Colors.outline;
+                if ((Audio.sink?.audio?.volume ?? 0) > 1)
+                    return Colors.warning;
+                return Styling.srItem("overprimary");
+            }
 
             onValueChanged: {
-                if (Audio.sink?.audio) {
-                    Audio.sink.audio.volume = value;
-                }
+                Audio.setVolume(value);
             }
 
             onIconClicked: {

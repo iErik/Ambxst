@@ -109,9 +109,9 @@ var ACTION_CATALOG = [
     { id: "media.next", label: "Next Track", category: "Media", dispatcher: "exec", argument: "playerctl next" },
     { id: "media.stop-locked", label: "Stop Playback (Locked)", category: "Media", dispatcher: "exec", argument: "playerctl stop", flags: "l" },
 
-    { id: "audio.volume-up", label: "Volume Up", category: "Audio", dispatcher: "exec", argument: "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 10%+", flags: "le" },
-    { id: "audio.volume-down", label: "Volume Down", category: "Audio", dispatcher: "exec", argument: "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 10%-", flags: "le" },
-    { id: "audio.mute-toggle", label: "Mute Audio", category: "Audio", dispatcher: "exec", argument: "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle", flags: "le" },
+    { id: "audio.volume-up", label: "Volume Up", category: "Audio", dispatcher: "exec", argument: "qs ipc call audio increment", flags: "le" },
+    { id: "audio.volume-down", label: "Volume Down", category: "Audio", dispatcher: "exec", argument: "qs ipc call audio decrement", flags: "le" },
+    { id: "audio.mute-toggle", label: "Mute Audio", category: "Audio", dispatcher: "exec", argument: "qs ipc call audio toggleMute", flags: "le" },
 
     { id: "brightness.up", label: "Brightness Up", category: "Brightness", dispatcher: "exec", argument: "ambxst brightness +5", flags: "le" },
     { id: "brightness.down", label: "Brightness Down", category: "Brightness", dispatcher: "exec", argument: "ambxst brightness -5", flags: "le" },
@@ -279,9 +279,9 @@ function actionFromLegacy(dispatcher, argument, flags) {
         if (arg === "playerctl previous") return { id: "media.prev", args: {} };
         if (arg === "playerctl next") return { id: "media.next", args: {} };
         if (arg === "playerctl stop" && flags === "l") return { id: "media.stop-locked", args: {} };
-        if (arg.indexOf("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 10%+") === 0) return { id: "audio.volume-up", args: {} };
-        if (arg.indexOf("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 10%-") === 0) return { id: "audio.volume-down", args: {} };
-        if (arg.indexOf("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle") === 0) return { id: "audio.mute-toggle", args: {} };
+        if (arg.indexOf("qs ipc call audio increment") === 0 || (arg.indexOf("wpctl set-volume") === 0 && arg.indexOf("10%+") !== -1)) return { id: "audio.volume-up", args: {} };
+        if (arg.indexOf("qs ipc call audio decrement") === 0 || (arg.indexOf("wpctl set-volume") === 0 && arg.indexOf("10%-") !== -1)) return { id: "audio.volume-down", args: {} };
+        if (arg.indexOf("qs ipc call audio toggleMute") === 0 || arg.indexOf("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle") === 0) return { id: "audio.mute-toggle", args: {} };
         if (arg.indexOf("ambxst brightness +5") === 0) return { id: "brightness.up", args: {} };
         if (arg.indexOf("ambxst brightness -5") === 0) return { id: "brightness.down", args: {} };
         if (arg === "notify-send \"Soon\"") return { id: "system.calculator", args: {} };

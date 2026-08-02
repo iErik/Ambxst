@@ -22,6 +22,7 @@ import "defaults/system.js" as SystemDefaults
 import "defaults/dock.js" as DockDefaults
 import "defaults/ai.js" as AiDefaults
 import "defaults/general.js" as GeneralDefaults
+import "defaults/audio.js" as AudioDefaults
 import "ConfigValidator.js" as ConfigValidator
 
 Singleton {
@@ -57,9 +58,10 @@ Singleton {
     property bool dockReady: false
     property bool aiReady: false
     property bool generalReady: false
+    property bool audioReady: false
     property bool keybindsInitialLoadComplete: false
 
-    property bool initialLoadComplete: themeReady && barReady && workspacesReady && overviewReady && notchReady && compositorReady && performanceReady && weatherReady && desktopReady && lockscreenReady && prefixReady && systemReady && dockReady && aiReady && generalReady
+    property bool initialLoadComplete: themeReady && barReady && workspacesReady && overviewReady && notchReady && compositorReady && performanceReady && weatherReady && desktopReady && lockscreenReady && prefixReady && systemReady && dockReady && aiReady && generalReady && audioReady
 
     // Compatibility aliases
     property alias loader: themeLoader
@@ -87,6 +89,7 @@ Singleton {
             "cp -n '" + root.presetDir + "/dock.json' '" + root.configDir + "/dock.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/ai.json' '" + root.configDir + "/ai.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/system.json' '" + root.configDir + "/system.json' 2>/dev/null || true; " +
+            "cp -n '" + root.presetDir + "/audio.json' '" + root.configDir + "/audio.json' 2>/dev/null || true; " +
             "echo 'Preset files copied if missing'"
         ]
     }
@@ -1235,6 +1238,45 @@ Singleton {
             property string terminal: "kitty"
             property bool terminalAdvanced: false
             property string terminalCommand: "$TERMINAL -e $COMMAND"
+        }
+    }
+
+    // ============================================
+    // AUDIO MODULE
+    // ============================================
+    FileView {
+        id: audioLoader
+        path: root.configDir + "/audio.json"
+        atomicWrites: true
+        watchChanges: true
+        onLoaded: {
+            if (!root.audioReady) {
+                validateModule("audio", audioLoader, AudioDefaults.data, () => {
+                    root.audioReady = true;
+                });
+            }
+        }
+        onLoadFailed: {
+            if (error.toString().includes("FileNotFound") && !root.audioReady) {
+                handleMissingConfig("audio", audioLoader, AudioDefaults.data, () => {
+                    root.audioReady = true;
+                });
+            }
+        }
+        onFileChanged: {
+            root.pauseAutoSave = true;
+            reload();
+            root.pauseAutoSave = false;
+        }
+        onPathChanged: reload()
+        onAdapterUpdated: {
+            if (root.audioReady && !root.pauseAutoSave) {
+                audioLoader.writeAdapter();
+            }
+        }
+
+        adapter: JsonAdapter {
+            property bool overAmplification: false
         }
     }
 
@@ -2425,7 +2467,7 @@ Singleton {
                     "actions": [
                         {
                             "dispatcher": "exec",
-                            "argument": "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 10%+",
+                            "argument": "qs ipc call audio increment",
                             "flags": "le",
                             "layouts": []
                         }
@@ -2443,7 +2485,7 @@ Singleton {
                     "actions": [
                         {
                             "dispatcher": "exec",
-                            "argument": "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 10%-",
+                            "argument": "qs ipc call audio decrement",
                             "flags": "le",
                             "layouts": []
                         }
@@ -2461,7 +2503,7 @@ Singleton {
                     "actions": [
                         {
                             "dispatcher": "exec",
-                            "argument": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+                            "argument": "qs ipc call audio toggleMute",
                             "flags": "le",
                             "layouts": []
                         }
@@ -3553,6 +3595,9 @@ Singleton {
     // General configuration
     property QtObject general: generalLoader.adapter
 
+    // Audio configuration
+    property QtObject audio: audioLoader.adapter
+
     // Module save functions
     function saveBar() {
         barLoader.writeAdapter();
@@ -3598,6 +3643,9 @@ Singleton {
     }
     function saveGeneral() {
         generalLoader.writeAdapter();
+    }
+    function saveAudio() {
+        audioLoader.writeAdapter();
     }
 
     // Color helpers

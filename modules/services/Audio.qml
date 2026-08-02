@@ -3,9 +3,11 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Pipewire
 import qs.modules.services
 import qs.modules.theme
+import qs.config
 
 /**
  * Default Pipewire audio sink/source wrapper.
@@ -19,6 +21,10 @@ Singleton {
     property PwNode sink: Pipewire.defaultAudioSink
     property PwNode source: Pipewire.defaultAudioSource
     readonly property real hardMaxValue: 2.00
+    // PipeWire / GNOME-style soft ceiling when over-amplification is enabled
+    readonly property real overAmplificationLimit: 1.5
+    readonly property bool overAmplification: Config.audio?.overAmplification ?? false
+    readonly property real maxVolume: overAmplification ? overAmplificationLimit : 1.0
     property real value: sink?.audio?.volume ?? 0
 
     // Volume protection (persisted)
@@ -38,6 +44,25 @@ Singleton {
     function setProtectionEnabled(enabled: bool) {
         root.protectionEnabled = enabled;
         StateService.set("volumeProtectionEnabled", enabled);
+    }
+
+    function setOverAmplification(enabled: bool) {
+        if (!Config.audio)
+            return;
+        if (Config.audio.overAmplification === enabled)
+            return;
+        Config.audio.overAmplification = enabled;
+        if (!enabled)
+            root.clampOutputToUnity();
+    }
+
+    function clampOutputToUnity() {
+        if (sink?.audio && sink.audio.volume > 1)
+            sink.audio.volume = 1;
+    }
+
+    function clampVolume(volume: real): real {
+        return Math.max(0, Math.min(root.maxVolume, volume));
     }
 
     signal sinkProtectionTriggered(string reason);
@@ -165,7 +190,7 @@ Singleton {
         if (sink?.audio) {
             const currentVolume = sink.audio.volume;
             const step = currentVolume < 0.1 ? 0.01 : 0.02;
-            sink.audio.volume = Math.min(1, sink.audio.volume + step);
+            root.setVolume(currentVolume + step);
         }
     }
 
@@ -173,30 +198,34 @@ Singleton {
         if (sink?.audio) {
             const currentVolume = sink.audio.volume;
             const step = currentVolume < 0.1 ? 0.01 : 0.02;
-            sink.audio.volume = Math.max(0, sink.audio.volume - step);
+            root.setVolume(currentVolume - step);
         }
     }
 
     function setVolume(volume: real) {
         if (sink?.audio) {
             const current = sink.audio.volume;
-            const safeVolume = protectedSetVolume(sink, volume, current);
-            sink.audio.volume = Math.max(0, Math.min(hardMaxValue, safeVolume));
+            const safeVolume = protectedSetVolume(sink, root.clampVolume(volume), current);
+            sink.audio.volume = root.clampVolume(safeVolume);
         }
     }
 
     function setMicVolume(volume: real) {
         if (source?.audio) {
-            source.audio.volume = Math.max(0, Math.min(hardMaxValue, volume));
+            // Mic stays at unity max; over-amplification is an output feature
+            source.audio.volume = Math.max(0, Math.min(1, volume));
         }
     }
 
     // Protected volume set
     function setNodeVolume(node, volume: real) {
         if (node?.audio) {
+            // Output sinks can over-amplify; inputs stay at 100%
+            const limit = (node.isSink === true) ? root.maxVolume : 1;
+            const target = Math.max(0, Math.min(limit, volume));
             const current = node.audio.volume;
-            const safeVolume = protectedSetVolume(node, volume, current);
-            node.audio.volume = Math.max(0, Math.min(hardMaxValue, safeVolume));
+            const safeVolume = protectedSetVolume(node, target, current);
+            node.audio.volume = Math.max(0, Math.min(limit, safeVolume));
         }
     }
 
@@ -214,5 +243,25 @@ Singleton {
         if (volume <= 0) return Icons.speakerNone;
         if (volume < 0.33) return Icons.speakerLow;
         return Icons.speakerHigh;
+    }
+
+    IpcHandler {
+        target: "audio"
+
+        function increment() {
+            root.incrementVolume();
+        }
+
+        function decrement() {
+            root.decrementVolume();
+        }
+
+        function toggleMute() {
+            root.toggleMute();
+        }
+
+        function set(volume: real) {
+            root.setVolume(volume);
+        }
     }
 }

@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
@@ -208,6 +207,94 @@ Item {
                         font.pixelSize: Styling.fontSize(-1)
                         font.weight: Font.Medium
                         color: Colors.overSurfaceVariant
+                    }
+
+                    // Over-amplification toggle (output volume above 100%)
+                    // Toggle is anchors.right on the pane — RowLayout trailing cells left a large
+                    // visual gap even with rightMargin:0 (StyledRect/pane has no content padding).
+                    StyledRect {
+                        id: overAmpRow
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 44
+                        variant: "pane"
+                        radius: Styling.radius(-4)
+
+                        // Custom pill — absolute right pin (matches AudioDeviceItem / Wifi 12px inset)
+                        Item {
+                            id: overAmpToggle
+                            anchors.right: parent.right
+                            anchors.rightMargin: 12
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 40
+                            height: 20
+
+                            readonly property bool checked: Config.audio?.overAmplification ?? false
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: height / 2
+                                color: overAmpToggle.checked ? Styling.srItem("overprimary") : Colors.surfaceBright
+                                border.color: overAmpToggle.checked ? Styling.srItem("overprimary") : Colors.outline
+
+                                Behavior on color {
+                                    enabled: Config.animDuration > 0
+                                    ColorAnimation {
+                                        duration: Config.animDuration / 2
+                                    }
+                                }
+
+                                Rectangle {
+                                    x: overAmpToggle.checked ? parent.width - width - 2 : 2
+                                    y: 2
+                                    width: parent.height - 4
+                                    height: width
+                                    radius: width / 2
+                                    color: overAmpToggle.checked ? Colors.background : Colors.overSurfaceVariant
+
+                                    Behavior on x {
+                                        enabled: Config.animDuration > 0
+                                        NumberAnimation {
+                                            duration: Config.animDuration / 2
+                                            easing.type: Easing.OutCubic
+                                        }
+                                    }
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: Audio.setOverAmplification(!overAmpToggle.checked)
+                            }
+                        }
+
+                        ColumnLayout {
+                            anchors.left: parent.left
+                            anchors.right: overAmpToggle.left
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 2
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Over-amplification"
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(-1)
+                                font.weight: Font.Medium
+                                color: Colors.overBackground
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Allow output volume up to 150%"
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(-2)
+                                color: Colors.overSurfaceVariant
+                                elide: Text.ElideRight
+                            }
+                        }
                     }
 
                     // Main volume control

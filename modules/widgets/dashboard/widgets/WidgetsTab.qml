@@ -346,14 +346,19 @@ Rectangle {
                     return Icons.speakerHigh;
                 }
                 value: Audio.sink?.audio?.volume ?? 0
-                accentColor: Audio.sink?.audio?.muted ? Colors.outline : Styling.srItem("overprimary")
+                maximum: Audio.maxVolume
+                accentColor: {
+                    if (Audio.sink?.audio?.muted)
+                        return Colors.outline;
+                    if ((Audio.sink?.audio?.volume ?? 0) > 1)
+                        return Colors.warning;
+                    return Styling.srItem("overprimary");
+                }
                 isToggleable: true
                 isToggled: !(Audio.sink?.audio?.muted ?? false)
 
                 onControlValueChanged: newValue => {
-                    if (Audio.sink?.audio) {
-                        Audio.sink.audio.volume = newValue;
-                    }
+                    Audio.setVolume(newValue);
                 }
 
                 onDraggingChanged: isDragging => {
@@ -379,9 +384,7 @@ Rectangle {
                 isToggled: !(Audio.source?.audio?.muted ?? false)
 
                 onControlValueChanged: newValue => {
-                    if (Audio.source?.audio) {
-                        Audio.source.audio.volume = newValue;
-                    }
+                    Audio.setMicVolume(newValue);
                 }
 
                 onDraggingChanged: isDragging => {

@@ -22,6 +22,7 @@ Item {
 
     // Popup visibility state
     property bool popupOpen: batteryPopup.isOpen
+    property bool clusterVisible: true
 
     // Function to interpolate color between green and red based on battery percentage
     function getBatteryColor() {
@@ -39,13 +40,26 @@ Item {
         return Qt.rgba(Colors.red.r + (Colors.green.r - Colors.red.r) * ratio, Colors.red.g + (Colors.green.g - Colors.red.g) * ratio, Colors.red.b + (Colors.green.b - Colors.red.b) * ratio, 1);
     }
 
-    Layout.preferredWidth: 36
-    Layout.preferredHeight: 36
-    Layout.fillWidth: vertical
-    Layout.fillHeight: !vertical
+    visible: clusterVisible
+    Layout.preferredWidth: clusterVisible ? 36 : 0
+    Layout.preferredHeight: clusterVisible ? 36 : 0
+    Layout.maximumWidth: clusterVisible ? 36 : 0
+    Layout.maximumHeight: clusterVisible ? 36 : 0
+    Layout.fillWidth: clusterVisible && vertical
+    Layout.fillHeight: clusterVisible && !vertical
 
     HoverHandler {
         onHoveredChanged: root.isHovered = hovered
+    }
+
+    function closePopup() {
+        if (batteryPopup.isOpen)
+            batteryPopup.close();
+    }
+
+    onClusterVisibleChanged: {
+        if (!clusterVisible)
+            closePopup();
     }
 
     // Main button with circular progress

@@ -25,9 +25,14 @@ Item {
     property bool vertical: false
     property string icon: ""
     property real value: 0
+    property real maximum: 1.0
     property bool isDragging: false
     property real dragPosition: 0.0
-    property real progressRatio: isDragging ? dragPosition : value
+    property real progressRatio: {
+        const v = isDragging ? dragPosition : value;
+        const max = Math.max(root.maximum, 0.0001);
+        return Math.max(0, Math.min(1, v / max));
+    }
     property string tooltipText: `${Math.round(value * 100)}%`
     property color progressColor: Styling.srItem("overprimary")
     property color backgroundColor: Colors.surfaceBright
@@ -368,7 +373,7 @@ Item {
             if (root.vertical) {
                 ratio = 1 - ratio; // Invert for vertical
             }
-            return ratio;
+            return ratio * root.maximum;
         }
 
         onPressed: mouse => {
@@ -420,7 +425,7 @@ Item {
             if (root.scroll) {
                 const scrollStep = root.stepSize > 0 ? root.stepSize : 0.1;
                 if (wheel.angleDelta.y > 0) {
-                    root.value = root.applyStep(Math.min(1, root.value + scrollStep));
+                    root.value = root.applyStep(Math.min(root.maximum, root.value + scrollStep));
                 } else {
                     root.value = root.applyStep(Math.max(0, root.value - scrollStep));
                 }

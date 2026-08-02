@@ -122,11 +122,13 @@ PanelWindow {
                         }
 
                         Text {
-                            text: Math.round(root.osdValue * 100)
+                            text: Math.round(root.osdValue * 100) + "%"
                             font.family: Config.theme.font
                             font.pixelSize: 15
                             font.bold: false
-                            color: Colors.overBackground
+                            color: (GlobalStates.osdIndicator === "volume" && root.osdValue > 1 && !root.osdMuted)
+                                ? Colors.warning
+                                : Colors.overBackground
                             Layout.alignment: Qt.AlignBottom
                         }
                     }
@@ -135,11 +137,18 @@ PanelWindow {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 12
                         value: root.osdValue
+                        maximum: GlobalStates.osdIndicator === "volume" ? Audio.maxVolume : 1
                         wavy: false
                         enabled: false
                         thickness: 3
                         handleSpacing: 0
-                        progressColor: root.osdMuted ? Colors.outline : Styling.srItem("overprimary")
+                        progressColor: {
+                            if (root.osdMuted)
+                                return Colors.outline;
+                            if (GlobalStates.osdIndicator === "volume" && root.osdValue > 1)
+                                return Colors.warning;
+                            return Styling.srItem("overprimary");
+                        }
                         backgroundColor: Qt.rgba(Colors.overBackground.r, Colors.overBackground.g, Colors.overBackground.b, 0.2)
                     }
                 }
