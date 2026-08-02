@@ -320,6 +320,7 @@ ShellRoot {
             let _ = NightLightService.active;
             _ = GameModeService.toggled;
             NordVpn.initialize();
+            Pcloud.initialize();
         }
     }
 }

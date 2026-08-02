@@ -883,6 +883,17 @@ Item {
                         }
 
                         ToggleRow {
+                            label: "Show pCloud"
+                            checked: Config.bar.showPcloud ?? true
+                            onToggled: value => {
+                                if (value !== Config.bar.showPcloud) {
+                                    GlobalStates.markShellChanged();
+                                    Config.bar.showPcloud = value;
+                                }
+                            }
+                        }
+
+                        ToggleRow {
                             label: "Available on Fullscreen"
                             checked: Config.bar.availableOnFullscreen ?? false
                             onToggled: value => {

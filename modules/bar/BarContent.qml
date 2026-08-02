@@ -548,6 +548,14 @@ Item {
                             endRadius: root.innerRadius
                         }
 
+                        Bar.PcloudButton {
+                            id: pcloudButton
+                            bar: root
+                            layerEnabled: root.shadowsEnabled
+                            startRadius: root.innerRadius
+                            endRadius: root.innerRadius
+                        }
+
                         SysTray {
                             bar: root
                             enableShadow: root.shadowsEnabled
@@ -621,6 +629,14 @@ Item {
 
                         Bar.NordVpnButton {
                             id: nordVpnButtonVert
+                            bar: root
+                            layerEnabled: root.shadowsEnabled
+                            startRadius: root.innerRadius
+                            endRadius: root.innerRadius
+                        }
+
+                        Bar.PcloudButton {
+                            id: pcloudButtonVert
                             bar: root
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius

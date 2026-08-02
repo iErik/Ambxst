@@ -246,6 +246,11 @@ QtObject {
     readonly property string shieldCheck: ""
     readonly property string shield: ""
 
+    readonly property string cloud: ""
+    readonly property string cloudArrowDown: ""
+    readonly property string cloudArrowUp: ""
+    readonly property string cloudCheck: ""
+
     readonly property string list: ""
     readonly property string paperPlane: ""
     readonly property string compositor: ""
