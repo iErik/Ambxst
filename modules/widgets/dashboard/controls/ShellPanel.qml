@@ -872,6 +872,17 @@ Item {
                         }
 
                         ToggleRow {
+                            label: "Show NordVPN"
+                            checked: Config.bar.showNordVpn ?? true
+                            onToggled: value => {
+                                if (value !== Config.bar.showNordVpn) {
+                                    GlobalStates.markShellChanged();
+                                    Config.bar.showNordVpn = value;
+                                }
+                            }
+                        }
+
+                        ToggleRow {
                             label: "Available on Fullscreen"
                             checked: Config.bar.availableOnFullscreen ?? false
                             onToggled: value => {

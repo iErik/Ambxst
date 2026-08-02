@@ -540,6 +540,14 @@ Item {
                             enableShadow: root.shadowsEnabled
                         }
 
+                        Bar.NordVpnButton {
+                            id: nordVpnButton
+                            bar: root
+                            layerEnabled: root.shadowsEnabled
+                            startRadius: root.innerRadius
+                            endRadius: root.innerRadius
+                        }
+
                         SysTray {
                             bar: root
                             enableShadow: root.shadowsEnabled
@@ -609,6 +617,14 @@ Item {
                             endRadius: root.innerRadius
                             vertical: true
                             enableShadow: root.shadowsEnabled
+                        }
+
+                        Bar.NordVpnButton {
+                            id: nordVpnButtonVert
+                            bar: root
+                            layerEnabled: root.shadowsEnabled
+                            startRadius: root.innerRadius
+                            endRadius: root.innerRadius
                         }
 
                         PresetsButton {

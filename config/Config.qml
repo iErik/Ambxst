@@ -546,6 +546,7 @@ Singleton {
             property bool hoverToReveal: true
             property int hoverRegionHeight: 8
             property bool showPinButton: true
+            property bool showNordVpn: true
             property bool availableOnFullscreen: false
             property bool use12hFormat: false
             property bool containBar: false

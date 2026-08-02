@@ -16,6 +16,7 @@ var data = {
     "hoverToReveal": true,
     "hoverRegionHeight": 8,
     "showPinButton": true,
+    "showNordVpn": true,
     "availableOnFullscreen": false,
     "use12hFormat": false,
     "containBar": false,
