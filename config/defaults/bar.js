@@ -20,6 +20,7 @@ var data = {
     "showPcloud": true,
     "showWifi": true,
     "showBluetooth": true,
+    "showSound": true,
     "trayCollapsed": false,
     "availableOnFullscreen": false,
     "use12hFormat": false,

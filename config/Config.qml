@@ -550,6 +550,7 @@ Singleton {
             property bool showPcloud: true
             property bool showWifi: true
             property bool showBluetooth: true
+            property bool showSound: true
             property bool trayCollapsed: false
             property bool availableOnFullscreen: false
             property bool use12hFormat: false

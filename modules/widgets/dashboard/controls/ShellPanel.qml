@@ -916,6 +916,17 @@ Item {
                         }
 
                         ToggleRow {
+                            label: "Show Sound"
+                            checked: Config.bar.showSound ?? true
+                            onToggled: value => {
+                                if (value !== Config.bar.showSound) {
+                                    GlobalStates.markShellChanged();
+                                    Config.bar.showSound = value;
+                                }
+                            }
+                        }
+
+                        ToggleRow {
                             label: "Collapse system tray"
                             checked: Config.bar.trayCollapsed ?? false
                             onToggled: value => {

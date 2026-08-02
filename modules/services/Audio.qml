@@ -110,6 +110,8 @@ Singleton {
     readonly property list<var> inputAppNodes: root.appNodes(false)
     readonly property list<var> outputDevices: root.devices(true)
     readonly property list<var> inputDevices: root.devices(false)
+    readonly property bool available: sink !== null || source !== null
+        || outputDevices.length > 0 || inputDevices.length > 0
 
     // Volume jump limiter
     function protectedSetVolume(node, targetVolume: real, currentVolume: real) {

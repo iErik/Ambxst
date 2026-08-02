@@ -572,9 +572,10 @@ Item {
                             endRadius: root.innerRadius
                         }
 
-                        SysTray {
+                        Bar.SoundButton {
+                            id: soundButton
                             bar: root
-                            enableShadow: root.shadowsEnabled
+                            layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
                         }
@@ -591,6 +592,13 @@ Item {
                             id: batteryIndicator
                             bar: root
                             layerEnabled: root.shadowsEnabled
+                            startRadius: root.innerRadius
+                            endRadius: root.innerRadius
+                        }
+
+                        SysTray {
+                            bar: root
+                            enableShadow: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
                         }
@@ -626,13 +634,6 @@ Item {
                             endRadius: root.innerRadius
                             vertical: true
                             enableShadow: root.shadowsEnabled
-                        }
-
-                        SysTray {
-                            bar: root
-                            enableShadow: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
                         }
 
                         ToolsButton {
@@ -818,11 +819,19 @@ Item {
                             }
                         }
 
+                        Bar.SoundButton {
+                            id: soundButtonVert
+                            bar: root
+                            layerEnabled: root.shadowsEnabled
+                            startRadius: root.outerRadius
+                            endRadius: root.innerRadius
+                        }
+
                         ControlsButton {
                             id: controlsButtonVert
                             bar: root
                             layerEnabled: root.shadowsEnabled
-                            startRadius: root.outerRadius
+                            startRadius: root.innerRadius
                             endRadius: root.innerRadius
                         }
 
@@ -830,6 +839,13 @@ Item {
                             id: batteryIndicatorVert
                             bar: root
                             layerEnabled: root.shadowsEnabled
+                            startRadius: root.innerRadius
+                            endRadius: root.innerRadius
+                        }
+
+                        SysTray {
+                            bar: root
+                            enableShadow: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
                         }
