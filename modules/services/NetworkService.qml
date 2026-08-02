@@ -5,19 +5,36 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.modules.globals
+import qs.modules.theme
 
 Singleton {
     id: root
 
+    property bool available: false
     property bool wifi: true
     property bool ethernet: false
 
     property bool wifiEnabled: false
     property bool wifiScanning: false
     property var lastScanTime: 0
-    property bool wifiConnecting: isUpdating && wifiStatus === "connecting"
+    property bool wifiConnecting: isUpdating && (wifiStatus === "connecting" || wifiConnectTarget !== null)
     property bool isUpdating: false
     property bool wasEnabledBeforeSleep: false
+    property string lastError: ""
+
+    readonly property string statusSummary: {
+        if (!root.available)
+            return "NetworkManager unavailable";
+        if (!root.wifiEnabled)
+            return "Wi-Fi off";
+        if (root.wifiConnecting)
+            return "Connecting...";
+        if (root.wifiStatus === "limited")
+            return (root.networkName || "Connected") + " · Limited";
+        if (root.wifi || root.wifiStatus === "connected")
+            return root.networkName ? ("Connected · " + root.networkName) : "Connected";
+        return "Disconnected";
+    }
 
     property var suspendConnections: Connections {
         target: SuspendManager
@@ -133,17 +150,33 @@ Singleton {
         });
     }
 
+    function clearPasswordPrompts(exceptAp = null): void {
+        const nets = root.wifiNetworks;
+        for (let i = 0; i < nets.length; i++) {
+            if (nets[i] !== exceptAp)
+                nets[i].askingPassword = false;
+        }
+    }
+
     function connectToWifiNetwork(accessPoint: WifiAccessPoint): void {
+        if (!accessPoint || !root.available || root.wifiConnectTarget)
+            return;
+        clearPasswordPrompts(accessPoint);
         accessPoint.askingPassword = false;
         root.wifiConnectTarget = accessPoint;
+        root.lastError = "";
         isUpdating = true;
         runAsync(["nmcli", "dev", "wifi", "connect", accessPoint.ssid]).then(() => {
             getNetworks.running = true;
             root.wifiConnectTarget = null;
             isUpdating = false;
+            root.notifyInfo("Connected to " + accessPoint.ssid);
         }).catch(e => {
-            if (e.includes("Secrets were required")) {
+            const msg = String(e || "");
+            if (/Secrets were required|802-11-wireless-security|password/i.test(msg)) {
                 accessPoint.askingPassword = true;
+            } else {
+                root.notifyError(msg || "Failed to connect");
             }
             root.wifiConnectTarget = null;
             isUpdating = false;
@@ -151,27 +184,75 @@ Singleton {
     }
 
     function disconnectWifiNetwork(): void {
-        if (active) {
-            isUpdating = true;
-            runAsync(["nmcli", "connection", "down", active.ssid]).then(() => {
-                getNetworks.running = true;
-                isUpdating = false;
-            }).catch(e => {
-                isUpdating = false;
+        if (!active || root.wifiConnectTarget)
+            return;
+        isUpdating = true;
+        root.lastError = "";
+        const name = active.ssid;
+        runAsync(["nmcli", "connection", "down", name]).then(() => {
+            getNetworks.running = true;
+            isUpdating = false;
+            root.notifyInfo("Disconnected from " + name);
+        }).catch(e => {
+            isUpdating = false;
+            root.notifyError(String(e || "Failed to disconnect"));
+        });
+    }
+
+    function connectWithPassword(network: WifiAccessPoint, password: string): void {
+        if (!network || !password || !root.available || root.wifiConnectTarget)
+            return;
+        clearPasswordPrompts(network);
+        network.askingPassword = false;
+        root.wifiConnectTarget = network;
+        root.lastError = "";
+        isUpdating = true;
+        // Array argv avoids shell injection; works for new and remembered SSIDs
+        runAsync(["nmcli", "dev", "wifi", "connect", network.ssid, "password", password]).then(() => {
+            getNetworks.running = true;
+            root.wifiConnectTarget = null;
+            isUpdating = false;
+            root.notifyInfo("Connected to " + network.ssid);
+        }).catch(e => {
+            const msg = String(e || "");
+            network.askingPassword = true;
+            root.wifiConnectTarget = null;
+            isUpdating = false;
+            root.notifyError(msg || "Wrong password or connection failed");
+        });
+    }
+
+    function changePassword(network: WifiAccessPoint, password: string): void {
+        connectWithPassword(network, password);
+    }
+
+    function notifyError(message) {
+        root.lastError = message || "Wi-Fi error";
+        if (typeof Notifications !== "undefined" && Notifications.notifyInternal) {
+            Notifications.notifyInternal({
+                "appName": "Wi-Fi",
+                "summary": "Wi-Fi",
+                "body": root.lastError,
+                "replaceKey": "wifi-status",
+                "expireTimeout": 6000
             });
         }
     }
 
-    function changePassword(network: WifiAccessPoint, password: string): void {
-        network.askingPassword = false;
-        isUpdating = true;
-        runAsync(["bash", "-c", `nmcli connection modify "${network.ssid}" wifi-sec.psk "$PASSWORD"`], { "PASSWORD": password }).then(() => {
-            connectToWifiNetwork(network);
-        }).then(() => {
-            isUpdating = false;
-        }).catch(e => {
-            isUpdating = false;
-        });
+    function notifyInfo(message) {
+        if (typeof Notifications !== "undefined" && Notifications.notifyInternal) {
+            Notifications.notifyInternal({
+                "appName": "Wi-Fi",
+                "summary": "Wi-Fi",
+                "body": message,
+                "replaceKey": "wifi-status",
+                "expireTimeout": 4000
+            });
+        }
+    }
+
+    function checkAvailable() {
+        checkAvailableProcess.running = true;
     }
 
     function openPublicWifiPortal() {
@@ -401,7 +482,30 @@ Singleton {
         WifiAccessPoint {}
     }
 
+    Process {
+        id: checkAvailableProcess
+        // Binary presence is enough; radio/device state is reflected in wifiEnabled/status
+        command: ["which", "nmcli"]
+        running: false
+        onExited: exitCode => {
+            root.available = (exitCode === 0);
+            if (root.available) {
+                root.update();
+                wifiStatusProcess.running = true;
+            }
+        }
+    }
+
+    // Re-check periodically in case NM/wifi device appears after startup
+    Timer {
+        interval: 120000
+        repeat: true
+        running: !root.available
+        onTriggered: root.checkAvailable()
+    }
+
     Component.onCompleted: {
+        root.checkAvailable();
         update();
         wifiStatusProcess.running = true;
     }

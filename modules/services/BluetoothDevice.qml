@@ -17,24 +17,30 @@ QtObject {
 
     signal infoUpdated()
 
-    // Connect (auto-trust new devices)
+    // Connect (pair if needed, auto-trust)
     function connect() {
         connecting = true;
-        let p;
-        if (!trusted) {
-            // Trust first, then connect
-            p = BluetoothService.runAsync(["bluetoothctl", "trust", address]).then(() => {
-                return BluetoothService.runAsync(["bluetoothctl", "connect", address]);
-            });
-        } else {
-            p = BluetoothService.connectDevice(address);
+        BluetoothService.ensureAgent();
+
+        let chain = Promise.resolve();
+
+        if (!paired) {
+            chain = chain.then(() => BluetoothService.runAsync(["bluetoothctl", "pair", address]));
         }
 
-        return p.catch(e => {
+        if (!trusted) {
+            chain = chain.then(() => BluetoothService.runAsync(["bluetoothctl", "trust", address]));
+        }
+
+        chain = chain.then(() => BluetoothService.runAsync(["bluetoothctl", "connect", address]));
+
+        return chain.catch(e => {
             console.error(`Failed to connect to ${address}: ${e}`);
+            BluetoothService.lastError = String(e || "Connect failed");
         }).finally(() => {
             connecting = false;
             updateInfo();
+            BluetoothService.updateDevices();
         });
     }
 
@@ -48,7 +54,8 @@ QtObject {
                         root.paired = trimmed.includes("yes");
                     } else if (trimmed.startsWith("Connected:")) {
                         root.connected = trimmed.includes("yes");
-                        if (root.connected) root.connecting = false;
+                        if (root.connected)
+                            root.connecting = false;
                     } else if (trimmed.startsWith("Trusted:")) {
                         root.trusted = trimmed.includes("yes");
                     } else if (trimmed.startsWith("Icon:")) {
@@ -72,6 +79,7 @@ QtObject {
     }
 
     function pair() {
+        BluetoothService.ensureAgent();
         BluetoothService.pairDevice(address);
     }
 

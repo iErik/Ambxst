@@ -18,6 +18,8 @@ Item {
     readonly property real sideMargin: (width - contentWidth) / 2
 
     Component.onCompleted: {
+        BluetoothService.initialize();
+        BluetoothService.setUiActive(true);
         // Only refresh device list, don't start scanning automatically
         if (BluetoothService.enabled) {
             // Defer update to avoid blocking UI initialization
@@ -33,6 +35,7 @@ Item {
     }
 
     Component.onDestruction: {
+        BluetoothService.setUiActive(false);
         BluetoothService.stopDiscovery();
     }
 

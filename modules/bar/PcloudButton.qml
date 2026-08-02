@@ -32,8 +32,6 @@ Item {
                 return Icons.cloudArrowDown;
             return Icons.cloudArrowUp;
         }
-        if (Pcloud.mounted)
-            return Icons.cloudCheck;
         return Icons.cloud;
     }
 
@@ -87,18 +85,6 @@ Item {
                     duration: Config.animDuration / 2
                 }
             }
-        }
-
-        // Sync / mounted indicator ring
-        Rectangle {
-            anchors.centerIn: parent
-            width: 28
-            height: 28
-            radius: width / 2
-            color: "transparent"
-            border.width: (Pcloud.mounted || Pcloud.syncing) ? 1.5 : 0
-            border.color: Styling.srItem("overprimary")
-            opacity: (Pcloud.mounted || Pcloud.syncing) && !root.popupOpen ? 0.55 : 0
         }
 
         Text {

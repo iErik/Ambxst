@@ -540,6 +540,22 @@ Item {
                             enableShadow: root.shadowsEnabled
                         }
 
+                        Bar.WifiButton {
+                            id: wifiButton
+                            bar: root
+                            layerEnabled: root.shadowsEnabled
+                            startRadius: root.innerRadius
+                            endRadius: root.innerRadius
+                        }
+
+                        Bar.BluetoothButton {
+                            id: bluetoothButton
+                            bar: root
+                            layerEnabled: root.shadowsEnabled
+                            startRadius: root.innerRadius
+                            endRadius: root.innerRadius
+                        }
+
                         Bar.NordVpnButton {
                             id: nordVpnButton
                             bar: root
@@ -625,6 +641,22 @@ Item {
                             endRadius: root.innerRadius
                             vertical: true
                             enableShadow: root.shadowsEnabled
+                        }
+
+                        Bar.WifiButton {
+                            id: wifiButtonVert
+                            bar: root
+                            layerEnabled: root.shadowsEnabled
+                            startRadius: root.innerRadius
+                            endRadius: root.innerRadius
+                        }
+
+                        Bar.BluetoothButton {
+                            id: bluetoothButtonVert
+                            bar: root
+                            layerEnabled: root.shadowsEnabled
+                            startRadius: root.innerRadius
+                            endRadius: root.innerRadius
                         }
 
                         Bar.NordVpnButton {

@@ -7,6 +7,7 @@ import Quickshell.Wayland
 import qs.modules.services
 import qs.modules.theme
 import qs.modules.components
+import qs.modules.globals
 import qs.config
 
 // BarPopup: A popup component that anchors to bar elements
@@ -30,6 +31,8 @@ PopupWindow {
 
     // Behavior configuration
     property bool closeOnFocusLost: true
+    // When true, opening this popup closes any other exclusive BarPopup
+    property bool exclusive: true
 
     // Logical open state (changes immediately, not after animation)
     property bool isOpen: false
@@ -172,6 +175,9 @@ PopupWindow {
         // Debug positioning
         console.log("BarPopup OPEN - position:", barPosition, "anchorItem:", anchorItem.width, "x", anchorItem.height, "rect.x:", anchor.rect.x, "rect.y:", anchor.rect.y);
 
+        if (exclusive)
+            GlobalStates.setActiveBarPopup(root);
+
         // Set logical state immediately
         isOpen = true;
 
@@ -194,6 +200,9 @@ PopupWindow {
         if (!visible)
             return;
 
+        if (exclusive)
+            GlobalStates.clearActiveBarPopup(root);
+
         // Set logical state immediately
         isOpen = false;
         focusActive = false;
@@ -204,6 +213,11 @@ PopupWindow {
 
         // Hide after animation
         closeTimer.restart();
+    }
+
+    Component.onDestruction: {
+        if (exclusive)
+            GlobalStates.clearActiveBarPopup(root);
     }
 
     function toggle() {

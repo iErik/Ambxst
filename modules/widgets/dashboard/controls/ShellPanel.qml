@@ -894,6 +894,39 @@ Item {
                         }
 
                         ToggleRow {
+                            label: "Show Wi-Fi"
+                            checked: Config.bar.showWifi ?? true
+                            onToggled: value => {
+                                if (value !== Config.bar.showWifi) {
+                                    GlobalStates.markShellChanged();
+                                    Config.bar.showWifi = value;
+                                }
+                            }
+                        }
+
+                        ToggleRow {
+                            label: "Show Bluetooth"
+                            checked: Config.bar.showBluetooth ?? true
+                            onToggled: value => {
+                                if (value !== Config.bar.showBluetooth) {
+                                    GlobalStates.markShellChanged();
+                                    Config.bar.showBluetooth = value;
+                                }
+                            }
+                        }
+
+                        ToggleRow {
+                            label: "Collapse system tray"
+                            checked: Config.bar.trayCollapsed ?? false
+                            onToggled: value => {
+                                if (value !== Config.bar.trayCollapsed) {
+                                    GlobalStates.markShellChanged();
+                                    Config.bar.trayCollapsed = value;
+                                }
+                            }
+                        }
+
+                        ToggleRow {
                             label: "Available on Fullscreen"
                             checked: Config.bar.availableOnFullscreen ?? false
                             onToggled: value => {

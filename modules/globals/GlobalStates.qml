@@ -185,6 +185,27 @@ Singleton {
         barForceHidden = !barForceHidden;
     }
 
+    // Exclusive BarPopup: only one bar-anchored popup open at a time
+    property var activeBarPopup: null
+
+    function setActiveBarPopup(popup) {
+        if (!popup)
+            return;
+        if (activeBarPopup && activeBarPopup !== popup) {
+            try {
+                activeBarPopup.close();
+            } catch (e) {
+                // Previous popup may have been destroyed
+            }
+        }
+        activeBarPopup = popup;
+    }
+
+    function clearActiveBarPopup(popup) {
+        if (activeBarPopup === popup)
+            activeBarPopup = null;
+    }
+
     // Lockscreen state
     property bool lockscreenVisible: false
 
