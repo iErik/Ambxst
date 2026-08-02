@@ -590,6 +590,7 @@ Singleton {
 
         adapter: JsonAdapter {
             property int shown: 10
+            property int groupSize: 10
             property bool showAppIcons: true
             property bool alwaysShowNumbers: false
             property bool showNumbers: false

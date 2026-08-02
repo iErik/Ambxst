@@ -18,7 +18,16 @@ Item {
     readonly property var monitor: AxctlService.monitorFor(bar.screen)
     readonly property Toplevel activeWindow: ToplevelManager.activeToplevel
 
-    readonly property int workspaceGroup: Math.floor(((monitor && monitor.activeWorkspace ? monitor.activeWorkspace.id : undefined) - 1 || 0) / Config.workspaces.shown)
+    // Group stride for multi-monitor / hyprsome layouts. Independent of how many
+    // buttons are drawn (`shown`) so decade-prefix workspaces (11, 21, …) still
+    // highlight local slot 1 when only 8 slots are visible.
+    readonly property int workspaceGroupSize: {
+        const configured = Config.workspaces.groupSize || 0;
+        const shown = Config.workspaces.shown || 10;
+        return configured > 0 ? configured : shown;
+    }
+    readonly property int activeWorkspaceId: (monitor && monitor.activeWorkspace ? monitor.activeWorkspace.id : undefined) || 1
+    readonly property int workspaceGroup: Math.floor((activeWorkspaceId - 1) / workspaceGroupSize)
     property var workspaceOccupied: []
     property var dynamicWorkspaceIds: []
     property int effectiveWorkspaceCount: Config.workspaces.dynamic ? dynamicWorkspaceIds.length : Config.workspaces.shown
@@ -34,16 +43,29 @@ Item {
     property real workspaceIconSizeShrinked: Math.round(workspaceButtonWidth * 0.5)
     property real workspaceIconOpacityShrinked: 1
     property real workspaceIconMarginShrinked: -4
-    property int workspaceIndexInGroup: Config.workspaces.dynamic ? dynamicWorkspaceIds.indexOf((monitor && monitor.activeWorkspace ? monitor.activeWorkspace.id : undefined) || 1) : ((monitor && monitor.activeWorkspace ? monitor.activeWorkspace.id : undefined) - 1 || 0) % Config.workspaces.shown
+    property int workspaceIndexInGroup: {
+        if (Config.workspaces.dynamic)
+            return dynamicWorkspaceIds.indexOf(activeWorkspaceId);
+        const idx = (activeWorkspaceId - 1) % workspaceGroupSize;
+        // Active WS beyond the visible slot count (e.g. 19 with shown=8)
+        return idx < Config.workspaces.shown ? idx : -1;
+    }
     property var occupiedRanges: []
 
     function updateWorkspaceOccupied() {
         if (Config.workspaces.dynamic) {
-            // Get occupied workspace IDs using the precomputed occupation map, sorted and limited by 'shown'
-            const occupiedIds = AxctlService.workspaces.values.filter(ws => CompositorData.workspaceOccupationMap[ws.id]).map(ws => ws.id).sort((a, b) => a - b).slice(0, Config.workspaces.shown);
+            const monName = monitor ? monitor.name : "";
+            // Prefer this monitor's occupied workspaces so each bar stays local
+            const occupiedIds = AxctlService.workspaces.values.filter(ws => {
+                if (!CompositorData.workspaceOccupationMap[ws.id])
+                    return false;
+                if (!monName)
+                    return true;
+                return ws.monitor === monName;
+            }).map(ws => ws.id).sort((a, b) => a - b).slice(0, Config.workspaces.shown);
 
             // Always include active workspace, even if empty
-            const activeId = (monitor && monitor.activeWorkspace ? monitor.activeWorkspace.id : undefined) || 1;
+            const activeId = activeWorkspaceId;
             if (!occupiedIds.includes(activeId)) {
                 occupiedIds.push(activeId);
                 occupiedIds.sort((a, b) => a - b);
@@ -60,7 +82,7 @@ Item {
             workspaceOccupied = Array.from({
                 length: Config.workspaces.shown
             }, (_, i) => {
-                const wsId = workspaceGroup * Config.workspaces.shown + i + 1;
+                const wsId = workspaceGroup * workspaceGroupSize + i + 1;
                 return CompositorData.workspaceOccupationMap[wsId];
             });
         }
@@ -109,7 +131,7 @@ Item {
         if (Config.workspaces.dynamic) {
             return dynamicWorkspaceIds[index] || 1;
         }
-        return workspaceGroup * Config.workspaces.shown + index + 1;
+        return workspaceGroup * workspaceGroupSize + index + 1;
     }
 
     Timer {
@@ -145,6 +167,17 @@ Item {
 
     onWorkspaceGroupChanged: {
         updateTimer.restart();
+    }
+
+    onWorkspaceGroupSizeChanged: {
+        updateTimer.restart();
+    }
+
+    Connections {
+        target: AxctlService.monitors
+        function onValuesChanged() {
+            updateTimer.restart();
+        }
     }
 
     implicitWidth: orientation === "vertical" ? baseSize : workspaceButtonSize * effectiveWorkspaceCount + widgetPadding * 2

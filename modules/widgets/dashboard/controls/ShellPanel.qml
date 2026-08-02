@@ -1162,6 +1162,31 @@ Item {
                             }
                         }
 
+                        NumberInputRow {
+                            label: "Group Size"
+                            value: Config.workspaces.groupSize ?? 0
+                            minValue: 0
+                            maxValue: 20
+                            onValueEdited: newValue => {
+                                if (newValue !== Config.workspaces.groupSize) {
+                                    GlobalStates.markShellChanged();
+                                    Config.workspaces.groupSize = newValue;
+                                }
+                            }
+                        }
+
+                        Text {
+                            text: "Per-monitor workspace stride (hyprsome / decade prefixes: 1–10, 11–20, …). Independent of Shown. Set 0 to match Shown."
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(-3)
+                            color: Colors.overSurfaceVariant
+                            wrapMode: Text.WordWrap
+                            Layout.fillWidth: true
+                            opacity: 0.8
+                            Layout.topMargin: -4
+                            Layout.bottomMargin: 4
+                        }
+
                         ToggleRow {
                             label: "Show App Icons"
                             checked: Config.workspaces.showAppIcons ?? true
