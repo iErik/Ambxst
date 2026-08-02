@@ -153,6 +153,11 @@ Singleton {
         return active ? active.presets : false;
     }
 
+    function getActiveTaskSwitcher() {
+        let active = Visibilities.getForActive();
+        return active ? active.taskswitcher : false;
+    }
+
     function getActiveNotchOpen() {
         let active = Visibilities.getForActive();
         return active ? (active.launcher || active.dashboard || active.overview) : false;
@@ -162,8 +167,16 @@ Singleton {
     readonly property bool notchOpen: getActiveNotchOpen()
     readonly property bool overviewOpen: getActiveOverview()
     readonly property bool presetsOpen: getActivePresets()
+    readonly property bool taskSwitcherOpen: getActiveTaskSwitcher()
     readonly property bool launcherOpen: getActiveLauncher()
     readonly property bool dashboardOpen: getActiveDashboard()
+
+    // Bumped by GlobalShortcuts when Super+Tab is pressed while the switcher is already open.
+    property int taskSwitcherAdvanceRequest: 0
+    // Bumped by GlobalShortcuts / compositor bindr when the hold modifier is released.
+    property int taskSwitcherConfirmRequest: 0
+    // Sticky until consumed: confirm IPC / hold-mod-up while switcher is opening or open.
+    property bool taskSwitcherPendingConfirm: false
 
     // Force-hide bar (ignores hover/pin until toggled off)
     property bool barForceHidden: false

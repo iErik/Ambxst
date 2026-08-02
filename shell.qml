@@ -13,6 +13,7 @@ import qs.modules.widgets.dashboard.wallpapers
 
 import qs.modules.notch
 import qs.modules.widgets.overview
+import qs.modules.widgets.taskswitcher
 import qs.modules.widgets.presets
 import qs.modules.services
 import qs.modules.corners
@@ -140,6 +141,26 @@ ShellRoot {
             required property ShellScreen modelData
             sourceComponent: OverviewPopup {
                 screen: overviewLoader.modelData
+            }
+        }
+    }
+
+    // Task switcher popup (current-workspace window cycle)
+    Variants {
+        model: {
+            const screens = Quickshell.screens;
+            const list = (Config.bar && Config.bar.screenList !== undefined ? Config.bar.screenList : []);
+            if (!list || list.length === 0)
+                return screens;
+            return screens.filter(screen => list.indexOf(screen.name) !== -1);
+        }
+
+        Loader {
+            id: taskSwitcherLoader
+            active: SuspendManager.wakeReady && (Visibilities.getForScreen(modelData.name) ? Visibilities.getForScreen(modelData.name).taskswitcher : false)
+            required property ShellScreen modelData
+            sourceComponent: TaskSwitcherPopup {
+                screen: taskSwitcherLoader.modelData
             }
         }
     }

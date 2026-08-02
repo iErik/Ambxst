@@ -21,6 +21,44 @@ Singleton {
         stdout: SplitParser {}
     }
 
+    property Process releaseBindFixProcess: Process {
+        running: false
+        stdout: SplitParser {}
+    }
+
+    readonly property string releaseBindFixScript: Qt.resolvedUrl("../../scripts/fix_taskswitcher_release_binds.py").toString().replace("file://", "")
+
+    // axctl regenerates hyprland.lua asynchronously after toml writes and drops flags:"r".
+    property Timer releaseBindFixTimer: Timer {
+        interval: 400
+        repeat: false
+        onTriggered: root.ensureTaskSwitcherReleaseBinds()
+    }
+
+    // Work around axctl dropping flags:"r" for Hyprland 0.56 exec binds.
+    function ensureTaskSwitcherReleaseBinds() {
+        if (!Config.keybindsLoader || !Config.keybindsLoader.loaded)
+            return;
+        const system = Config.keybindsLoader.adapter && Config.keybindsLoader.adapter.ambxst
+            ? Config.keybindsLoader.adapter.ambxst.system
+            : null;
+        const taskBind = system ? system.taskswitcher : null;
+        const evalLines = KeybindActions.taskSwitcherHyprReleaseEvalLines(taskBind);
+        if (!evalLines.length)
+            return;
+
+        const shareDir = root.outputPath.replace(/\/[^\/]*$/, "");
+        let cmd = "python3 " + JSON.stringify(root.releaseBindFixScript) + " " + JSON.stringify(shareDir);
+        if (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE")) {
+            for (let i = 0; i < evalLines.length; i++) {
+                const line = evalLines[i].replace(/'/g, "'\\''");
+                cmd += " && hyprctl eval '" + line + "' >/dev/null 2>&1 || true";
+            }
+        }
+        releaseBindFixProcess.command = ["bash", "-c", cmd];
+        releaseBindFixProcess.running = true;
+    }
+
     function getColorValue(colorName) {
         const resolved = Config.resolveColor(colorName);
         return (typeof resolved === 'string') ? Qt.color(resolved) : resolved;
@@ -282,6 +320,14 @@ Singleton {
 
                 if (ambxst.system) {
                     pushCoreBind(ambxst.system.overview);
+                    if (ambxst.system.taskswitcher) {
+                        pushCoreBind(ambxst.system.taskswitcher);
+                        const releaseBinds = KeybindActions.taskSwitcherReleaseBinds(ambxst.system.taskswitcher);
+                        for (let r = 0; r < releaseBinds.length; r++) {
+                            const rb = releaseBinds[r];
+                            pushKeybindEntry(rb.modifiers, rb.key, rb.dispatcher, rb.argument, rb.flags);
+                        }
+                    }
                     pushCoreBind(ambxst.system.powermenu);
                     pushCoreBind(ambxst.system.config);
                     pushCoreBind(ambxst.system.lockscreen);
@@ -387,6 +433,12 @@ Singleton {
         toml += "blur_popups = true\n";
         toml += "no_anim = true\n";
 
+        toml += "\n[[layer_rules]]\n";
+        toml += "namespace = \"taskswitcher\"\n";
+        toml += "blur = true\n";
+        toml += "blur_popups = true\n";
+        toml += "no_anim = true\n";
+
 
 
         // Input section (placeholder for keyboard layout)
@@ -406,6 +458,8 @@ Singleton {
         writeProcess.command = ["bash", "-c", `mkdir -p "$(dirname '${escapedPath}')" && echo '${escapedContent}' > '${escapedPath}'`];
         writeProcess.running = true;
         console.log("CompositorTomlWriter: Written TOML to", root.outputPath);
+        // axctl regenerates hyprland.lua from this toml and drops flags:"r"; re-patch shortly after.
+        releaseBindFixTimer.restart();
     }
 
     function refresh() {

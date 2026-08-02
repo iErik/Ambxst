@@ -1,10 +1,14 @@
+pragma Singleton
+
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import qs.config
 import qs.modules.globals
+import qs.modules.services
 import "../../config/KeybindActions.js" as KeybindActions
 
-QtObject {
+Singleton {
     id: root
 
     property Process compositorProcess: Process {}
@@ -17,6 +21,13 @@ QtObject {
         interval: 100
         repeat: false
         onTriggered: applyKeybindsInternal()
+    }
+
+    // axctl regenerates hyprland.lua asynchronously after keybinds-batch; re-apply release fix shortly after.
+    property Timer releaseBindFixTimer: Timer {
+        interval: 350
+        repeat: false
+        onTriggered: CompositorTomlWriter.ensureTaskSwitcherReleaseBinds()
     }
 
     function applyKeybinds() {
@@ -61,6 +72,8 @@ QtObject {
             },
             system: {
                 overview: cloneKeybind(ambxst.system.overview),
+                taskswitcher: ambxst.system.taskswitcher ? cloneKeybind(ambxst.system.taskswitcher) : null,
+                taskswitcherRelease: KeybindActions.taskSwitcherReleaseBinds(ambxst.system.taskswitcher),
                 powermenu: cloneKeybind(ambxst.system.powermenu),
                 config: cloneKeybind(ambxst.system.config),
                 lockscreen: cloneKeybind(ambxst.system.lockscreen),
@@ -188,6 +201,10 @@ QtObject {
             // Unbind previous ambxst system keybinds
             if (previousAmbxstBinds.system) {
                 pushUnbind(payload, previousAmbxstBinds.system.overview);
+                pushUnbind(payload, previousAmbxstBinds.system.taskswitcher);
+                const prevRelease = previousAmbxstBinds.system.taskswitcherRelease || [];
+                for (let r = 0; r < prevRelease.length; r++)
+                    pushUnbind(payload, prevRelease[r]);
                 pushUnbind(payload, previousAmbxstBinds.system.powermenu);
                 pushUnbind(payload, previousAmbxstBinds.system.config);
                 pushUnbind(payload, previousAmbxstBinds.system.lockscreen);
@@ -237,6 +254,10 @@ QtObject {
 
         // Unbind current system keybinds
         pushUnbind(payload, system.overview);
+        pushUnbind(payload, system.taskswitcher);
+        const currentRelease = KeybindActions.taskSwitcherReleaseBinds(system.taskswitcher);
+        for (let r = 0; r < currentRelease.length; r++)
+            pushUnbind(payload, currentRelease[r]);
         pushUnbind(payload, system.powermenu);
         pushUnbind(payload, system.config);
         pushUnbind(payload, system.lockscreen);
@@ -249,11 +270,16 @@ QtObject {
         pushUnbind(payload, system.quit);
 
         // Bind current system keybinds
-        [system.overview, system.powermenu, system.config, system.lockscreen, system.tools, system.togglebar, system.screenshot, system.screenrecord, system.lens, system.reload, system.quit].forEach(bind => {
+        [system.overview, system.taskswitcher, system.powermenu, system.config, system.lockscreen, system.tools, system.togglebar, system.screenshot, system.screenrecord, system.lens, system.reload, system.quit].forEach(bind => {
             if (!bind) return;
             const resolved = makeBindFromCore(bind);
             if (resolved) payload.binds.push(resolved);
         });
+
+        // Do NOT push task-switcher release companions through keybinds-batch:
+        // axctl's Hyprland 0.56 path drops flags:"r" and registers them as press binds,
+        // which fires confirm on Super press and breaks pending-confirm logic.
+        // Hyprland release binds are applied by CompositorTomlWriter.ensureTaskSwitcherReleaseBinds().
 
         // Process custom keybinds (keys[] and actions[] format).
         const customBinds = Config.keybindsLoader.adapter.custom;
@@ -299,6 +325,8 @@ QtObject {
         console.log("CompositorKeybinds: Enviando keybinds-batch (" + payload.unbinds.length + " unbinds, " + payload.binds.length + " binds)");
         compositorProcess.command = ["axctl", "config", "keybinds-batch", JSON.stringify(payload)];
         compositorProcess.running = true;
+        // Re-assert release binds after axctl applies (and after it regenerates hyprland.lua).
+        releaseBindFixTimer.restart();
     }
 
     property Connections configConnections: Connections {

@@ -132,6 +132,20 @@ Singleton {
         proc.running = true;
     }
 
+    // Focus a window and warp the pointer into it (Alt-Tab / task switcher).
+    // Prefer axctl: on Hyprland it focuses and warps reliably across app types.
+    function focusWindow(address, workspaceId) {
+        if (!address)
+            return;
+        let addr = String(address).replace(/^address:/, "");
+        let proc = Qt.createQmlObject('import Quickshell.Io; Process {}', root);
+        // workspaceId accepted for API symmetry with PreserveCursor; axctl focus
+        // switches as needed and warps to the window center.
+        proc.command = ["axctl", "window", "focus", addr];
+        proc.onExited.connect(() => proc.destroy());
+        proc.running = true;
+    }
+
     function monitorFor(screen) {
         if (!screen) return null;
         let screenName = screen.name || screen;

@@ -2,9 +2,11 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
 import qs.modules.globals
 import qs.modules.services
 import qs.config
+import "../../config/KeybindActions.js" as KeybindActions
 
 import Quickshell.Io
 
@@ -51,6 +53,14 @@ QtObject {
 
             // System
             case "overview": toggleSimpleModule("overview"); break;
+            case "task-switcher":
+            case "taskswitcher":
+                openOrAdvanceTaskSwitcher();
+                break;
+            case "task-switcher-confirm":
+            case "taskswitcher-confirm":
+                confirmTaskSwitcher();
+                break;
             case "powermenu": toggleSimpleModule("powermenu"); break;
             case "tools": toggleSimpleModule("tools"); break;
             case "toggle-bar": GlobalStates.toggleBarForceHidden(); break;
@@ -114,7 +124,273 @@ QtObject {
         }
     }
 
+    // Suppress launcher toggle briefly after Super-release confirms the task switcher,
+    // so a shared Super_L bindr (default launcher) does not reopen the launcher.
+    property double taskSwitcherConfirmedAt: 0
+    property double taskSwitcherOpenRequestedAt: 0
+    property bool taskSwitcherForceClosing: false
+
+    function taskSwitcherHoldModifier() {
+        const loader = Config.keybindsLoader;
+        const bind = loader && loader.adapter && loader.adapter.ambxst && loader.adapter.ambxst.system
+            ? loader.adapter.ambxst.system.taskswitcher
+            : null;
+        return KeybindActions.taskSwitcherPrimaryModifier(bind && bind.modifiers ? bind.modifiers : ["SUPER"]);
+    }
+
+    function hasFreshPendingTaskSwitcherConfirm() {
+        if (!GlobalStates.taskSwitcherPendingConfirm || taskSwitcherConfirmedAt <= 0)
+            return false;
+        return (Date.now() - taskSwitcherConfirmedAt) < 500;
+    }
+
+    // Alt-tab style: first press opens, further presses advance; modifier release confirms.
+    function openOrAdvanceTaskSwitcher() {
+        // Confirm IPC already arrived (Super released before/during open): never show UI.
+        if (hasFreshPendingTaskSwitcherConfirm()) {
+            taskSwitcherConfirmedAt = Date.now();
+            GlobalStates.taskSwitcherPendingConfirm = false;
+            pendingConfirmExpire.stop();
+            if (Visibilities.currentActiveModule === "taskswitcher") {
+                confirmTaskSwitcherNow();
+            } else {
+                focusTaskSwitcherTargetWindow();
+            }
+            return;
+        }
+
+        if (Visibilities.currentActiveModule === "taskswitcher") {
+            GlobalStates.taskSwitcherAdvanceRequest++;
+            armHoldInvariantChecks();
+            return;
+        }
+
+        taskSwitcherOpenRequestedAt = Date.now();
+        Visibilities.setActiveModule("taskswitcher");
+        startHoldInvariantPolling();
+        armHoldInvariantChecks();
+    }
+
+    // Drop a raced confirm into the Popup path, and force-close if Popup never consumed it.
+    function flushPendingTaskSwitcherConfirm() {
+        if (!hasFreshPendingTaskSwitcherConfirm())
+            return;
+        if (Visibilities.currentActiveModule !== "taskswitcher")
+            return;
+        taskSwitcherConfirmedAt = Date.now();
+        // Prefer Popup selection if it is already loaded.
+        GlobalStates.taskSwitcherConfirmRequest++;
+        Qt.callLater(() => {
+            if (GlobalStates.taskSwitcherPendingConfirm && Visibilities.currentActiveModule === "taskswitcher")
+                confirmTaskSwitcherNow();
+        });
+    }
+
+    function confirmTaskSwitcher() {
+        taskSwitcherConfirmedAt = Date.now();
+        // Sticky until Popup or GlobalShortcuts failsafe consumes it.
+        GlobalStates.taskSwitcherPendingConfirm = true;
+        pendingConfirmExpire.restart();
+
+        if (Visibilities.currentActiveModule !== "taskswitcher") {
+            // Open IPC may still be in flight — arm flushes; openOrAdvance also short-circuits.
+            if (taskSwitcherOpenRequestedAt > 0 && (Date.now() - taskSwitcherOpenRequestedAt) < 500)
+                armHoldInvariantChecks();
+            return;
+        }
+
+        // Module flagged active, but Loader/Popup may not exist yet (fast-tap race).
+        GlobalStates.taskSwitcherConfirmRequest++;
+        armHoldInvariantChecks();
+        // Failsafe: if Popup does not clear pending, close + focus without it.
+        Qt.callLater(() => {
+            if (GlobalStates.taskSwitcherPendingConfirm && Visibilities.currentActiveModule === "taskswitcher")
+                confirmTaskSwitcherNow();
+        });
+    }
+
+    // Close switcher and focus the default next window without needing the Popup.
+    // Used when confirm races ahead of Loader creation.
+    function confirmTaskSwitcherNow() {
+        if (taskSwitcherForceClosing)
+            return;
+        taskSwitcherForceClosing = true;
+        taskSwitcherConfirmedAt = Date.now();
+        GlobalStates.taskSwitcherPendingConfirm = false;
+        pendingConfirmExpire.stop();
+        stopHoldInvariantPolling();
+
+        const wasOpen = Visibilities.currentActiveModule === "taskswitcher";
+        if (wasOpen)
+            Visibilities.setActiveModule("");
+        focusTaskSwitcherTargetWindow();
+
+        Qt.callLater(() => {
+            taskSwitcherForceClosing = false;
+        });
+    }
+
+    function focusTaskSwitcherTargetWindow() {
+        const mon = AxctlService.focusedMonitor;
+        if (!mon)
+            return;
+        const wsId = mon.activeWorkspace?.id;
+        if (wsId === null || wsId === undefined)
+            return;
+        const monId = mon.id ?? -1;
+        const clients = AxctlService.clients.values || [];
+        const list = [];
+        for (let i = 0; i < clients.length; i++) {
+            const win = clients[i];
+            if (!win || !win.workspace)
+                continue;
+            if (Number(win.workspace.id) !== Number(wsId))
+                continue;
+            if (monId >= 0 && win.monitor !== undefined && win.monitor !== null && Number(win.monitor) !== Number(monId))
+                continue;
+            list.push(win);
+        }
+        list.sort((a, b) => {
+            const af = a.focusHistoryID ?? Number.MAX_SAFE_INTEGER;
+            const bf = b.focusHistoryID ?? Number.MAX_SAFE_INTEGER;
+            if (af !== bf)
+                return af - bf;
+            return String(a.title || "").localeCompare(String(b.title || ""));
+        });
+        if (list.length === 0)
+            return;
+        const target = list.length > 1 ? list[1] : list[0];
+        AxctlService.focusWindow(target.address, target.workspace ? target.workspace.id : undefined);
+    }
+
+    function armHoldInvariantChecks() {
+        Qt.callLater(() => enforceTaskSwitcherHoldInvariant());
+        holdInvariantTimer16.restart();
+        holdInvariantTimer50.restart();
+        holdInvariantTimer100.restart();
+    }
+
+    function enforceTaskSwitcherHoldInvariant() {
+        if (Visibilities.currentActiveModule !== "taskswitcher")
+            return;
+        if (GlobalStates.taskSwitcherPendingConfirm) {
+            // Popup may still consume via confirmRequest; only force if still pending next tick.
+            Qt.callLater(() => {
+                if (GlobalStates.taskSwitcherPendingConfirm && Visibilities.currentActiveModule === "taskswitcher")
+                    confirmTaskSwitcherNow();
+            });
+            return;
+        }
+        probeHoldModifierDown();
+    }
+
+    function startHoldInvariantPolling() {
+        if (!Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE"))
+            return;
+        holdInvariantPollTimer.restart();
+    }
+
+    function stopHoldInvariantPolling() {
+        holdInvariantPollTimer.stop();
+        if (holdModifierProbe.running)
+            holdModifierProbe.running = false;
+    }
+
+    function probeHoldModifierDown() {
+        if (Visibilities.currentActiveModule !== "taskswitcher")
+            return;
+        if (!Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE"))
+            return;
+        if (holdModifierProbe.running)
+            return;
+        const keys = KeybindActions.taskSwitcherReleaseKeys(taskSwitcherHoldModifier());
+        if (!keys.length)
+            return;
+        const expr = keys.map(k => 'hl.is_key_down("' + k + '")').join(" or ");
+        holdModifierProbe.command = ["hyprctl", "repl", "return (" + expr + ') and "down" or "up"'];
+        holdModifierProbe.running = true;
+    }
+
+    // Emitted after each hyprctl is_key_down probe while the switcher is active.
+    signal holdModifierProbeResult(bool held)
+
+    property Process holdModifierProbe: Process {
+        running: false
+        stdout: SplitParser {
+            onRead: data => {
+                const s = String(data).trim().toLowerCase();
+                // Require an explicit token; ignore empty/error output so we never false-close.
+                if (s.indexOf("down") >= 0) {
+                    root.holdModifierProbeResult(true);
+                    return;
+                }
+                if (s.indexOf("up") >= 0) {
+                    if (Visibilities.currentActiveModule === "taskswitcher") {
+                        // Prefer Popup confirm (keeps advanced selection); failsafe closes if Loader lags.
+                        root.confirmTaskSwitcher();
+                    }
+                    root.holdModifierProbeResult(false);
+                }
+            }
+        }
+    }
+
+    property Timer holdInvariantPollTimer: Timer {
+        interval: 32
+        repeat: true
+        onTriggered: {
+            if (Visibilities.currentActiveModule !== "taskswitcher") {
+                stop();
+                return;
+            }
+            root.enforceTaskSwitcherHoldInvariant();
+        }
+    }
+
+    property Timer holdInvariantTimer16: Timer {
+        interval: 16
+        repeat: false
+        onTriggered: root.enforceTaskSwitcherHoldInvariant()
+    }
+
+    property Timer holdInvariantTimer50: Timer {
+        interval: 50
+        repeat: false
+        onTriggered: root.enforceTaskSwitcherHoldInvariant()
+    }
+
+    property Timer holdInvariantTimer100: Timer {
+        interval: 100
+        repeat: false
+        onTriggered: root.enforceTaskSwitcherHoldInvariant()
+    }
+
+    property Timer pendingConfirmExpire: Timer {
+        interval: 500
+        repeat: false
+        onTriggered: {
+            // Only drop stale confirms when the switcher never became active.
+            if (Visibilities.currentActiveModule !== "taskswitcher")
+                GlobalStates.taskSwitcherPendingConfirm = false;
+        }
+    }
+
+    property Connections taskSwitcherModuleConnections: Connections {
+        target: Visibilities
+        function onCurrentActiveModuleChanged() {
+            if (Visibilities.currentActiveModule === "taskswitcher") {
+                root.startHoldInvariantPolling();
+                root.armHoldInvariantChecks();
+                root.flushPendingTaskSwitcherConfirm();
+            } else {
+                root.stopHoldInvariantPolling();
+            }
+        }
+    }
+
     function toggleLauncher() {
+        if (taskSwitcherConfirmedAt > 0 && (Date.now() - taskSwitcherConfirmedAt) < 400)
+            return;
         const isActive = Visibilities.currentActiveModule === "launcher";
         if (isActive && GlobalStates.widgetsTabCurrentIndex === 0 && GlobalStates.launcherSearchText === "") {
             Visibilities.setActiveModule("");

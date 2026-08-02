@@ -459,9 +459,10 @@ Item {
 
         // System binds
         if (ambxst.system) {
-            const systemKeys = ["overview", "powermenu", "config", "lockscreen", "tools", "togglebar", "screenshot", "screenrecord", "lens", "reload", "quit"];
+            const systemKeys = ["overview", "taskswitcher", "powermenu", "config", "lockscreen", "tools", "togglebar", "screenshot", "screenrecord", "lens", "reload", "quit"];
             const systemDisplayNames = {
-                "togglebar": "Toggle Bar"
+                "togglebar": "Toggle Bar",
+                "taskswitcher": "Task Switcher (hold)"
             };
             for (const key of systemKeys) {
                 if (ambxst.system[key]) {

@@ -39,6 +39,9 @@ var ACTION_CATALOG = [
     { id: "ambxst.wallpapers", label: "Open Wallpapers", category: "Ambxst", dispatcher: "exec", argument: "ambxst run wallpapers" },
     { id: "ambxst.config", label: "Open Settings", category: "Ambxst", dispatcher: "exec", argument: "ambxst run config" },
     { id: "ambxst.overview", label: "Open Overview", category: "Ambxst", dispatcher: "exec", argument: "ambxst run overview" },
+    { id: "ambxst.task-switcher", label: "Task Switcher (hold to cycle)", category: "Ambxst", dispatcher: "exec", argument: "ambxst run task-switcher" },
+    // Hidden companion: auto-injected as bindr on the Task Switcher modifier key (Super/Alt/Ctrl).
+    { id: "ambxst.task-switcher-confirm", label: "Confirm Task Switcher", category: "Ambxst", dispatcher: "exec", argument: "ambxst run task-switcher-confirm", flags: "r", hidden: true },
     { id: "ambxst.powermenu", label: "Open Power Menu", category: "Ambxst", dispatcher: "exec", argument: "ambxst run powermenu" },
     { id: "ambxst.tools", label: "Open Tools", category: "Ambxst", dispatcher: "exec", argument: "ambxst run tools" },
     { id: "ambxst.toggle-bar", label: "Toggle Bar Visibility", category: "Ambxst", dispatcher: "exec", argument: "ambxst run toggle-bar" },
@@ -357,4 +360,65 @@ function normalizeCustomBinds(binds) {
 
 function migrateLegacyCustomBinds(binds) {
     return normalizeCustomBinds(binds).binds;
+}
+
+// Primary hold modifier for Alt-Tab-style release confirm (prefer SUPER, then ALT, then CTRL).
+function taskSwitcherPrimaryModifier(modifiers) {
+    const mods = (modifiers || []).map(m => String(m).toUpperCase());
+    if (mods.indexOf("SUPER") >= 0)
+        return "SUPER";
+    if (mods.indexOf("ALT") >= 0)
+        return "ALT";
+    if (mods.indexOf("CTRL") >= 0)
+        return "CTRL";
+    return mods.length > 0 ? mods[0] : "";
+}
+
+function taskSwitcherReleaseKeys(modifier) {
+    switch (String(modifier || "").toUpperCase()) {
+    case "SUPER":
+        return ["Super_L", "Super_R"];
+    case "ALT":
+        return ["Alt_L", "Alt_R"];
+    case "CTRL":
+        return ["Control_L", "Control_R"];
+    default:
+        return [];
+    }
+}
+
+// Companion bindr entries: confirm+close when the Task Switcher hold modifier is released.
+function taskSwitcherReleaseBinds(taskSwitcherBind) {
+    if (!taskSwitcherBind || !taskSwitcherBind.key)
+        return [];
+    const primary = taskSwitcherPrimaryModifier(taskSwitcherBind.modifiers);
+    if (!primary)
+        return [];
+    const keys = taskSwitcherReleaseKeys(primary);
+    const binds = [];
+    for (var i = 0; i < keys.length; i++) {
+        binds.push({
+            modifiers: [primary],
+            key: keys[i],
+            dispatcher: "exec",
+            argument: "ambxst run task-switcher-confirm",
+            flags: "r",
+            enabled: true
+        });
+    }
+    return binds;
+}
+
+// Build Hyprland lua bind expressions with { release = true } for task-switcher-confirm.
+// Needed because axctl's Hyprland 0.56 generator drops flags:"r" on exec binds.
+function taskSwitcherHyprReleaseEvalLines(taskSwitcherBind) {
+    const binds = taskSwitcherReleaseBinds(taskSwitcherBind);
+    const lines = [];
+    for (var i = 0; i < binds.length; i++) {
+        const b = binds[i];
+        const mod = String(b.modifiers[0] || "SUPER").toUpperCase();
+        const key = String(b.key || "");
+        lines.push('hl.bind("' + mod + " + " + key + '", hl.dsp.exec_cmd("ambxst run task-switcher-confirm"), { release = true })');
+    }
+    return lines;
 }

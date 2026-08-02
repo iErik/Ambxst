@@ -1366,7 +1366,7 @@ Singleton {
             }
 
             // Check system binds
-            const systemKeys = ["overview", "powermenu", "config", "lockscreen", "tools", "togglebar", "screenshot", "screenrecord", "lens", "reload", "quit"];
+            const systemKeys = ["overview", "taskswitcher", "powermenu", "config", "lockscreen", "tools", "togglebar", "screenshot", "screenrecord", "lens", "reload", "quit"];
             for (const key of systemKeys) {
                 if (!current.ambxst.system[key] && adapter.ambxst.system && adapter.ambxst.system[key]) {
                     console.log("Adding missing system bind:", key);
@@ -1377,6 +1377,25 @@ Singleton {
                     delete current.ambxst.system[key].dispatcher;
                     delete current.ambxst.system[key].argument;
                     delete current.ambxst.system[key].flags;
+                    needsUpdate = true;
+                }
+            }
+
+            // Task Switcher defaults to Super+Tab. If Overview still owns that combo, move it to Super+Shift+Tab.
+            const overviewBind = current.ambxst.system.overview;
+            const taskSwitcherBind = current.ambxst.system.taskswitcher;
+            if (overviewBind && taskSwitcherBind) {
+                function bindCombo(bind) {
+                    const mods = (bind.modifiers || []).map(m => String(m).toUpperCase()).sort();
+                    return mods.join("+") + "+" + String(bind.key || "").toUpperCase();
+                }
+                if (bindCombo(overviewBind) === bindCombo(taskSwitcherBind) && String(overviewBind.key || "").toUpperCase() === "TAB") {
+                    console.log("Resolving Super+Tab conflict: Overview -> Super+Shift+Tab, Task Switcher keeps Super+Tab");
+                    current.ambxst.system.overview = {
+                        "modifiers": ["SUPER", "SHIFT"],
+                        "key": "TAB",
+                        "action": createAction(overviewBind)
+                    };
                     needsUpdate = true;
                 }
             }
@@ -1504,9 +1523,14 @@ Singleton {
                     property var action: ({ "id": "system.lock", "args": {} })
                 }
                 property JsonObject overview: JsonObject {
-                    property list<string> modifiers: ["SUPER"]
+                    property list<string> modifiers: ["SUPER", "SHIFT"]
                     property string key: "TAB"
                     property var action: ({ "id": "ambxst.overview", "args": {} })
+                }
+                property JsonObject taskswitcher: JsonObject {
+                    property list<string> modifiers: ["SUPER"]
+                    property string key: "TAB"
+                    property var action: ({ "id": "ambxst.task-switcher", "args": {} })
                 }
                 property JsonObject powermenu: JsonObject {
                     property list<string> modifiers: ["SUPER"]
@@ -1565,7 +1589,8 @@ Singleton {
                 "system": {
                     "config": { "modifiers": ["SUPER", "SHIFT"], "key": "C", "action": { "id": "ambxst.config", "args": {} } },
                     "lockscreen": { "modifiers": ["SUPER"], "key": "L", "action": { "id": "system.lock", "args": {} } },
-                    "overview": { "modifiers": ["SUPER"], "key": "TAB", "action": { "id": "ambxst.overview", "args": {} } },
+                    "overview": { "modifiers": ["SUPER", "SHIFT"], "key": "TAB", "action": { "id": "ambxst.overview", "args": {} } },
+                    "taskswitcher": { "modifiers": ["SUPER"], "key": "TAB", "action": { "id": "ambxst.task-switcher", "args": {} } },
                     "powermenu": { "modifiers": ["SUPER"], "key": "ESCAPE", "action": { "id": "ambxst.powermenu", "args": {} } },
                     "tools": { "modifiers": ["SUPER"], "key": "S", "action": { "id": "ambxst.tools", "args": {} } },
                     "togglebar": { "modifiers": [], "key": "", "action": { "id": "ambxst.toggle-bar", "args": {} } },
