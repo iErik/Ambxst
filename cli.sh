@@ -53,6 +53,7 @@ Commands:
     brightness -s [monitor]           Save current brightness
     brightness -r [monitor]           Restore saved brightness
     brightness -l                     List monitors and their brightness
+    volume up|down|mute               Adjust output volume via Ambxst audio IPC
     help                              Show this help message
     version, -v, --version            Show Ambxst version
     goodbye                           Uninstall Ambxst :(
@@ -67,6 +68,9 @@ Examples:
     ambxst brightness 10 -s           Save current, then set all to 10%
     ambxst brightness -s HDMI-A-1     Save current brightness of HDMI-A-1
     ambxst brightness -r              Restore saved brightness
+    ambxst volume up                  Increase output volume
+    ambxst volume down                Decrease output volume
+    ambxst volume mute                Toggle output mute
 
 EOF
 }
@@ -367,6 +371,40 @@ suspend)
 		# Fallback to D-Bus
 		dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.Suspend boolean:true
 	fi
+	;;
+volume)
+	PID=$(find_ambxst_pid_cached)
+	if [ -z "$PID" ]; then
+		echo "Error: Ambxst is not running"
+		exit 1
+	fi
+
+	ACTION="${2:-}"
+	case "$ACTION" in
+	up | + | raise)
+		qs ipc --pid "$PID" call audio increment 2>/dev/null || {
+			echo "Error: Could not raise volume"
+			exit 1
+		}
+		;;
+	down | - | lower)
+		qs ipc --pid "$PID" call audio decrement 2>/dev/null || {
+			echo "Error: Could not lower volume"
+			exit 1
+		}
+		;;
+	mute | toggle-mute | toggle)
+		qs ipc --pid "$PID" call audio toggleMute 2>/dev/null || {
+			echo "Error: Could not toggle mute"
+			exit 1
+		}
+		;;
+	*)
+		echo "Error: Invalid volume action. Use: up, down, or mute"
+		echo "Run 'ambxst help' for usage information"
+		exit 1
+		;;
+	esac
 	;;
 brightness)
 	PID=$(find_ambxst_pid_cached)

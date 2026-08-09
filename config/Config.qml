@@ -2467,7 +2467,7 @@ Singleton {
                     "actions": [
                         {
                             "dispatcher": "exec",
-                            "argument": "qs ipc call audio increment",
+                            "argument": "ambxst volume up",
                             "flags": "le",
                             "layouts": []
                         }
@@ -2485,7 +2485,7 @@ Singleton {
                     "actions": [
                         {
                             "dispatcher": "exec",
-                            "argument": "qs ipc call audio decrement",
+                            "argument": "ambxst volume down",
                             "flags": "le",
                             "layouts": []
                         }
@@ -2503,7 +2503,7 @@ Singleton {
                     "actions": [
                         {
                             "dispatcher": "exec",
-                            "argument": "qs ipc call audio toggleMute",
+                            "argument": "ambxst volume mute",
                             "flags": "le",
                             "layouts": []
                         }
