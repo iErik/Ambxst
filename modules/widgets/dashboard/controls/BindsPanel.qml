@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import Quickshell.Io
 import qs.modules.theme
 import qs.modules.components
+import qs.modules.services
 import qs.config
 import "../../../../config/KeybindActions.js" as KeybindActions
 
@@ -74,7 +75,7 @@ Item {
     property var editActionArgs: editActions.length > currentActionPage ? (editActions[currentActionPage].args || {}) : ({})
     property var editLayouts: editActions.length > currentActionPage ? (editActions[currentActionPage].layouts || []) : []
     readonly property var actionOptions: {
-        const options = KeybindActions.getActionOptions();
+        const options = KeybindActions.getActionOptions(AxctlService.compositorId);
         if (editActionId === "legacy.dispatcher") {
             return options.concat([{ id: "legacy.dispatcher", label: "Legacy Dispatcher", category: "Advanced" }]);
         }
@@ -83,7 +84,7 @@ Item {
     readonly property var editActionFields: KeybindActions.getActionFields(editActionId)
 
     readonly property var availableModifiers: ["SUPER", "SHIFT", "CTRL", "ALT"]
-    readonly property var availableLayouts: ["dwindle", "master", "scrolling"]
+    readonly property var availableLayouts: AxctlService.availableLayouts
 
     // Helper to update current key in editKeys array
     function updateCurrentKey(modifiers, key) {
@@ -1698,6 +1699,7 @@ Item {
                             // LAYOUT SELECTOR (for AxctlService)
                             // =====================
                             Text {
+                                visible: AxctlService.supportsLayoutSwitch
                                 text: "Layouts (AxctlService)"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -1707,6 +1709,7 @@ Item {
                             }
 
                             Text {
+                                visible: AxctlService.supportsLayoutSwitch
                                 text: "Leave all unselected to work in all layouts"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-2)
@@ -1715,6 +1718,7 @@ Item {
                             }
 
                             Flow {
+                                visible: AxctlService.supportsLayoutSwitch
                                 Layout.fillWidth: true
                                 spacing: 8
 

@@ -58,11 +58,11 @@ var ACTION_CATALOG = [
     { id: "window.move", label: "Move Window", category: "Window", dispatcher: "movewindow", args: [{ key: "direction", label: "Direction", placeholder: "up/down/left/right", defaultValue: "left" }], argumentBuilder: function (args) {
         return directionToLetter(args.direction);
     } },
-    { id: "window.drag", label: "Drag Window", category: "Window", dispatcher: "movewindow", argument: "", flags: "m" },
-    { id: "window.resize-drag", label: "Resize Window (Drag)", category: "Window", dispatcher: "resizewindow", argument: "", flags: "m" },
+    { id: "window.drag", label: "Drag Window", category: "Window", dispatcher: "movewindow", argument: "", flags: "m", compositors: ["hyprland"] },
+    { id: "window.resize-drag", label: "Resize Window (Drag)", category: "Window", dispatcher: "resizewindow", argument: "", flags: "m", compositors: ["hyprland"] },
     { id: "window.resize", label: "Resize Window", category: "Window", dispatcher: "resizeactive", args: [{ key: "delta", label: "Delta", placeholder: "50 0", defaultValue: "50 0" }], argumentBuilder: function (args) {
         return String(args.delta || "").trim();
-    } },
+    }, compositors: ["hyprland"] },
 
     { id: "workspace.switch", label: "Switch Workspace", category: "Workspace", dispatcher: "workspace", args: [{ key: "index", label: "Workspace", placeholder: "1", defaultValue: "1" }], argumentBuilder: function (args) {
         return String(args.index || "").trim();
@@ -80,9 +80,9 @@ var ACTION_CATALOG = [
     { id: "workspace.move-window-silent", label: "Move Window to Workspace (Silent)", category: "Workspace", dispatcher: "movetoworkspacesilent", args: [{ key: "index", label: "Workspace", placeholder: "1", defaultValue: "1" }], argumentBuilder: function (args) {
         return String(args.index || "").trim();
     } },
-    { id: "workspace.toggle-special", label: "Toggle Special Workspace", category: "Workspace", dispatcher: "togglespecialworkspace", argument: "" },
-    { id: "workspace.move-window-special", label: "Move Window to Special Workspace", category: "Workspace", dispatcher: "movetoworkspace", argument: "special" },
-    { id: "workspace.move-window-special-silent", label: "Move Window to Special Workspace (Silent)", category: "Workspace", dispatcher: "movetoworkspacesilent", argument: "special" },
+    { id: "workspace.toggle-special", label: "Toggle Special Workspace", category: "Workspace", dispatcher: "togglespecialworkspace", argument: "", compositors: ["hyprland"] },
+    { id: "workspace.move-window-special", label: "Move Window to Special Workspace", category: "Workspace", dispatcher: "movetoworkspace", argument: "special", compositors: ["hyprland"] },
+    { id: "workspace.move-window-special-silent", label: "Move Window to Special Workspace (Silent)", category: "Workspace", dispatcher: "movetoworkspacesilent", argument: "special", compositors: ["hyprland"] },
 
     { id: "scrolling.focus", label: "Focus", category: "Window", dispatcher: "movefocus", args: [{ key: "direction", label: "Direction", placeholder: "up/down/left/right", defaultValue: "up" }], argumentBuilder: function (args) {
         return directionToLetter(args.direction);
@@ -93,15 +93,15 @@ var ACTION_CATALOG = [
     { id: "scrolling.resize-column", label: "Resize Column", category: "Scrolling Layout", dispatcher: "layoutmsg", args: [{ key: "delta", label: "Delta", placeholder: "+0.1 / -0.1", defaultValue: "+0.1" }], argumentBuilder: function (args) {
         return "colresize " + String(args.delta || "").trim();
     } },
-    { id: "scrolling.promote", label: "Promote Column", category: "Scrolling Layout", dispatcher: "layoutmsg", argument: "promote" },
-    { id: "scrolling.toggle-fit", label: "Toggle Fit", category: "Scrolling Layout", dispatcher: "layoutmsg", argument: "togglefit" },
-    { id: "scrolling.toggle-full-column", label: "Toggle Full Column", category: "Scrolling Layout", dispatcher: "layoutmsg", argument: "colresize +conf" },
+    { id: "scrolling.promote", label: "Promote Column", category: "Scrolling Layout", dispatcher: "layoutmsg", argument: "promote", compositors: ["hyprland"] },
+    { id: "scrolling.toggle-fit", label: "Toggle Fit", category: "Scrolling Layout", dispatcher: "layoutmsg", argument: "togglefit", compositors: ["hyprland"] },
+    { id: "scrolling.toggle-full-column", label: "Toggle Full Column", category: "Scrolling Layout", dispatcher: "layoutmsg", argument: "colresize +conf", compositors: ["hyprland"] },
     { id: "scrolling.swap-column", label: "Swap Column", category: "Scrolling Layout", dispatcher: "layoutmsg", args: [{ key: "direction", label: "Direction", placeholder: "left/right", defaultValue: "left" }], argumentBuilder: function (args) {
         return "swapcol " + directionToLetter(args.direction);
-    } },
+    }, compositors: ["hyprland"] },
     { id: "scrolling.move-column-workspace", label: "Move Column to Workspace", category: "Scrolling Layout", dispatcher: "layoutmsg", args: [{ key: "index", label: "Workspace", placeholder: "1", defaultValue: "1" }], argumentBuilder: function (args) {
         return "movecoltoworkspace " + String(args.index || "").trim();
-    } },
+    }, compositors: ["hyprland"] },
 
     { id: "media.play-pause", label: "Play/Pause", category: "Media", dispatcher: "exec", argument: "playerctl play-pause" },
     { id: "media.play-pause-locked", label: "Play/Pause (Locked)", category: "Media", dispatcher: "exec", argument: "playerctl play-pause", flags: "l" },
@@ -142,8 +142,19 @@ function getActionById(id) {
     return ACTION_INDEX[id] || null;
 }
 
-function getActionOptions() {
-    return ACTION_CATALOG.filter(a => !a.hidden).map(a => ({
+function actionAvailableOnCompositor(entry, compositorId) {
+    if (!entry)
+        return false;
+    if (!entry.compositors || !entry.compositors.length)
+        return true;
+    const id = String(compositorId || "");
+    if (!id || id === "unknown")
+        return true;
+    return entry.compositors.indexOf(id) !== -1;
+}
+
+function getActionOptions(compositorId) {
+    return ACTION_CATALOG.filter(a => !a.hidden && actionAvailableOnCompositor(a, compositorId)).map(a => ({
         id: a.id,
         label: a.label,
         category: a.category

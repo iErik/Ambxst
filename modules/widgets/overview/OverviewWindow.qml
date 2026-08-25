@@ -305,7 +305,8 @@ Item {
                         
                         // Move to workspace and set position
                         AxctlService.dispatch(`movetoworkspacesilent ${targetWorkspace}, address:${windowData?.address}`);
-                        AxctlService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${windowData?.address}`);
+                        if (!AxctlService.isNiri)
+                            AxctlService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${windowData?.address}`);
                         
                         // Force immediate window data update
                         CompositorData.updateWindowList();
@@ -331,7 +332,8 @@ Item {
                     const draggedX = root.x;
                     const draggedY = root.y;
                     
-                    AxctlService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${windowData?.address}`);
+                    if (!AxctlService.isNiri)
+                        AxctlService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${windowData?.address}`);
                     
                     // Force immediate window data update
                     CompositorData.updateWindowList();

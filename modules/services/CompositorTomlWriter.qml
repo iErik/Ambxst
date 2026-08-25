@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import qs.config
 import qs.modules.globals
+import qs.modules.services
 import "../../config/KeybindActions.js" as KeybindActions
 
 /**
@@ -37,6 +38,8 @@ Singleton {
 
     // Work around axctl dropping flags:"r" for Hyprland 0.56 exec binds.
     function ensureTaskSwitcherReleaseBinds() {
+        if (Quickshell.env("NIRI_SOCKET") || !Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE"))
+            return;
         if (!Config.keybindsLoader || !Config.keybindsLoader.loaded)
             return;
         const system = Config.keybindsLoader.adapter && Config.keybindsLoader.adapter.ambxst
@@ -192,6 +195,14 @@ Singleton {
         function pushKeybindEntry(modifiers, key, dispatcher, argument, flags) {
             if (!key || String(key).trim().length === 0)
                 return;
+            if (AxctlService.isNiri) {
+                const d = String(dispatcher || "").toLowerCase();
+                const arg = String(argument || "");
+                if (d === "togglespecialworkspace" || d === "movewindowpixel" || d === "resizeactive" || d === "resizewindow")
+                    return;
+                if ((d === "movetoworkspace" || d === "movetoworkspacesilent") && (arg === "special" || arg.indexOf("special") === 0))
+                    return;
+            }
             const normalized = normalizeKeybindDispatcher(dispatcher || "", argument || "");
             toml += "\n[[keybinds]]\n";
             toml += `modifiers = ${tomlStringArray(modifiers || [])}\n`;
@@ -227,7 +238,12 @@ Singleton {
         function actionCompatibleWithLayout(action) {
             if (!action)
                 return false;
+            const entry = action.id ? KeybindActions.getActionById(action.id) : null;
+            if (entry && !KeybindActions.actionAvailableOnCompositor(entry, AxctlService.compositorId))
+                return false;
             if (!action.layouts || action.layouts.length === 0)
+                return true;
+            if (AxctlService.isNiri)
                 return true;
             return action.layouts.indexOf(GlobalStates.compositorLayout) !== -1;
         }
@@ -280,10 +296,10 @@ Singleton {
 
         // Animations
         toml += "[appearance.animations]\n";
-        toml += "enabled = true\n";
+        toml += `enabled = ${GameModeService.toggled ? "false" : "true"}\n`;
 
-        // Layout (if set)
-        if (GlobalStates.compositorLayout && GlobalStates.compositorLayout.length > 0) {
+        // Layout (Hyprland only)
+        if (!AxctlService.isNiri && GlobalStates.compositorLayout && GlobalStates.compositorLayout.length > 0) {
             toml += "\n[general]\n";
             toml += `layout = "${GlobalStates.compositorLayout}"\n`;
         }
@@ -562,5 +578,10 @@ Singleton {
     property Connections globalStatesConnections: Connections {
         target: GlobalStates
         function onCompositorLayoutChanged() { writeTomlFile(); }
+    }
+
+    property Connections gameModeConnections: Connections {
+        target: GameModeService
+        function onToggledChanged() { writeTomlFile(); }
     }
 }

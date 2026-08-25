@@ -216,8 +216,8 @@ update_ini_key "${gtk4Ini}" "gtk-cursor-theme-name" "$theme_id"
 update_qtct_cursor "${qt5Conf}" "$theme_id"
 update_qtct_cursor "${qt6Conf}" "$theme_id"
 
-# Apply immediately on Hyprland (and similar) when available
-if command -v hyprctl >/dev/null 2>&1; then
+# Apply immediately on Hyprland when this session is Hyprland
+if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && command -v hyprctl >/dev/null 2>&1; then
     hyprctl setcursor "$theme_id" "$cursor_size" >/dev/null 2>&1 || true
 fi
 `

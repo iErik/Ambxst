@@ -269,6 +269,8 @@ Rectangle {
 
         const query = searchQuery.toLowerCase();
         return searchIndex.items.filter(item => {
+            if (item.hyprlandOnly && AxctlService.isNiri)
+                return false;
             return fuzzyMatch(query, item.label) || (item.keywords && item.keywords.includes(query));
         }).map(item => {
             // Find section metadata

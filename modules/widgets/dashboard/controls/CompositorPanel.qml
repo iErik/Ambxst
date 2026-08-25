@@ -8,6 +8,7 @@ import Quickshell
 import qs.modules.theme
 import qs.modules.components
 import qs.modules.globals
+import qs.modules.services
 import qs.config
 
 Item {
@@ -608,13 +609,16 @@ Item {
                     spacing: 8
 
                     CompositorTabButton {
-                        label: "AxctlService"
-                        image: "../../../../assets/compositors/hyprland.svg"
+                        label: AxctlService.isNiri ? "Niri" : "AxctlService"
+                        image: AxctlService.isNiri
+                            ? "../../../../assets/compositors/niri.svg"
+                            : "../../../../assets/compositors/hyprland.svg"
                         isSelected: stackLayout.currentIndex === 0
                         onClicked: stackLayout.currentIndex = 0
                     }
 
                     CompositorTabButton {
+                        visible: !AxctlService.isNiri && !AxctlService.isHyprland
                         label: "Coming Soon"
                         icon: Icons.clock
                         isSelected: stackLayout.currentIndex === 1
@@ -662,6 +666,7 @@ Item {
                                 sectionId: "shadows"
                             }
                             SectionButton {
+                                visible: AxctlService.supportsBlur
                                 text: "Blur"
                                 sectionId: "blur"
                             }
@@ -727,7 +732,7 @@ Item {
                             }
 
                             NumberInputRow {
-                                label: "Gaps In"
+                                label: AxctlService.supportsInnerOuterGaps ? "Gaps In" : "Gaps"
                                 value: Config.compositor.gapsIn ?? 5
                                 minValue: 0
                                 maxValue: 50
@@ -739,6 +744,7 @@ Item {
                             }
 
                             NumberInputRow {
+                                visible: AxctlService.supportsInnerOuterGaps
                                 label: "Gaps Out"
                                 value: Config.compositor.gapsOut ?? 10
                                 minValue: 0
@@ -916,6 +922,7 @@ Item {
                             }
 
                             NumberInputRow {
+                                visible: AxctlService.shadowCaps.render_power !== false
                                 label: "Render Power"
                                 value: Config.compositor.shadowRenderPower ?? 3
                                 minValue: 1
@@ -927,6 +934,7 @@ Item {
                             }
 
                             DecimalInputRow {
+                                visible: AxctlService.shadowCaps.scale !== false
                                 label: "Scale"
                                 value: Config.compositor.shadowScale ?? 1.0
                                 minValue: 0.0
@@ -950,6 +958,7 @@ Item {
                             }
 
                             ToggleRow {
+                                visible: AxctlService.shadowCaps.sharp !== false
                                 label: "Sharp"
                                 checked: Config.compositor.shadowSharp ?? false
                                 onToggled: value => {
@@ -959,6 +968,7 @@ Item {
                             }
 
                             ToggleRow {
+                                visible: AxctlService.shadowCaps.ignore_window !== false
                                 label: "Ignore Window"
                                 checked: Config.compositor.shadowIgnoreWindow ?? true
                                 onToggled: value => {
@@ -975,7 +985,7 @@ Item {
 
                         // Blur Section
                         ColumnLayout {
-                            visible: root.currentSection === "blur"
+                            visible: root.currentSection === "blur" && AxctlService.supportsBlur
                             Layout.fillWidth: true
                             spacing: 8
 
@@ -1124,6 +1134,7 @@ Item {
                     // ═══════════════════════════════════════════════════════════════
                     Item {
                         id: placeholderPage
+                        visible: !AxctlService.isNiri && !AxctlService.isHyprland
                         Layout.fillWidth: true
                         implicitHeight: 300
 

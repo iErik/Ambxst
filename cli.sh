@@ -57,8 +57,8 @@ Commands:
     help                              Show this help message
     version, -v, --version            Show Ambxst version
     goodbye                           Uninstall Ambxst :(
-    install <target>                    Install compositor config (hyprland)
-    remove <target>                    Remove compositor config (hyprland)
+    install <target>                    Install compositor config (hyprland|niri)
+    remove <target>                    Remove compositor config (hyprland|niri)
 
 Examples:
     ambxst brightness 75              Set all monitors to 75%
@@ -95,6 +95,49 @@ loadfile(os.getenv("HOME") .. "/.local/share/ambxst/hyprland.lua")()
 -- Down here you can write or source anything that you want to override from Ambxst's settings.
 EOF
 )
+
+AMBXST_NIRI_INCLUDE='include "~/.local/share/ambxst/niri.kdl"'
+AMBXST_NIRI_BLOCK=$(
+	cat <<'EOF'
+// Ambxst
+include "~/.local/share/ambxst/niri.kdl"
+
+// OVERRIDES
+// Settings below override Ambxst-generated niri config (includes are positional).
+EOF
+)
+
+append_ambxst_niri_block() {
+	local conf="$1"
+	if [ -f "$conf" ] && grep -qF 'include "~/.local/share/ambxst/niri.kdl"' "$conf"; then
+		echo "Ambxst Niri include already present in $conf"
+		return 0
+	fi
+	mkdir -p "$(dirname "$conf")"
+	if [ -f "$conf" ] && [ -s "$conf" ]; then
+		printf "\n%s\n" "$AMBXST_NIRI_BLOCK" >>"$conf"
+	else
+		printf "%s\n" "$AMBXST_NIRI_BLOCK" >"$conf"
+	fi
+	echo "Added Ambxst Niri include to $conf"
+}
+
+remove_ambxst_niri_block() {
+	local conf="$1"
+	if [ ! -f "$conf" ]; then
+		echo "$conf does not exist"
+		return 0
+	fi
+	awk '
+		$0 == "// Ambxst" { skip=1; next }
+		skip && $0 ~ /^include "~\/.local\/share\/ambxst\/niri.kdl"/ { next }
+		skip && $0 == "" { next }
+		skip && $0 == "// OVERRIDES" { next }
+		skip && $0 ~ /^\/\/ Settings below override/ { skip=0; next }
+		{ skip=0; print }
+	' "$conf" >"${conf}.tmp" && mv "${conf}.tmp" "$conf"
+	echo "Removed Ambxst Niri block from $conf"
+}
 
 append_ambxst_hyprland_block() {
 	local conf="$1"
@@ -423,13 +466,18 @@ brightness)
 	# Handle list flag
 	if [ "$ARG2" = "-l" ] || [ "$ARG2" = "--list" ]; then
 		echo "Monitors:"
-		if command -v hyprctl &>/dev/null; then
+		if [ -n "${NIRI_SOCKET:-}" ] && command -v niri &>/dev/null; then
+			niri msg --json outputs 2>/dev/null | jq -r '.[] | "  \(.name)"' || {
+				echo "Error: Could not list monitors"
+				exit 1
+			}
+		elif [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && command -v hyprctl &>/dev/null; then
 			hyprctl monitors -j 2>/dev/null | jq -r '.[] | "  \(.name)"' || {
 				echo "Error: Could not list monitors"
 				exit 1
 			}
 		else
-			echo "Error: hyprctl not found"
+			echo "Error: no compositor monitor list available"
 			exit 1
 		fi
 		exit 0
@@ -644,8 +692,10 @@ install)
 		else
 			append_ambxst_hyprland_block "$HYPR_CONF" "$AMBXST_HYPR_CONF_SOURCE" "$AMBXST_HYPR_CONF_BLOCK"
 		fi
+	elif [ "$TARGET" = "niri" ]; then
+		append_ambxst_niri_block "$HOME/.config/niri/config.kdl"
 	else
-		echo "Error: Unknown target '$TARGET'. Supported: hyprland"
+		echo "Error: Unknown target '$TARGET'. Supported: hyprland, niri"
 		exit 1
 	fi
 	;;
@@ -658,8 +708,10 @@ remove)
 
 		remove_ambxst_hyprland_block "$HYPR_LUA" "$AMBXST_HYPR_LUA_SOURCE"
 		remove_ambxst_hyprland_block "$HYPR_CONF" "$AMBXST_HYPR_CONF_SOURCE"
+	elif [ "$TARGET" = "niri" ]; then
+		remove_ambxst_niri_block "$HOME/.config/niri/config.kdl"
 	else
-		echo "Error: Unknown target '$TARGET'. Supported: hyprland"
+		echo "Error: Unknown target '$TARGET'. Supported: hyprland, niri"
 		exit 1
 	fi
 	;;

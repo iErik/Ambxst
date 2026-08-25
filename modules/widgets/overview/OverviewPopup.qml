@@ -201,11 +201,7 @@ PanelWindow {
                         if (searchInput.text.length === 0) {
                             const current = AxctlService.focusedWorkspace?.id || 1;
                             const next = current + 1;
-                            if (next > Config.workspaces.shown) {
-                                AxctlService.dispatch("workspace 1");
-                            } else {
-                                AxctlService.dispatch("workspace r+1");
-                            }
+                            AxctlService.switchRelativeWorkspace(1);
                         } else if (overviewLoader.item) {
                             overviewLoader.item.selectNextMatch();
                         }
@@ -215,11 +211,7 @@ PanelWindow {
                         if (searchInput.text.length === 0) {
                             const current = AxctlService.focusedWorkspace?.id || 1;
                             const prev = current - 1;
-                            if (prev < 1) {
-                                AxctlService.dispatch("workspace " + Config.workspaces.shown);
-                            } else {
-                                AxctlService.dispatch("workspace r-1");
-                            }
+                            AxctlService.switchRelativeWorkspace(-1);
                         } else if (overviewLoader.item) {
                             overviewLoader.item.selectPrevMatch();
                         }
@@ -252,11 +244,7 @@ PanelWindow {
                         if (searchInput.text.length === 0) {
                             const current = AxctlService.focusedWorkspace?.id || 1;
                             const prev = current - 1;
-                            if (prev < 1) {
-                                AxctlService.dispatch("workspace " + Config.workspaces.shown);
-                            } else {
-                                AxctlService.dispatch("workspace r-1");
-                            }
+                            AxctlService.switchRelativeWorkspace(-1);
                         } else if (overviewLoader.item) {
                             overviewLoader.item.selectPrevMatch();
                         }
@@ -266,11 +254,7 @@ PanelWindow {
                         if (searchInput.text.length === 0) {
                             const current = AxctlService.focusedWorkspace?.id || 1;
                             const next = current + 1;
-                            if (next > Config.workspaces.shown) {
-                                AxctlService.dispatch("workspace 1");
-                            } else {
-                                AxctlService.dispatch("workspace r+1");
-                            }
+                            AxctlService.switchRelativeWorkspace(1);
                         } else if (overviewLoader.item) {
                             overviewLoader.item.selectNextMatch();
                         }

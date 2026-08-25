@@ -30,6 +30,106 @@ Singleton {
     // Config path for axctl daemon
     property string configPath: (Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")) + "/ambxst/axctl.toml"
 
+    // Compositor identity / capabilities. Env is the instant bootstrap; axctl
+    // `system get-capabilities` confirms and fills the feature mask.
+    property string compositorId: {
+        if (Quickshell.env("NIRI_SOCKET"))
+            return "niri";
+        if (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE"))
+            return "hyprland";
+        return "unknown";
+    }
+    property bool capabilitiesReady: false
+    property var capabilities: ({})
+    readonly property bool isNiri: compositorId === "niri"
+    readonly property bool isHyprland: compositorId === "hyprland"
+    readonly property bool supportsLayoutSwitch: capabilitiesReady ? capabilities.layout_switch === true : isHyprland
+    readonly property bool supportsBlur: capabilitiesReady ? capabilities.blur === true : !isNiri
+    readonly property bool supportsSpecialWorkspace: capabilitiesReady ? capabilities.special_workspaces === true : isHyprland
+    readonly property bool supportsInnerOuterGaps: capabilitiesReady ? capabilities.inner_outer_gaps !== false : !isNiri
+    readonly property var availableLayouts: (capabilities.layouts && capabilities.layouts.length) ? capabilities.layouts : (isNiri ? [] : ["dwindle", "master", "scrolling"])
+    readonly property var shadowCaps: capabilities.shadow || ({
+        enabled: true,
+        size: true,
+        color: true,
+        offset: true,
+        render_power: isHyprland,
+        scale: isHyprland,
+        sharp: isHyprland,
+        ignore_window: isHyprland
+    })
+
+    function applyCapabilities(caps) {
+        if (!caps || typeof caps !== "object")
+            return;
+        if (caps.id)
+            compositorId = String(caps.id);
+        capabilities = caps;
+        capabilitiesReady = true;
+    }
+
+    function defaultCapabilitiesFor(id) {
+        if (id === "niri") {
+            return {
+                id: "niri",
+                layouts: [],
+                layout_switch: false,
+                blur: false,
+                shadows: true,
+                shadow: {
+                    enabled: true, size: true, color: true, offset: true,
+                    render_power: false, scale: false, sharp: false, ignore_window: false
+                },
+                animations: true,
+                rounded_corners: true,
+                workspaces_supported: true,
+                windows_supported: true,
+                special_workspaces: false,
+                inner_outer_gaps: false
+            };
+        }
+        return {
+            id: id || "hyprland",
+            layouts: ["dwindle", "master", "scrolling"],
+            layout_switch: true,
+            blur: true,
+            shadows: true,
+            shadow: {
+                enabled: true, size: true, color: true, offset: true,
+                render_power: true, scale: true, sharp: true, ignore_window: true
+            },
+            animations: true,
+            rounded_corners: true,
+            workspaces_supported: true,
+            windows_supported: true,
+            special_workspaces: true,
+            inner_outer_gaps: true
+        };
+    }
+
+    function switchRelativeWorkspace(delta) {
+        const values = root.workspaces.values || [];
+        const focusedMon = root.focusedMonitor;
+        const monName = focusedMon ? (focusedMon.name || "") : "";
+        let list = values.filter(ws => {
+            if (root.isNiri && monName)
+                return String(ws.monitor) === String(monName) || String(ws.monitor) === String(focusedMon.id);
+            return true;
+        });
+        if (!list.length)
+            list = values.slice();
+        list.sort((a, b) => (a.id || 0) - (b.id || 0));
+        if (!list.length)
+            return;
+        const currentId = root.focusedWorkspace ? root.focusedWorkspace.id : list[0].id;
+        let idx = list.findIndex(ws => ws.id === currentId);
+        if (idx < 0)
+            idx = 0;
+        const next = list[(idx + delta + list.length) % list.length];
+        if (next)
+            root.dispatch("workspace " + next.id);
+    }
+
     function dispatch(command) {
         if (!command) return;
 
@@ -45,6 +145,15 @@ Singleton {
         let cmdArgs = [];
 
         if (action === "workspace") {
+            const rel = String(rawArgs).trim();
+            if (rel === "r+1" || rel === "e+1" || rel === "+1" || rel === "m+1") {
+                root.switchRelativeWorkspace(1);
+                return;
+            }
+            if (rel === "r-1" || rel === "e-1" || rel === "-1" || rel === "m-1") {
+                root.switchRelativeWorkspace(-1);
+                return;
+            }
             cmdArgs = ["workspace", "switch", rawArgs];
         } else if (action === "closewindow") {
             cmdArgs = ["window", "close", getAddr(rawArgs)];
@@ -59,8 +168,14 @@ Singleton {
         } else if (action === "focusmonitor") {
             cmdArgs = ["monitor", "focus", rawArgs];
         } else if (action === "togglespecialworkspace") {
+            if (root.isNiri)
+                return;
             cmdArgs = ["workspace", "toggle-special"];
             if (rawArgs) cmdArgs.push(rawArgs);
+        } else if (action === "movewindowpixel") {
+            if (root.isNiri)
+                return;
+            cmdArgs = ["system", "execute", command];
         } else {
             cmdArgs = ["system", "execute", command];
         }
@@ -252,12 +367,37 @@ Singleton {
         }
     }
 
-    // Brief delay to let daemon start before subscribing
     Timer {
         id: subscribeDelay
         interval: 500
         running: true
-        onTriggered: axctlSubscribe.running = true
+        onTriggered: {
+            axctlSubscribe.running = true;
+            if (!root.capabilitiesReady)
+                root.applyCapabilities(root.defaultCapabilitiesFor(root.compositorId));
+            capabilitiesProcess.running = true;
+        }
+    }
+
+    property Process capabilitiesProcess: Process {
+        command: ["axctl", "system", "get-capabilities"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const parsed = JSON.parse(text);
+                    root.applyCapabilities(parsed);
+                } catch (e) {
+                    console.warn("AxctlService: get-capabilities failed, using env defaults:", e);
+                    if (!root.capabilitiesReady)
+                        root.applyCapabilities(root.defaultCapabilitiesFor(root.compositorId));
+                }
+            }
+        }
+        onExited: (code) => {
+            if (code !== 0 && !root.capabilitiesReady)
+                root.applyCapabilities(root.defaultCapabilitiesFor(root.compositorId));
+        }
     }
 
     // Auto-reconnect on unexpected subscribe/daemon exit.

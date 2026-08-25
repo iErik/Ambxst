@@ -10,9 +10,13 @@ if command -v brightnessctl &> /dev/null; then
         MAX=$(brightnessctl -d "$device" m 2>/dev/null)
         if [ -n "$CURRENT" ] && [ -n "$MAX" ] && [ "$MAX" -gt 0 ]; then
             PERCENT=$(( CURRENT * 100 / MAX ))
-            # Try to map backlight device to Hyprland monitor name
-            # Most internal displays are eDP, so we use that as fallback
-            MONITOR_NAME=$(hyprctl monitors -j 2>/dev/null | jq -r '.[] | select(.name | contains("eDP")) | .name' | head -1)
+            # Map backlight device to the compositor's laptop panel name
+            MONITOR_NAME=""
+            if [ -n "${NIRI_SOCKET:-}" ] && command -v niri >/dev/null 2>&1; then
+                MONITOR_NAME=$(niri msg --json outputs 2>/dev/null | jq -r '.[] | select(.name | test("eDP")) | .name' | head -1)
+            elif [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && command -v hyprctl >/dev/null 2>&1; then
+                MONITOR_NAME=$(hyprctl monitors -j 2>/dev/null | jq -r '.[] | select(.name | contains("eDP")) | .name' | head -1)
+            fi
             if [ -z "$MONITOR_NAME" ]; then
                 MONITOR_NAME="eDP-1"
             fi

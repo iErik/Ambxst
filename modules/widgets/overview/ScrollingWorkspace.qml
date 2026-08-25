@@ -580,7 +580,8 @@ Item {
                                             
                                             // Move to workspace and set position
                                             AxctlService.dispatch(`movetoworkspacesilent ${targetWs}, address:${(windowDelegate.windowData && windowDelegate.windowData.address !== undefined ? windowDelegate.windowData.address : "")}`);
-                                            AxctlService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${(windowDelegate.windowData && windowDelegate.windowData.address !== undefined ? windowDelegate.windowData.address : "")}`);
+                                            if (!AxctlService.isNiri)
+                                                AxctlService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${(windowDelegate.windowData && windowDelegate.windowData.address !== undefined ? windowDelegate.windowData.address : "")}`);
                                             
                                             // Force immediate window data update
                                             CompositorData.updateWindowList();
@@ -642,7 +643,8 @@ Item {
                                         const percentageY = Math.round((actualY / adjustedMonitorHeight) * 100);
                                         
                                         // Dispatch movewindowpixel command
-                                        AxctlService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${(windowDelegate.windowData && windowDelegate.windowData.address !== undefined ? windowDelegate.windowData.address : "")}`);
+                                        if (!AxctlService.isNiri)
+                                            AxctlService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${(windowDelegate.windowData && windowDelegate.windowData.address !== undefined ? windowDelegate.windowData.address : "")}`);
                                         
                                         // Force immediate window data update
                                         CompositorData.updateWindowList();

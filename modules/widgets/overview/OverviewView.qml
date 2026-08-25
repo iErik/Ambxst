@@ -9,7 +9,7 @@ Item {
     property var currentScreen
 
     // Detect if we're in scrolling layout mode
-    readonly property bool isScrollingLayout: GlobalStates.compositorLayout === "scrolling"
+    readonly property bool isScrollingLayout: AxctlService.isNiri || GlobalStates.compositorLayout === "scrolling"
 
     implicitWidth: overviewLoader.item ? overviewLoader.item.implicitWidth : 400
     implicitHeight: overviewLoader.item ? overviewLoader.item.implicitHeight : 300

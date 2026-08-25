@@ -30,7 +30,8 @@ Item {
     readonly property int workspaceGroup: Math.floor((activeWorkspaceId - 1) / workspaceGroupSize)
     property var workspaceOccupied: []
     property var dynamicWorkspaceIds: []
-    property int effectiveWorkspaceCount: Config.workspaces.dynamic ? dynamicWorkspaceIds.length : Config.workspaces.shown
+    readonly property bool niriMode: AxctlService.isNiri
+    property int effectiveWorkspaceCount: (Config.workspaces.dynamic || niriMode) ? dynamicWorkspaceIds.length : Config.workspaces.shown
     property int widgetPadding: 4
     property real radius: Styling.radius(0)
     property real startRadius: radius
@@ -44,7 +45,7 @@ Item {
     property real workspaceIconOpacityShrinked: 1
     property real workspaceIconMarginShrinked: -4
     property int workspaceIndexInGroup: {
-        if (Config.workspaces.dynamic)
+        if (Config.workspaces.dynamic || niriMode)
             return dynamicWorkspaceIds.indexOf(activeWorkspaceId);
         const idx = (activeWorkspaceId - 1) % workspaceGroupSize;
         // Active WS beyond the visible slot count (e.g. 19 with shown=8)
@@ -53,23 +54,30 @@ Item {
     property var occupiedRanges: []
 
     function updateWorkspaceOccupied() {
-        if (Config.workspaces.dynamic) {
+        if (Config.workspaces.dynamic || niriMode) {
             const monName = monitor ? monitor.name : "";
-            // Prefer this monitor's occupied workspaces so each bar stays local
-            const occupiedIds = AxctlService.workspaces.values.filter(ws => {
-                if (!CompositorData.workspaceOccupationMap[ws.id])
-                    return false;
-                if (!monName)
-                    return true;
-                return ws.monitor === monName;
-            }).map(ws => ws.id).sort((a, b) => a - b).slice(0, Config.workspaces.shown);
+            let occupiedIds;
+            if (niriMode) {
+                occupiedIds = AxctlService.workspaces.values.filter(ws => {
+                    if (!monName)
+                        return true;
+                    return ws.monitor === monName;
+                }).map(ws => ws.id).sort((a, b) => a - b);
+            } else {
+                occupiedIds = AxctlService.workspaces.values.filter(ws => {
+                    if (!CompositorData.workspaceOccupationMap[ws.id])
+                        return false;
+                    if (!monName)
+                        return true;
+                    return ws.monitor === monName;
+                }).map(ws => ws.id).sort((a, b) => a - b).slice(0, Config.workspaces.shown);
+            }
 
-            // Always include active workspace, even if empty
             const activeId = activeWorkspaceId;
             if (!occupiedIds.includes(activeId)) {
                 occupiedIds.push(activeId);
                 occupiedIds.sort((a, b) => a - b);
-                if (occupiedIds.length > Config.workspaces.shown) {
+                if (!niriMode && occupiedIds.length > Config.workspaces.shown) {
                     occupiedIds.pop();
                 }
             }
@@ -77,7 +85,7 @@ Item {
             dynamicWorkspaceIds = occupiedIds;
             workspaceOccupied = Array.from({
                 length: dynamicWorkspaceIds.length
-            }, (_, i) => CompositorData.workspaceOccupationMap[dynamicWorkspaceIds[i]]);
+            }, (_, i) => CompositorData.workspaceOccupationMap[dynamicWorkspaceIds[i]] || niriMode);
         } else {
             workspaceOccupied = Array.from({
                 length: Config.workspaces.shown
@@ -128,7 +136,7 @@ Item {
     }
 
     function getWorkspaceId(index) {
-        if (Config.workspaces.dynamic) {
+        if (Config.workspaces.dynamic || niriMode) {
             return dynamicWorkspaceIds[index] || 1;
         }
         return workspaceGroup * workspaceGroupSize + index + 1;
@@ -200,9 +208,9 @@ Item {
     WheelHandler {
         onWheel: event => {
             if (event.angleDelta.y < 0)
-                AxctlService.dispatch(`workspace r+1`);
+                AxctlService.switchRelativeWorkspace(1);
             else if (event.angleDelta.y > 0)
-                AxctlService.dispatch(`workspace r-1`);
+                AxctlService.switchRelativeWorkspace(-1);
         }
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
     }
@@ -212,6 +220,8 @@ Item {
         acceptedButtons: Qt.BackButton
         onPressed: event => {
             if (event.button === Qt.BackButton) {
+                if (!AxctlService.supportsSpecialWorkspace)
+                    return;
                 AxctlService.dispatch(`togglespecialworkspace`);
             }
         }

@@ -53,36 +53,11 @@ Singleton {
     // ═══════════════════════════════════════════════════════════════
     property string compositorLayout: ""
     property bool compositorLayoutReady: false
-    readonly property var availableLayouts: ["dwindle", "master", "scrolling"]
-
-    Process {
-        id: getLayoutProcess
-        command: ["hyprctl", "getoption", "general:layout", "-j"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    const parsed = JSON.parse(text);
-                    if (parsed && typeof parsed.str === 'string') {
-                        const layout = parsed.str.trim();
-                        if (root.availableLayouts.includes(layout)) {
-                            root.compositorLayout = layout;
-                        } else {
-                            // Fallback if the layout isn't one of the known ones
-                            root.compositorLayout = StateService.get("compositorLayout", "dwindle");
-                        }
-                    } else {
-                        root.compositorLayout = StateService.get("compositorLayout", "dwindle");
-                    }
-                } catch (e) {
-                    console.warn("GlobalStates: Failed to parse hyprctl layout:", e);
-                    root.compositorLayout = StateService.get("compositorLayout", "dwindle");
-                }
-                root.compositorLayoutReady = true;
-            }
-        }
-    }
+    readonly property var availableLayouts: AxctlService.availableLayouts
 
     function setCompositorLayout(layout) {
+        if (AxctlService.isNiri)
+            return;
         if (availableLayouts.includes(layout)) {
             compositorLayout = layout;
             StateService.set("compositorLayout", layout);
@@ -90,9 +65,43 @@ Singleton {
     }
 
     function cycleCompositorLayout() {
+        if (AxctlService.isNiri || !availableLayouts.length)
+            return;
         const currentIndex = availableLayouts.indexOf(compositorLayout);
         const nextIndex = (currentIndex + 1) % availableLayouts.length;
         setCompositorLayout(availableLayouts[nextIndex]);
+    }
+
+    function applyLayoutFromProbe(text) {
+        try {
+            const parsed = JSON.parse(text);
+            if (parsed && typeof parsed.str === 'string') {
+                const layout = parsed.str.trim();
+                if (root.availableLayouts.includes(layout)) {
+                    root.compositorLayout = layout;
+                    root.compositorLayoutReady = true;
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn("GlobalStates: Failed to parse hyprctl layout:", e);
+        }
+        root.compositorLayout = StateService.get("compositorLayout", root.availableLayouts[0] || "");
+        root.compositorLayoutReady = true;
+    }
+
+    Process {
+        id: getLayoutProcess
+        command: ["hyprctl", "getoption", "general:layout", "-j"]
+        stdout: StdioCollector {
+            onStreamFinished: root.applyLayoutFromProbe(text)
+        }
+        onExited: (code) => {
+            if (code !== 0 && !root.compositorLayoutReady) {
+                root.compositorLayout = StateService.get("compositorLayout", root.availableLayouts[0] || "");
+                root.compositorLayoutReady = true;
+            }
+        }
     }
 
 
@@ -100,8 +109,12 @@ Singleton {
     Component.onCompleted: {
         // Reference the singleton to ensure it loads
         LockscreenService.toString();
-        // Fetch the active layout from the compositor
-        getLayoutProcess.running = true;
+        if (AxctlService.isNiri) {
+            compositorLayout = "";
+            compositorLayoutReady = true;
+        } else {
+            getLayoutProcess.running = true;
+        }
     }
 
     // Persistent launcher state across monitors
