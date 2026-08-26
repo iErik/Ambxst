@@ -5,7 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     axctl = {
-      url = "github:Axenide/axctl";
+      url = "github:iErik/axctl/niri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -17,8 +17,12 @@
     in {
       nixosModules.default = { pkgs, lib, ... }: {
         imports = [ ./nix/modules ];
-        programs.ambxst.enable = lib.mkDefault true;
         programs.ambxst.package = lib.mkDefault self.packages.${pkgs.system}.default;
+      };
+
+      homeManagerModules = {
+        default = self.homeManagerModules.dots;
+        dots = import ./nix/hm self;
       };
 
       packages = ambxstLib.forAllSystems (system:

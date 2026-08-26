@@ -12,6 +12,16 @@ in {
       description = "The Ambxst package to use";
     };
 
+    installPackage = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Whether to install the Ambxst package system-wide. Set this to false
+        when Home Manager installs it instead (see the dots.ambxst module),
+        so the two do not both put it on PATH.
+      '';
+    };
+
     fonts.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -20,7 +30,7 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    environment.systemPackages = [ cfg.package ];
+    environment.systemPackages = lib.mkIf cfg.installPackage [ cfg.package ];
 
     # Register fonts with fontconfig (NixOS handles this via fonts.packages)
     fonts.packages = lib.mkIf cfg.fonts.enable (with pkgs; [
