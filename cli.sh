@@ -31,6 +31,10 @@ ensure_config_files() {
 	# Copy preset files if they don't exist (cp -n = no-clobber)
 	for file in theme bar workspaces overview notch compositor performance desktop lockscreen dock ai audio; do
 		cp -n "${preset_dir}/${file}.json" "${config_dir}/${file}.json" 2>/dev/null || true
+		# The presets may come from a read-only tree (the Nix store), and cp
+		# copies their mode along with them. Ambxst rewrites these files from
+		# the settings UI, so make sure they stay writable.
+		[ -e "${config_dir}/${file}.json" ] && chmod u+w "${config_dir}/${file}.json" 2>/dev/null || true
 	done
 }
 

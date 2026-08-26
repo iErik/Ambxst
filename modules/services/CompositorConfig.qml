@@ -24,7 +24,11 @@ QtObject {
                         currentAnimationConfig = parsed;
                     }
                 } catch (e) {
-                    console.error("CompositorConfig: Error parsing animations:", e);
+                    // Not every compositor can report its animations back:
+                    // niri has no IPC query for them, so axctl answers with a
+                    // plain-text "not supported". Callers already guard on
+                    // currentAnimationConfig being null.
+                    console.debug("CompositorConfig: No animation config available:", text.trim());
                 }
             }
         }
