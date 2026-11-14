@@ -5,7 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     axctl = {
-      url = "github:iErik/axctl/niri";
+      url = "github:iErik/axctl/erik";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
