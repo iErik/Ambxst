@@ -558,7 +558,9 @@ Rectangle {
             clip: true
 
             property int previousSection: 0
-            readonly property int maxContentWidth: 480
+            // Full width (minus margins) when embedded in the Control Center;
+            // the classic 480 px column next to the search list.
+            readonly property int maxContentWidth: root.showSidebar ? 480 : Math.max(320, contentScaler.width - 24)
 
             // Track section changes for animation direction
             onVisibleChanged: {
@@ -622,46 +624,58 @@ Rectangle {
             // switching back to a section is instant (no rebuild, no re-scan).
             readonly property Loader panelLoader: panelRepeater.count > root.currentSection ? panelRepeater.itemAt(root.currentSection) : null
 
-            Repeater {
-                id: panelRepeater
-                model: contentArea.panelComponents
+            // Pages are drawn ~10% larger (text and spacing together) and laid
+            // out across the available width with small side margins, instead
+            // of a narrow centred 480 px column.
+            Item {
+                id: contentScaler
+                readonly property real contentScale: 1.1
+                width: contentArea.width / contentScale
+                height: contentArea.height / contentScale
+                scale: contentScale
+                transformOrigin: Item.TopLeft
 
-                Loader {
-                    id: sectionLoader
-                    required property var modelData
-                    required property int index
-                    readonly property bool current: root.currentSection === modelData.section
-                    property bool visited: current
-                    onCurrentChanged: if (current)
-                        visited = true
+                Repeater {
+                    id: panelRepeater
+                    model: contentArea.panelComponents
 
-                    anchors.fill: parent
-                    asynchronous: true
-                    active: visited
-                    visible: current
-                    source: modelData.component
+                    Loader {
+                        id: sectionLoader
+                        required property var modelData
+                        required property int index
+                        readonly property bool current: root.currentSection === modelData.section
+                        property bool visited: current
+                        onCurrentChanged: if (current)
+                            visited = true
 
-                    // Fade in when shown
-                    opacity: current && status === Loader.Ready ? 1 : 0
-                    Behavior on opacity {
-                        enabled: Config.animDuration > 0
-                        NumberAnimation {
-                            duration: Config.animDuration / 2
-                            easing.type: Easing.OutCubic
+                        anchors.fill: parent
+                        asynchronous: true
+                        active: visited
+                        visible: current
+                        source: modelData.component
+
+                        // Fade in when shown
+                        opacity: current && status === Loader.Ready ? 1 : 0
+                        Behavior on opacity {
+                            enabled: Config.animDuration > 0
+                            NumberAnimation {
+                                duration: Config.animDuration / 2
+                                easing.type: Easing.OutCubic
+                            }
                         }
-                    }
 
-                    onActiveChanged: if (active)
-                        PerfProbe.mark("section " + modelData.section + " load")
-                    onLoaded: {
-                        PerfProbe.done("section " + modelData.section + " load");
-                        if (item) {
-                            item.maxContentWidth = contentArea.maxContentWidth;
-                            settingsIndexer.crawlSection(item, modelData.section);
-                            // Apply pending subsection if any
-                            if (current && root.pendingSubSection !== "" && item.currentSection !== undefined) {
-                                item.currentSection = root.pendingSubSection;
-                                root.pendingSubSection = "";
+                        onActiveChanged: if (active)
+                            PerfProbe.mark("section " + modelData.section + " load")
+                        onLoaded: {
+                            PerfProbe.done("section " + modelData.section + " load");
+                            if (item) {
+                                item.maxContentWidth = Qt.binding(() => contentArea.maxContentWidth);
+                                settingsIndexer.crawlSection(item, modelData.section);
+                                // Apply pending subsection if any
+                                if (current && root.pendingSubSection !== "" && item.currentSection !== undefined) {
+                                    item.currentSection = root.pendingSubSection;
+                                    root.pendingSubSection = "";
+                                }
                             }
                         }
                     }
