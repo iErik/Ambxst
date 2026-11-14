@@ -169,6 +169,9 @@ QtObject {
         { label: "Pinned on Startup", keywords: "show visible default", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
         { label: "Hover to Reveal", keywords: "mouse show hide edge", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
         { label: "Hover Region Height", keywords: "pixels trigger area", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
+        { label: "Edge Trigger Depth", keywords: "edge pixels distance reveal auto-hide autohide touch", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
+        { label: "Reveal Pressure", keywords: "push force strength threshold edge reveal auto-hide autohide mouse", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
+        { label: "Reveal Delay", keywords: "dwell wait time milliseconds edge reveal auto-hide autohide pressure", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.clock, isIcon: true },
         { label: "Show Pin Button", keywords: "toggle pin unpin", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
         { label: "Available on Fullscreen", keywords: "overlay game video", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
         { label: "Show Running Indicators", keywords: "dots active apps", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
@@ -203,6 +206,9 @@ QtObject {
         { label: "Dock Spacing", keywords: "gap between icons", section: 8, subSection: "dock", subLabel: "Ambxst > Dock", icon: Icons.layout, isIcon: true },
         { label: "Dock Margin", keywords: "edge distance offset", section: 8, subSection: "dock", subLabel: "Ambxst > Dock", icon: Icons.layout, isIcon: true },
         { label: "Dock Hover Region Height", keywords: "trigger area pixels", section: 8, subSection: "dock", subLabel: "Ambxst > Dock", icon: Icons.layout, isIcon: true },
+        { label: "Dock Edge Trigger Depth", keywords: "edge pixels distance reveal auto-hide autohide touch", section: 8, subSection: "dock", subLabel: "Ambxst > Dock", icon: Icons.layout, isIcon: true },
+        { label: "Dock Reveal Pressure", keywords: "push force strength threshold edge reveal auto-hide autohide mouse", section: 8, subSection: "dock", subLabel: "Ambxst > Dock", icon: Icons.layout, isIcon: true },
+        { label: "Dock Reveal Delay", keywords: "dwell wait time milliseconds edge reveal auto-hide autohide pressure", section: 8, subSection: "dock", subLabel: "Ambxst > Dock", icon: Icons.clock, isIcon: true },
         { label: "Dock Pinned on Startup", keywords: "show visible default", section: 8, subSection: "dock", subLabel: "Ambxst > Dock", icon: Icons.layout, isIcon: true },
         
         // Ambxst > Lockscreen
