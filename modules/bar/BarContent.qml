@@ -179,7 +179,23 @@ Item {
         // Plain hover over the hidden strip is not enough: hoverActive is only
         // raised through the edge-pressure gate below (or by hovering the bar
         // once it is already revealed).
-        return hoverActive || notchHoverActive || notchOpen;
+        return hoverActive || notchHoverActive || notchOpen || popupOpen;
+    }
+
+    // One of this bar's popups (sound, wifi, tray menu, …) is open: keep the
+    // bar revealed until it closes, even though the pointer has left the bar.
+    readonly property bool popupOpen: {
+        const popup = GlobalStates.activeBarPopup;
+        return popup !== null && popup.isOpen && popup.bar === root;
+    }
+
+    // Once the popup closes, hide again after the usual delay unless the
+    // pointer is back on the bar, instead of snapping shut immediately.
+    onPopupOpenChanged: {
+        if (!popupOpen && shouldAutoHide && !GlobalStates.barForceHidden) {
+            hoverActive = true;
+            hideDelayTimer.restart();
+        }
     }
 
     // Edge-pressure reveal: while hidden, the pointer has to touch the screen
