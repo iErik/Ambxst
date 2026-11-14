@@ -11,12 +11,41 @@ import sys
 import zlib
 from pathlib import Path
 
-SEARCH_DIRS = [
-    Path.home() / ".local/share/icons",
-    Path("/usr/share/icons"),
-    Path("/usr/local/share/icons"),
-    Path.home() / ".icons",
-]
+def _search_dirs() -> list[Path]:
+    """Icon/cursor theme directories, in lookup priority order.
+
+    Besides the FHS locations, honour XCURSOR_PATH and XDG_DATA_DIRS: on
+    NixOS (and in Nix profiles / Flatpak) themes live under paths like
+    /run/current-system/sw/share/icons, never /usr/share/icons.
+    """
+    home = Path.home()
+    dirs: list[Path] = [home / ".local/share/icons", home / ".icons"]
+    for entry in os.environ.get("XCURSOR_PATH", "").split(":"):
+        if entry:
+            dirs.append(Path(entry))
+    data_home = os.environ.get("XDG_DATA_HOME") or str(home / ".local/share")
+    for entry in [data_home] + os.environ.get("XDG_DATA_DIRS", "").split(":"):
+        if entry:
+            dirs.append(Path(entry) / "icons")
+    user = os.environ.get("USER", "")
+    dirs += [
+        Path("/usr/share/icons"),
+        Path("/usr/local/share/icons"),
+        home / ".nix-profile/share/icons",
+        Path(f"/etc/profiles/per-user/{user}/share/icons"),
+        Path("/run/current-system/sw/share/icons"),
+    ]
+    seen: set[str] = set()
+    unique: list[Path] = []
+    for d in dirs:
+        key = str(d)
+        if key not in seen:
+            seen.add(key)
+            unique.append(d)
+    return unique
+
+
+SEARCH_DIRS = _search_dirs()
 
 # Common cursor names to show as card previews
 PREVIEW_CURSORS = [

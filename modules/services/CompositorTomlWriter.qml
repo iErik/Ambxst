@@ -298,6 +298,15 @@ Singleton {
         toml += "[appearance.animations]\n";
         toml += `enabled = ${GameModeService.toggled ? "false" : "true"}\n`;
 
+        // Cursor theme (Theme → Cursors): axctl writes it into the compositor
+        // config (niri `cursor {}` block, Hyprland env + setcursor), so it
+        // applies to the compositor's own cursor, not just GTK/Qt apps.
+        if (Config.cursorTheme) {
+            toml += "[appearance.cursor]\n";
+            toml += `theme = ${tomlString(Config.cursorTheme)}\n`;
+            toml += `size = 24\n`;
+        }
+
         // Layout (Hyprland only)
         if (!AxctlService.isNiri && GlobalStates.compositorLayout && GlobalStates.compositorLayout.length > 0) {
             toml += "\n[general]\n";
@@ -503,6 +512,11 @@ Singleton {
         function onFileChanged() { writeTomlFile(); }
         function onAdapterUpdated() { writeTomlFile(); }
         function onPathChanged() { writeTomlFile(); }
+    }
+
+    property Connections cursorConnections: Connections {
+        target: Config
+        function onCursorThemeChanged() { writeTomlFile(); }
     }
 
     // Compositor section connections
