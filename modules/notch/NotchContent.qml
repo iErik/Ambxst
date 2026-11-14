@@ -297,7 +297,15 @@ Item {
 
     Item {
         id: notchRegionContainer
-        
+
+        // While the notch is hidden this container stays parked at the edge
+        // (only its content slides away), above the bar. Taking hover there
+        // swallowed it from the notch's own hover region and the bar's edge
+        // strip, leaving a notch-wide dead zone for the edge-pressure reveal.
+        // A hidden notch has nothing to interact with, so take no input until
+        // revealed.
+        enabled: root.reveal
+
         width: Math.max(notchAnimationContainer.width, notificationPopupContainer.visible ? notificationPopupContainer.width : 0)
         height: notchAnimationContainer.height + (notificationPopupContainer.visible ? notificationPopupContainer.height + notificationPopupContainer.anchors.topMargin : 0)
 
@@ -307,7 +315,9 @@ Item {
         // HoverHandler to detect when mouse is over the revealed notch
         HoverHandler {
             id: notchRegionHover
-            enabled: !GlobalStates.barForceHidden
+            // Gated separately: a disabled parent item does not stop a
+            // HoverHandler from receiving hover (see the note on the container).
+            enabled: !GlobalStates.barForceHidden && root.reveal
         }
 
         // Animation container for reveal/hide
