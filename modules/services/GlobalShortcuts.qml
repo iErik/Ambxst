@@ -53,7 +53,7 @@ QtObject {
             case "dashboard-assistant": toggleAssistant(); break;
             case "dashboard-controls": toggleSettings(); break;
             case "controlcenter":
-            case "control-center": toggleControlCenter("controls"); break;
+            case "control-center": toggleControlCenter(0); break;
 
             // System
             case "overview": toggleSimpleModule("overview"); break;
@@ -107,16 +107,16 @@ QtObject {
         }
     }
 
-    // Open the Control Center on `page` ("controls" or "settings"); toggling
-    // the page that is already showing closes it.
-    function toggleControlCenter(page) {
-        const target = page || "controls";
+    // Open the Control Center on `tab` (0 Control Center, 1–10 Settings
+    // sections, 11 Settings search); toggling the tab already showing closes it.
+    function toggleControlCenter(tab) {
+        const target = tab || 0;
         const open = Visibilities.currentActiveModule === "controlcenter";
-        if (open && GlobalStates.controlCenterPage === target) {
+        if (open && GlobalStates.controlCenterTab === target) {
             Visibilities.setActiveModule("");
             return;
         }
-        GlobalStates.controlCenterPage = target;
+        GlobalStates.controlCenterTab = target;
         if (!open)
             Visibilities.setActiveModule("controlcenter");
     }
@@ -128,7 +128,7 @@ QtObject {
             if (targetMonitor && targetMonitor.id !== AxctlService.focusedMonitor?.id)
                 AxctlService.dispatch(`focusmonitor ${targetMonitor.id}`);
         }
-        toggleControlCenter("settings");
+        toggleControlCenter(11);
     }
 
     function toggleSimpleModule(moduleName) {

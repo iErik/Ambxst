@@ -81,7 +81,7 @@ Item {
                 if (root.open)
                     Visibilities.setActiveModule("");
                 else
-                    GlobalShortcuts.toggleControlCenter("controls");
+                    GlobalShortcuts.toggleControlCenter(0);
             }
         }
 

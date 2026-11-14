@@ -23,7 +23,7 @@ Item {
     readonly property bool active: screenVisibilities ? screenVisibilities.controlcenter : false
 
     // Input region for the shell panel's mask.
-    property alias hitbox: panel
+    property alias hitbox: hitArea
 
     // ── Placement ───────────────────────────────────────────────────────
     readonly property var screenBar: Visibilities.bars[targetScreen.name] ?? null
@@ -53,16 +53,69 @@ Item {
     // Blend into a flush bar it hangs from; otherwise look like the notch.
     readonly property bool blendWithBar: barShown && barPosition === "top" && !barFloating && !barContained
 
-    // ── Size ────────────────────────────────────────────────────────────
-    readonly property bool onSettings: GlobalStates.controlCenterPage === "settings"
+    // ── Tabs ────────────────────────────────────────────────────────────
+    // 0: Control Center, 1–10: the Settings sections (SettingsTab sections
+    // 0–9), 11: Settings search (the full Settings layout with its list).
+    readonly property int searchTab: 11
+    readonly property int currentTab: GlobalStates.controlCenterTab
+    readonly property bool onSettings: currentTab > 0
     property bool settingsVisited: onSettings
     onOnSettingsChanged: if (onSettings)
         settingsVisited = true
-    readonly property int bodyWidth: onSettings ? 880 : 420
+
+    readonly property var tabModel: [
+        { icon: Icons.squaresFour, label: "Control Center" },
+        { icon: Icons.wifiHigh, label: "Network" },
+        { icon: Icons.bluetooth, label: "Bluetooth" },
+        { icon: Icons.faders, label: "Mixer" },
+        { icon: Icons.robot, label: "AI" },
+        { icon: Icons.waveform, label: "Effects" },
+        { icon: Icons.paintBrush, label: "Theme" },
+        { icon: Icons.keyboard, label: "Binds" },
+        { icon: Icons.circuitry, label: "System" },
+        { icon: Icons.compositor, label: "Compositor" },
+        { image: Qt.resolvedUrl("../../assets/ambxst/ambxst-icon.svg"), label: "Ambxst" }
+    ]
+
+    function selectTab(index) {
+        PerfProbe.mark("tab " + index);
+        GlobalStates.controlCenterTab = index;
+    }
+
+    // Point the shared Settings view at the selected section.
+    function syncSettings() {
+        const settings = settingsLoader.item;
+        if (!settings)
+            return;
+        settings.showSidebar = root.currentTab === root.searchTab;
+        if (root.currentTab > 0 && root.currentTab < root.searchTab)
+            settings.showSection(root.currentTab - 1);
+        if (root.currentTab === root.searchTab)
+            Qt.callLater(() => settings.focusSearchInput());
+    }
+    onCurrentTabChanged: syncSettings()
+
+    // ── Size ────────────────────────────────────────────────────────────
+    readonly property int tabSize: 44
+    readonly property int contentWidth: currentTab === 0 ? 404 : (currentTab === searchTab ? 840 : 620)
+    readonly property int bodyWidth: tabSize + 2 + 12 + contentWidth + 32
     readonly property int flareSize: Config.roundness > 0 ? Config.roundness + 4 : 0
     readonly property int cornerRadius: Config.roundness > 0 ? Config.roundness + 20 : 0
 
+    // Widest tab: the frame below is always this wide, so its layers never
+    // change size; only `shownWidth` animates.
+    readonly property int maxBodyWidth: tabSize + 2 + 12 + 840 + 32
+    property real shownWidth: bodyWidth
+    Behavior on shownWidth {
+        enabled: Config.animDuration > 0 && root.active
+        NumberAnimation {
+            duration: Config.animDuration
+            easing.type: Easing.OutCubic
+        }
+    }
+
     onActiveChanged: {
+        PerfProbe.mark(active ? "controlcenter open" : "controlcenter close");
         if (active) {
             panelFocus.forceActiveFocus();
         } else {
@@ -70,34 +123,75 @@ Item {
         }
     }
 
+    // ── Warm-up ─────────────────────────────────────────────────────────
+    // Build every page ahead of time while the shell is idle, so opening the
+    // panel or switching tabs never creates objects mid-animation.
+    Component.onCompleted: {
+        const focused = AxctlService.focusedMonitor?.name === root.targetScreen.name;
+        const name = root.targetScreen.name;
+        const jobs = [];
+        jobs.push({
+            label: name + " settings",
+            run: () => {
+                root.settingsVisited = true;
+                return settingsLoader;
+            }
+        });
+        for (let i = 0; i < root.tabModel.length - 1; i++) {
+            const section = i;
+            jobs.push({
+                label: name + " section " + section,
+                run: () => settingsLoader.item ? settingsLoader.item.warmSection(section) : null
+            });
+        }
+        for (const detail of controlsPage.detailNames) {
+            const d = detail;
+            jobs.push({
+                label: name + " detail " + d,
+                run: () => controlsPage.warmDetail(d)
+            });
+        }
+        if (focused) {
+            for (let j = jobs.length - 1; j >= 0; j--)
+                IdleWork.enqueue(jobs[j], true);
+        } else {
+            for (const job of jobs)
+                IdleWork.enqueue(job, false);
+        }
+    }
+
     Item {
         id: panel
-        width: root.bodyWidth + root.flareSize
+        // Fixed size (see maxBodyWidth): the open/close slide moves it, the
+        // tab resize only moves the mask edge and the content clip.
+        width: root.maxBodyWidth + root.flareSize
         y: root.topInset
         height: Math.max(0, parent.height - root.topInset - root.bottomInset)
-        x: root.active ? parent.width - root.rightInset - width : parent.width + 16
-        visible: root.active || slideAnimation.running
+        property real slide: root.active ? 0 : 1
+        // Left edge of the visible body within the frame.
+        readonly property real edgeX: width - root.shownWidth
+        x: parent.width - root.rightInset - width + slide * (root.shownWidth + root.flareSize + root.rightInset + 16)
+        visible: root.active || slide < 1
 
-        Behavior on x {
+        Behavior on slide {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                id: slideAnimation
                 duration: Config.animDuration
                 easing.type: Easing.OutCubic
             }
         }
 
-        Behavior on width {
-            enabled: Config.animDuration > 0 && root.active
-            NumberAnimation {
-                duration: Config.animDuration
-                easing.type: Easing.OutCubic
-            }
+        // The visible part (body + flares): input region and click absorber.
+        Item {
+            id: hitArea
+            x: panel.edgeX - root.flareSize
+            width: root.shownWidth + root.flareSize
+            height: parent.height
         }
 
         // Clicks on the panel never reach the click-outside backdrop.
         MouseArea {
-            anchors.fill: body
+            anchors.fill: hitArea
             acceptedButtons: Qt.AllButtons
             onPressed: mouse => {
                 panelFocus.forceActiveFocus();
@@ -105,71 +199,94 @@ Item {
             }
         }
 
-        // Surface, masked to body + flares.
-        StyledRect {
-            anchors.fill: parent
-            variant: root.blendWithBar ? "barbg" : "bg"
-            enableBorder: false
-            animateRadius: false
-            radius: 0
-            layer.enabled: true
-            layer.smooth: true
-            layer.effect: MultiEffect {
-                maskEnabled: true
-                maskSource: panelMask
-                maskThresholdMin: 0.5
-                maskSpreadAtMin: 1.0
-            }
-        }
-
+        // Surface with its own shadow (outside the shell's full-screen shadow
+        // layer). Clipped where the panel meets the bar or a screen edge, so
+        // no shadow falls onto the bar.
         Item {
-            id: panelMask
-            anchors.fill: parent
-            visible: false
-            layer.enabled: true
-            layer.smooth: true
+            id: shadowClip
+            readonly property int pad: 48
+            x: -pad
+            y: root.topAttached ? 0 : -pad
+            width: parent.width + pad
+            height: parent.height + (root.topAttached ? 0 : pad) + (root.bottomAttached ? 0 : pad)
+            clip: true
 
-            // Flare curving out of the top edge (or the bar) into the body.
-            RoundCorner {
-                x: 0
-                y: 0
-                width: root.flareSize
-                height: root.flareSize
-                size: Math.max(1, root.flareSize)
-                // opacity, not visible: inside the hidden mask layer a
-                // RoundCorner that starts invisible never gets painted.
-                opacity: root.topAttached ? 1 : 0
-                corner: RoundCorner.CornerEnum.TopRight
-                color: "white"
-            }
+            Item {
+                id: surfaceWrap
+                x: shadowClip.pad
+                y: root.topAttached ? 0 : shadowClip.pad
+                width: panel.width
+                height: panel.height
+                layer.enabled: true
+                layer.effect: Shadow {}
 
-            Rectangle {
-                id: bodyMask
-                x: root.flareSize
-                width: parent.width - root.flareSize
-                height: parent.height
-                color: "white"
-                topLeftRadius: root.topAttached ? 0 : root.cornerRadius
-                bottomLeftRadius: root.bottomAttached ? 0 : root.cornerRadius
-            }
+                // Surface, masked to body + flares.
+                StyledRect {
+                    anchors.fill: parent
+                    variant: root.blendWithBar ? "barbg" : "bg"
+                    enableBorder: false
+                    animateRadius: false
+                    radius: 0
+                    layer.enabled: true
+                    layer.smooth: true
+                    layer.effect: MultiEffect {
+                        maskEnabled: true
+                        maskSource: panelMask
+                        maskThresholdMin: 0.5
+                        maskSpreadAtMin: 1.0
+                    }
+                }
 
-            // Flare curving out of the bottom edge into the body.
-            RoundCorner {
-                x: 0
-                y: parent.height - height
-                width: root.flareSize
-                height: root.flareSize
-                size: Math.max(1, root.flareSize)
-                opacity: root.bottomAttached ? 1 : 0
-                corner: RoundCorner.CornerEnum.BottomRight
-                color: "white"
+                Item {
+                    id: panelMask
+                    anchors.fill: parent
+                    visible: false
+                    layer.enabled: true
+                    layer.smooth: true
+
+                    // Flare curving out of the top edge (or the bar) into the body.
+                    RoundCorner {
+                        x: panel.edgeX - root.flareSize
+                        y: 0
+                        width: root.flareSize
+                        height: root.flareSize
+                        size: Math.max(1, root.flareSize)
+                        // opacity, not visible: inside the hidden mask layer a
+                        // RoundCorner that starts invisible never gets painted.
+                        opacity: root.topAttached ? 1 : 0
+                        corner: RoundCorner.CornerEnum.TopRight
+                        color: "white"
+                    }
+
+                    Rectangle {
+                        id: bodyMask
+                        x: panel.edgeX
+                        width: root.shownWidth
+                        height: parent.height
+                        color: "white"
+                        topLeftRadius: root.topAttached ? 0 : root.cornerRadius
+                        bottomLeftRadius: root.bottomAttached ? 0 : root.cornerRadius
+                    }
+
+                    // Flare curving out of the bottom edge into the body.
+                    RoundCorner {
+                        x: panel.edgeX - root.flareSize
+                        y: parent.height - height
+                        width: root.flareSize
+                        height: root.flareSize
+                        size: Math.max(1, root.flareSize)
+                        opacity: root.bottomAttached ? 1 : 0
+                        corner: RoundCorner.CornerEnum.BottomRight
+                        color: "white"
+                    }
+                }
             }
         }
 
         // ── Content ─────────────────────────────────────────────────────
         FocusScope {
             id: panelFocus
-            anchors.fill: body
+            anchors.fill: hitArea
             focus: root.active
 
             Keys.onEscapePressed: event => {
@@ -178,70 +295,204 @@ Item {
             }
         }
 
+        // Clip to the visible body; the content inside is laid out at the
+        // target width right away and kept against the right edge, so pages
+        // aren't re-laid out on every frame of the resize.
+        Item {
+            id: contentClip
+            x: panel.edgeX
+            width: root.shownWidth
+            height: parent.height
+            clip: true
+
         Item {
             id: body
-            x: root.flareSize
-            width: parent.width - root.flareSize
+            width: root.bodyWidth
+            x: contentClip.width - width
             height: parent.height
 
-            ColumnLayout {
+            RowLayout {
                 anchors.fill: parent
                 anchors.margins: 16
                 anchors.topMargin: root.topAttached ? 12 : 16
                 anchors.bottomMargin: root.bottomAttached ? 12 : 16
-                spacing: 12
+                spacing: 6
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
+                // Side tabs, styled like the dashboard's: a sliding primary
+                // highlight behind icon buttons, search pinned to the bottom.
+                Item {
+                    id: tabsContainer
+                    Layout.preferredWidth: root.tabSize
+                    Layout.fillHeight: true
 
-                    SegmentedSwitch {
-                        options: [
-                            {
-                                icon: Icons.faders,
-                                label: "Control Center"
-                            },
-                            {
-                                icon: Icons.gear,
-                                label: "Settings"
+                    Flickable {
+                        id: tabsFlick
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: searchButton.top
+                        anchors.bottomMargin: 8
+                        contentHeight: tabsColumn.height
+                        boundsBehavior: Flickable.StopAtBounds
+                        interactive: contentHeight > height
+                        clip: true
+
+                        StyledRect {
+                            id: tabHighlight
+                            variant: "primary"
+                            width: root.tabSize
+                            height: root.tabSize
+                            radius: Styling.radius(4)
+                            visible: root.currentTab < root.searchTab
+                            y: Math.min(root.currentTab, root.tabModel.length - 1) * (root.tabSize + tabsColumn.spacing)
+
+                            Behavior on y {
+                                enabled: Config.animDuration > 0
+                                NumberAnimation {
+                                    duration: Config.animDuration / 2
+                                    easing.type: Easing.OutCubic
+                                }
                             }
-                        ]
-                        currentIndex: root.onSettings ? 1 : 0
-                        buttonSize: 32
-                        onIndexChanged: index => GlobalStates.controlCenterPage = index === 1 ? "settings" : "controls"
+                        }
+
+                        Column {
+                            id: tabsColumn
+                            width: parent.width
+                            spacing: 4
+
+                            Repeater {
+                                model: root.tabModel
+
+                                Item {
+                                    id: tabButton
+                                    required property var modelData
+                                    required property int index
+                                    readonly property bool selected: root.currentTab === index
+                                    width: root.tabSize
+                                    height: root.tabSize
+
+                                    StyledRect {
+                                        anchors.fill: parent
+                                        variant: "focus"
+                                        radius: Styling.radius(4)
+                                        opacity: tabArea.containsMouse && !tabButton.selected ? 1 : 0
+
+                                        Behavior on opacity {
+                                            enabled: Config.animDuration > 0
+                                            NumberAnimation {
+                                                duration: Config.animDuration / 3
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        visible: !tabButton.modelData.image
+                                        text: tabButton.modelData.icon ?? ""
+                                        font.family: Icons.font
+                                        font.pixelSize: 20
+                                        color: tabButton.selected ? Styling.srItem("primary") : Colors.overBackground
+
+                                        Behavior on color {
+                                            enabled: Config.animDuration > 0
+                                            ColorAnimation {
+                                                duration: Config.animDuration
+                                                easing.type: Easing.OutCubic
+                                            }
+                                        }
+                                    }
+
+                                    Image {
+                                        anchors.centerIn: parent
+                                        visible: !!tabButton.modelData.image
+                                        width: 20
+                                        height: 20
+                                        source: tabButton.modelData.image ?? ""
+                                        sourceSize: Qt.size(40, 40)
+                                        fillMode: Image.PreserveAspectFit
+                                        smooth: true
+                                        layer.enabled: visible
+                                        layer.effect: MultiEffect {
+                                            brightness: 1.0
+                                            colorization: 1.0
+                                            colorizationColor: tabButton.selected ? Styling.srItem("primary") : Colors.overBackground
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: tabArea
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.selectTab(tabButton.index)
+                                    }
+
+                                    StyledToolTip {
+                                        show: tabArea.containsMouse
+                                        tooltipText: tabButton.modelData.label
+                                    }
+                                }
+                            }
+                        }
+
+                        // Wheel over the tabs steps through them.
+                        WheelHandler {
+                            enabled: !tabsFlick.interactive
+                            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                            onWheel: event => {
+                                const last = root.tabModel.length - 1;
+                                const cur = Math.min(root.currentTab, last);
+                                if (event.angleDelta.y > 0 && cur > 0)
+                                    root.selectTab(cur - 1);
+                                else if (event.angleDelta.y < 0 && cur < last)
+                                    root.selectTab(cur + 1);
+                            }
+                        }
                     }
 
-                    Item {
-                        Layout.fillWidth: true
-                    }
-
+                    // Search: the full Settings layout (search box + results).
                     StyledRect {
-                        Layout.preferredWidth: 32
-                        Layout.preferredHeight: 32
-                        variant: closeArea.containsMouse ? "focus" : "common"
-                        radius: Styling.radius(-2)
+                        id: searchButton
+                        anchors.bottom: parent.bottom
+                        anchors.left: parent.left
+                        width: root.tabSize
+                        height: root.tabSize
+                        radius: Styling.radius(4)
+                        variant: root.currentTab === root.searchTab ? "primary" : (searchArea.containsMouse ? "focus" : "common")
 
                         Text {
                             anchors.centerIn: parent
-                            text: Icons.cancel
+                            text: Icons.magnifyingGlass
                             font.family: Icons.font
-                            font.pixelSize: 16
-                            color: parent.item
+                            font.pixelSize: 20
+                            color: root.currentTab === root.searchTab ? Styling.srItem("primary") : Colors.overBackground
                         }
 
                         MouseArea {
-                            id: closeArea
+                            id: searchArea
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: Visibilities.setActiveModule("")
+                            onClicked: root.selectTab(root.searchTab)
+                        }
+
+                        StyledToolTip {
+                            show: searchArea.containsMouse
+                            tooltipText: "Search settings"
                         }
                     }
+                }
+
+                Separator {
+                    Layout.preferredWidth: 2
+                    Layout.fillHeight: true
+                    vert: true
                 }
 
                 Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+                    Layout.leftMargin: 6
                     clip: true
 
                     ControlCenterPage {
@@ -251,25 +502,25 @@ Item {
                         visible: !root.onSettings
                     }
 
-                    // Settings stays loaded once opened, so its state and
-                    // search index survive switching pages.
+                    // One Settings view shared by the section tabs and search;
+                    // it stays loaded once opened so its state and search
+                    // index survive switching tabs.
                     Loader {
                         id: settingsLoader
                         anchors.fill: parent
                         active: root.settingsVisited
+                        // Built in the background: creating Settings in one
+                        // go froze the shell on its first open.
+                        asynchronous: true
                         visible: root.onSettings
-                        sourceComponent: SettingsTab {}
-                        onVisibleChanged: {
-                            if (visible && item && item.focusSearchInput)
-                                Qt.callLater(() => item.focusSearchInput());
+                        sourceComponent: SettingsTab {
+                            showSidebar: false
                         }
-                        onLoaded: {
-                            if (visible && item.focusSearchInput)
-                                Qt.callLater(() => item.focusSearchInput());
-                        }
+                        onLoaded: root.syncSettings()
                     }
                 }
             }
+        }
         }
     }
 }

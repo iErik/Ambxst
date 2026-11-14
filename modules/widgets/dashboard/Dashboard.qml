@@ -310,7 +310,7 @@ NotchAnimationBehavior {
                 variant: controlsButton.hovered ? "focus" : "common"
                 z: -1
 
-                opacity: GlobalStates.settingsWindowVisible ? 0 : 1
+                opacity: 1
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -340,7 +340,7 @@ NotchAnimationBehavior {
                     font.family: Icons.font
                     font.pixelSize: 20
                     font.weight: Font.Medium
-                    color: GlobalStates.settingsWindowVisible ? Styling.srItem("primary") : Colors.overBackground
+                    color: Colors.overBackground
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
 

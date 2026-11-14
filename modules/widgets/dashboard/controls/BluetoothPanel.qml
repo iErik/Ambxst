@@ -17,15 +17,26 @@ Item {
     readonly property int contentWidth: Math.min(width, maxContentWidth)
     readonly property real sideMargin: (width - contentWidth) / 2
 
-    Component.onCompleted: {
-        BluetoothService.initialize();
-        BluetoothService.setUiActive(true);
-        // Only refresh device list, don't start scanning automatically
-        if (BluetoothService.enabled) {
-            // Defer update to avoid blocking UI initialization
-            initialUpdateTimer.start();
+    // Pages can be built ahead of time while hidden (Control Center warm-up):
+    // only poll Bluetooth while the page is actually shown.
+    function setShown(shown) {
+        if (shown) {
+            BluetoothService.setUiActive(true);
+            // Only refresh device list, don't start scanning automatically
+            if (BluetoothService.enabled)
+                initialUpdateTimer.start();
+        } else {
+            BluetoothService.setUiActive(false);
+            BluetoothService.stopDiscovery();
         }
     }
+
+    Component.onCompleted: {
+        BluetoothService.initialize();
+        if (visible)
+            setShown(true);
+    }
+    onVisibleChanged: setShown(visible)
 
     Timer {
         id: initialUpdateTimer
@@ -45,7 +56,7 @@ Item {
         anchors.fill: parent
         clip: true
         spacing: 4
-        cacheBuffer: 1000
+        cacheBuffer: 200
         reuseItems: true
 
         model: BluetoothService.friendlyDeviceList
@@ -90,16 +101,21 @@ Item {
             }
         }
 
+        // Rows are built asynchronously behind a placeholder (see WifiPanel).
         delegate: Item {
+            id: deviceRow
             required property var modelData
             width: deviceList.width
-            height: deviceItem.height
+            height: deviceLoader.item ? deviceLoader.item.height : 48
 
-            BluetoothDeviceItem {
-                id: deviceItem
+            Loader {
+                id: deviceLoader
                 width: root.contentWidth
                 anchors.horizontalCenter: parent.horizontalCenter
-                device: parent.modelData
+                asynchronous: true
+                sourceComponent: BluetoothDeviceItem {
+                    device: deviceRow.modelData
+                }
             }
         }
 

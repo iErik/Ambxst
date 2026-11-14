@@ -3,6 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Quickshell
+import Quickshell.Io
 import qs.modules.theme
 import QtQuick.Effects
 import qs.modules.components
@@ -13,12 +15,16 @@ import "SettingsCrawler.js" as SettingsCrawler
 
 Rectangle {
     id: root
+
     color: "transparent"
     implicitWidth: 400
     implicitHeight: 300
     // 0: Network, 1: Bluetooth, 2: Mixer, 3: AI, 4: Effects, 5: Theme, 6: Binds, 7: System, 8: Compositor, 9: Shell
 
     property int currentSection: 0
+    // false: the section list and search are hidden and the host (the
+    // Control Center's side tabs) picks the section with showSection().
+    property bool showSidebar: true
     property int selectedIndex: GlobalStates.settingsCurrentTab
     property string searchQuery: ""
 
@@ -28,7 +34,7 @@ Rectangle {
     Timer {
         id: focusRestoreTimer
         interval: 50
-        onTriggered: searchInput.focusInput()
+        onTriggered: root.focusSearchInput()
     }
 
     onSelectedIndexChanged: {
@@ -55,67 +61,77 @@ Rectangle {
 
     // Focus the search input (called from parent Dashboard)
     function focusSearchInput() {
-        searchInput.focusInput();
+        if (root.showSidebar)
+            searchInput.focusInput();
+    }
+
+    // Show one section directly, leaving any search.
+    function showSection(sectionId) {
+        if (root.searchQuery !== "") {
+            searchInput.clear();
+            root.searchQuery = "";
+        }
+        if (root.selectedIndex !== sectionId)
+            root.selectedIndex = sectionId;
+        else
+            root.currentSection = sectionId;
     }
 
     SettingsIndex {
         id: searchIndex
     }
 
-    // Dynamic Settings Indexer
-    Item {
+    // Search index for the panels' own settings. Each section page is crawled
+    // once, when it is first created (warm-up builds them all while the shell
+    // is idle), instead of loading a second, headless copy of every page. The
+    // result is cached on disk so later runs have full search immediately.
+    QtObject {
         id: settingsIndexer
-        visible: false // Headless
 
-        property int currentPanelIndex: 0
+        property var crawled: ({})
         property var aggregatedItems: []
-        property bool isIndexing: false
+        property bool fromCache: false
 
-        // Helper to load panels one by one
-        Loader {
-            id: indexerLoader
-            active: settingsIndexer.isIndexing
-            asynchronous: true
-            source: settingsIndexer.isIndexing && settingsIndexer.currentPanelIndex < contentArea.panelComponents.length ? contentArea.panelComponents[settingsIndexer.currentPanelIndex].component : ""
+        // Changes whenever the shell build changes, so a stale index is rebuilt.
+        readonly property string cacheKey: Qt.resolvedUrl(".").toString()
 
-            onStatusChanged: {
-                if (status === Loader.Ready && item) {
-                    // Scrape
-                    const sectionId = contentArea.panelComponents[settingsIndexer.currentPanelIndex].section;
-                    const newItems = SettingsCrawler.crawl(item, sectionId);
-                    settingsIndexer.aggregatedItems = settingsIndexer.aggregatedItems.concat(newItems);
+        function crawlSection(item, sectionId) {
+            if (!item || crawled[sectionId] || fromCache)
+                return;
+            const newItems = SettingsCrawler.crawl(item, sectionId);
+            crawled[sectionId] = true;
+            aggregatedItems = aggregatedItems.concat(newItems);
+            searchIndex.addDynamicItems(newItems);
+            if (Object.keys(crawled).length >= contentArea.panelComponents.length) {
+                indexCache.setText(JSON.stringify({
+                    key: cacheKey,
+                    items: aggregatedItems
+                }));
+            }
+        }
+    }
 
-                    // Move to next
-                    settingsIndexer.currentPanelIndex++;
-                } else if (status === Loader.Error) {
-                    console.warn("Failed to load panel for indexing:", source);
-                    settingsIndexer.currentPanelIndex++;
+    FileView {
+        id: indexCache
+        path: Quickshell.env("HOME") + "/.cache/ambxst/settings-index.json"
+        printErrors: false
+        onLoaded: {
+            try {
+                const data = JSON.parse(text());
+                if (data && data.key === settingsIndexer.cacheKey && Array.isArray(data.items)) {
+                    searchIndex.addDynamicItems(data.items);
+                    settingsIndexer.fromCache = true;
                 }
-            }
+            } catch (e) {}
         }
+    }
 
-        onCurrentPanelIndexChanged: {
-            if (currentPanelIndex >= contentArea.panelComponents.length) {
-                // Done
-                if (isIndexing) {
-                    isIndexing = false;
-                    searchIndex.addDynamicItems(aggregatedItems);
-                }
-            }
-        }
-
-        Component.onCompleted: {
-            // Start indexing after a short delay to allow UI to settle
-            indexingTimer.start();
-        }
-
-        Timer {
-            id: indexingTimer
-            interval: 500
-            onTriggered: {
-                settingsIndexer.isIndexing = true;
-            }
-        }
+    // Warm-up: create section `sectionId` hidden; returns its Loader.
+    function warmSection(sectionId) {
+        const loader = panelRepeater.itemAt(sectionId);
+        if (loader)
+            loader.visited = true;
+        return loader;
     }
 
     // Store pending subsection to apply when panel loads
@@ -127,7 +143,8 @@ Rectangle {
 
         // Panels that support subsections: Theme(5), System(7), Compositor(8), Shell(9)
         if ([5, 7, 8, 9].includes(sectionId)) {
-            if (panelLoader.item && panelLoader.status === Loader.Ready) {
+            const panelLoader = contentArea.panelLoader;
+            if (panelLoader && panelLoader.item && panelLoader.status === Loader.Ready) {
                 panelLoader.item.currentSection = subSectionId;
             } else {
                 pendingSubSection = subSectionId;
@@ -303,6 +320,7 @@ Rectangle {
 
         // Sidebar area: search + list
         ColumnLayout {
+            visible: root.showSidebar
             Layout.preferredWidth: 200
             Layout.maximumWidth: 200
             Layout.fillHeight: true
@@ -600,30 +618,51 @@ Rectangle {
                 }
             ]
 
-            // Lazy-loaded panel using Loader
-            Loader {
-                id: panelLoader
-                anchors.fill: parent
-                asynchronous: true
-                source: contentArea.panelComponents[root.currentSection]?.component ?? ""
+            // One Loader per section, loaded on first visit and then kept, so
+            // switching back to a section is instant (no rebuild, no re-scan).
+            readonly property Loader panelLoader: panelRepeater.count > root.currentSection ? panelRepeater.itemAt(root.currentSection) : null
 
-                // Fade in animation
-                opacity: status === Loader.Ready ? 1 : 0
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: Config.animDuration
-                        easing.type: Easing.OutCubic
+            Repeater {
+                id: panelRepeater
+                model: contentArea.panelComponents
+
+                Loader {
+                    id: sectionLoader
+                    required property var modelData
+                    required property int index
+                    readonly property bool current: root.currentSection === modelData.section
+                    property bool visited: current
+                    onCurrentChanged: if (current)
+                        visited = true
+
+                    anchors.fill: parent
+                    asynchronous: true
+                    active: visited
+                    visible: current
+                    source: modelData.component
+
+                    // Fade in when shown
+                    opacity: current && status === Loader.Ready ? 1 : 0
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: Config.animDuration / 2
+                            easing.type: Easing.OutCubic
+                        }
                     }
-                }
 
-                onLoaded: {
-                    if (item) {
-                        item.maxContentWidth = contentArea.maxContentWidth;
-                        // Apply pending subsection if any
-                        if (root.pendingSubSection !== "" && item.currentSection !== undefined) {
-                            item.currentSection = root.pendingSubSection;
-                            root.pendingSubSection = "";
+                    onActiveChanged: if (active)
+                        PerfProbe.mark("section " + modelData.section + " load")
+                    onLoaded: {
+                        PerfProbe.done("section " + modelData.section + " load");
+                        if (item) {
+                            item.maxContentWidth = contentArea.maxContentWidth;
+                            settingsIndexer.crawlSection(item, modelData.section);
+                            // Apply pending subsection if any
+                            if (current && root.pendingSubSection !== "" && item.currentSection !== undefined) {
+                                item.currentSection = root.pendingSubSection;
+                                root.pendingSubSection = "";
+                            }
                         }
                     }
                 }

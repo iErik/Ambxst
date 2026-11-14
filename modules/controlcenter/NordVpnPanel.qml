@@ -175,6 +175,7 @@ Item {
             visible: NordVpn.selectedCountry.length > 0
 
             StyledRect {
+                id: cityBackButton
                 Layout.preferredHeight: 28
                 Layout.preferredWidth: backLabel.implicitWidth + 16
                 variant: "common"
@@ -186,7 +187,7 @@ Item {
                     text: "← Countries"
                     font.family: Styling.defaultFont
                     font.pixelSize: Styling.fontSize(-1)
-                    color: parent.item
+                    color: cityBackButton.item
                 }
 
                 MouseArea {

@@ -26,9 +26,25 @@ Item {
     }
 
     function closeDetail() {
-        if (detailLoader.item && detailLoader.item.reset)
-            detailLoader.item.reset();
+        const loader = detailLoaderFor(root.detail);
+        if (loader && loader.item && loader.item.reset)
+            loader.item.reset();
         root.detail = "";
+    }
+
+    readonly property var detailNames: ["wifi", "bluetooth", "nordvpn", "pcloud"]
+
+    function detailLoaderFor(name) {
+        const i = root.detailNames.indexOf(name);
+        return i >= 0 ? detailRepeater.itemAt(i) : null;
+    }
+
+    // Warm-up: build detail view `name` hidden; returns its Loader.
+    function warmDetail(name) {
+        const loader = detailLoaderFor(name);
+        if (loader)
+            loader.visited = true;
+        return loader;
     }
 
     // Leaving the Control Center returns to the overview next time.
@@ -73,7 +89,8 @@ Item {
         }
     }
 
-    // A toggle tile; a chevron (or right-click) opens its detail view.
+    // A toggle tile. Tiles with a detail view carry a small chevron badge on
+    // the button's corner (click it, or right-click the tile, to open it).
     component Tile: ColumnLayout {
         id: tile
         required property string iconName
@@ -82,11 +99,14 @@ Item {
         property string detailName: ""
         signal toggled
         spacing: 4
+        Layout.fillWidth: true
+        Layout.preferredWidth: 1
 
         ControlButton {
+            id: tileButton
             Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: 56
-            Layout.preferredHeight: 56
+            Layout.preferredWidth: 48
+            Layout.preferredHeight: 48
             iconName: tile.iconName
             isActive: tile.isActive
             tooltipText: tile.detailName !== "" ? tile.label + " · right-click for details" : tile.label
@@ -95,35 +115,45 @@ Item {
                 root.openDetail(tile.detailName)
             onLongPressed: if (tile.detailName !== "")
                 root.openDetail(tile.detailName)
-        }
 
-        RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 2
-
-            Text {
-                text: tile.label
-                font.family: Styling.defaultFont
-                font.pixelSize: Styling.fontSize(-2)
-                color: Colors.overBackground
-                elide: Text.ElideRight
-                Layout.maximumWidth: 72
-            }
-
-            Text {
+            StyledRect {
+                id: detailBadge
                 visible: tile.detailName !== ""
-                text: Icons.caretRight
-                font.family: Icons.font
-                font.pixelSize: Styling.fontSize(-2)
-                color: Colors.overSurfaceVariant
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: -3
+                width: 18
+                height: 18
+                radius: 9
+                variant: badgeArea.containsMouse ? "focus" : "common"
+
+                Text {
+                    anchors.centerIn: parent
+                    text: Icons.caretRight
+                    font.family: Icons.font
+                    font.pixelSize: 10
+                    color: detailBadge.item
+                }
 
                 MouseArea {
+                    id: badgeArea
                     anchors.fill: parent
-                    anchors.margins: -6
+                    anchors.margins: -3
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.openDetail(tile.detailName)
                 }
             }
+        }
+
+        Text {
+            Layout.fillWidth: true
+            horizontalAlignment: Text.AlignHCenter
+            text: tile.label
+            font.family: Styling.defaultFont
+            font.pixelSize: Styling.fontSize(-3)
+            color: Colors.overBackground
+            elide: Text.ElideRight
         }
     }
 
@@ -168,14 +198,12 @@ Item {
             Card {
                 title: "Quick Settings"
 
-                GridLayout {
+                // One row; tiles share the width equally.
+                RowLayout {
                     Layout.fillWidth: true
-                    columns: 4
-                    rowSpacing: 10
-                    columnSpacing: 4
+                    spacing: 2
 
                     Tile {
-                        Layout.fillWidth: true
                         label: "Wi-Fi"
                         detailName: "wifi"
                         iconName: {
@@ -197,7 +225,6 @@ Item {
                     }
 
                     Tile {
-                        Layout.fillWidth: true
                         label: "Bluetooth"
                         detailName: "bluetooth"
                         iconName: {
@@ -212,7 +239,6 @@ Item {
                     }
 
                     Tile {
-                        Layout.fillWidth: true
                         visible: NordVpn.available
                         label: "NordVPN"
                         detailName: "nordvpn"
@@ -222,7 +248,6 @@ Item {
                     }
 
                     Tile {
-                        Layout.fillWidth: true
                         visible: Pcloud.available
                         label: "pCloud"
                         detailName: "pcloud"
@@ -232,7 +257,6 @@ Item {
                     }
 
                     Tile {
-                        Layout.fillWidth: true
                         label: "Night Light"
                         iconName: Icons.nightLight
                         isActive: NightLightService.active
@@ -240,7 +264,6 @@ Item {
                     }
 
                     Tile {
-                        Layout.fillWidth: true
                         label: "Caffeine"
                         iconName: Icons.caffeine
                         isActive: CaffeineService.inhibit
@@ -248,7 +271,6 @@ Item {
                     }
 
                     Tile {
-                        Layout.fillWidth: true
                         label: "Game Mode"
                         iconName: Icons.gameMode
                         isActive: GameModeService.toggled
@@ -378,6 +400,7 @@ Item {
                 spacing: 8
 
                 StyledRect {
+                    id: backButton
                     Layout.preferredWidth: 32
                     Layout.preferredHeight: 32
                     variant: backArea.containsMouse ? "focus" : "common"
@@ -388,7 +411,7 @@ Item {
                         text: Icons.caretLeft
                         font.family: Icons.font
                         font.pixelSize: 16
-                        color: parent.item
+                        color: backButton.item
                     }
 
                     MouseArea {
@@ -418,28 +441,46 @@ Item {
                 radius: Styling.radius(4)
                 clip: true
 
-                Loader {
-                    id: detailLoader
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    active: root.detail !== ""
-                    sourceComponent: {
-                        switch (root.detail) {
-                        case "wifi":
-                            return wifiComponent;
-                        case "bluetooth":
-                            return bluetoothComponent;
-                        case "nordvpn":
-                            return nordVpnComponent;
-                        case "pcloud":
-                            return pcloudComponent;
-                        default:
-                            return null;
+                // One Loader per detail view, built once (by warm-up or on
+                // first open) and then kept: opening a view only shows it.
+                Repeater {
+                    id: detailRepeater
+                    model: root.detailNames
+
+                    Loader {
+                        id: detailLoader
+                        required property string modelData
+                        readonly property bool current: root.detail === modelData
+                        property bool visited: current
+                        onCurrentChanged: {
+                            if (current) {
+                                visited = true;
+                                if (item && item.activate)
+                                    item.activate();
+                            }
                         }
-                    }
-                    onLoaded: {
-                        if (item && item.activate)
-                            item.activate();
+
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        active: visited
+                        asynchronous: true
+                        visible: current
+                        sourceComponent: {
+                            switch (modelData) {
+                            case "wifi":
+                                return wifiComponent;
+                            case "bluetooth":
+                                return bluetoothComponent;
+                            case "nordvpn":
+                                return nordVpnComponent;
+                            default:
+                                return pcloudComponent;
+                            }
+                        }
+                        onLoaded: {
+                            if (current && item && item.activate)
+                                item.activate();
+                        }
                     }
                 }
             }

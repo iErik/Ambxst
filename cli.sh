@@ -787,10 +787,13 @@ help | --help | -h)
 
 	# Launch QuickShell with the main shell.qml
 	# If NIXGL_BIN is set (NixOS/Nix setup), use it. Otherwise, just run qs directly.
+	# AMBXST_QS_ARGS passes extra quickshell options, e.g. "--debug 3768" to
+	# attach qmlprofiler.
+	# shellcheck disable=SC2086
 	if [ -n "$NIXGL_BIN" ]; then
-		exec "$NIXGL_BIN" "$QS_BIN" -p "${SCRIPT_DIR}/shell.qml"
+		exec "$NIXGL_BIN" "$QS_BIN" ${AMBXST_QS_ARGS:-} -p "${SCRIPT_DIR}/shell.qml"
 	else
-		exec qs -p "${SCRIPT_DIR}/shell.qml"
+		exec qs ${AMBXST_QS_ARGS:-} -p "${SCRIPT_DIR}/shell.qml"
 	fi
 	;;
 *)

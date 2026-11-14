@@ -147,72 +147,77 @@ Item {
             }
         }
 
-        // Expanded content with connect/disconnect button and password input
-        ColumnLayout {
+        // Expanded content with connect/disconnect button and password input.
+        // Built only when the row is opened: creating it for every network up
+        // front made the list slow to appear.
+        Loader {
             Layout.fillWidth: true
-            visible: root.expanded
-            spacing: 8
-            opacity: root.expanded ? 1 : 0
-
-            Behavior on opacity {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: Config.animDuration / 2
-                }
-            }
-
-            // Password input (shown when required)
-            SearchInput {
-                id: passwordInput
-                Layout.fillWidth: true
-                visible: root.network?.askingPassword ?? false
-                placeholderText: "Enter password..."
-                passwordMode: true
-                implicitHeight: 40
-                variant: "internalbg"
-
-                onAccepted: {
-                    if (text.length > 0) {
-                        NetworkService.changePassword(root.network, text);
-                        text = "";
-                    }
-                }
-            }
-
-            // Action buttons
-            RowLayout {
-                Layout.fillWidth: true
+            active: root.expanded
+            visible: active
+            sourceComponent: ColumnLayout {
                 spacing: 8
+                opacity: root.expanded ? 1 : 0
 
-                Item {
-                    Layout.fillWidth: true
+                Behavior on opacity {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: Config.animDuration / 2
+                    }
                 }
 
-                Button {
-                    id: actionButton
-                    flat: true
-                    implicitWidth: 100
-                    implicitHeight: 32
+                // Password input (shown when required)
+                SearchInput {
+                    id: passwordInput
+                    Layout.fillWidth: true
+                    visible: root.network?.askingPassword ?? false
+                    placeholderText: "Enter password..."
+                    passwordMode: true
+                    implicitHeight: 40
+                    variant: "internalbg"
 
-                    background: StyledRect {
-                        variant: root.network?.active ? "internalbg" : "primary"
-                        radius: Styling.radius(4)
+                    onAccepted: {
+                        if (text.length > 0) {
+                            NetworkService.changePassword(root.network, text);
+                            text = "";
+                        }
+                    }
+                }
+
+                // Action buttons
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    Item {
+                        Layout.fillWidth: true
                     }
 
-                    contentItem: Text {
-                        text: root.network?.active ? "Disconnect" : "Connect"
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-1)
-                        color: root.network?.active ? Colors.overSurfaceVariant : Styling.srItem("primary")
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                    Button {
+                        id: actionButton
+                        flat: true
+                        implicitWidth: 100
+                        implicitHeight: 32
 
-                    onClicked: {
-                        if (root.network?.active) {
-                            NetworkService.disconnectWifiNetwork();
-                        } else {
-                            NetworkService.connectToWifiNetwork(root.network);
+                        background: StyledRect {
+                            variant: root.network?.active ? "internalbg" : "primary"
+                            radius: Styling.radius(4)
+                        }
+
+                        contentItem: Text {
+                            text: root.network?.active ? "Disconnect" : "Connect"
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(-1)
+                            color: root.network?.active ? Colors.overSurfaceVariant : Styling.srItem("primary")
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        onClicked: {
+                            if (root.network?.active) {
+                                NetworkService.disconnectWifiNetwork();
+                            } else {
+                                NetworkService.connectToWifiNetwork(root.network);
+                            }
                         }
                     }
                 }

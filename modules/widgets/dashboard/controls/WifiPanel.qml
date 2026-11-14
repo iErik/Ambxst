@@ -16,9 +16,37 @@ Item {
     readonly property int contentWidth: Math.min(width, maxContentWidth)
     readonly property real sideMargin: (width - contentWidth) / 2
 
+    // Rows are created a couple per frame while the page is shown, behind
+    // placeholders, so building the list never blocks a frame for long.
+    // ("asynchronous" Loaders still built everything in one go here.)
+    property int rowBudget: 0
+    readonly property int rowsPerTick: 2
+
+    Timer {
+        id: rowTicker
+        interval: 16
+        repeat: true
+        running: root.visible && root.rowBudget < networkList.count
+        onTriggered: root.rowBudget += root.rowsPerTick
+    }
+
+    // A new model rebuilds every row: start the budget over.
+    Connections {
+        target: NetworkService
+        function onFriendlyWifiNetworksChanged() {
+            root.rowBudget = 0;
+        }
+    }
+
+    // Pages can be built ahead of time while hidden (Control Center warm-up):
+    // scan when the page is actually shown, not when it is created.
     Component.onCompleted: {
-        // Defer scan to avoid blocking UI initialization
-        initialScanTimer.start();
+        if (visible)
+            initialScanTimer.start();
+    }
+    onVisibleChanged: {
+        if (visible)
+            initialScanTimer.start();
     }
 
     Timer {
@@ -34,7 +62,8 @@ Item {
         anchors.fill: parent
         clip: true
         spacing: 4
-        cacheBuffer: 1000
+        // Rows are built as they scroll into view, not all up front.
+        cacheBuffer: 200
         reuseItems: true
 
         model: NetworkService.friendlyWifiNetworks
@@ -89,16 +118,25 @@ Item {
             }
         }
 
+        // Rows are built asynchronously (spread over frames) behind a
+        // placeholder of the collapsed row height: building them all in one
+        // frame froze the shell for most of a second.
         delegate: Item {
+            id: networkRow
             required property var modelData
+            required property int index
             width: networkList.width
-            height: networkItem.height
+            height: networkLoader.item ? networkLoader.item.height : 48
 
-            WifiNetworkItem {
-                id: networkItem
+            Loader {
+                id: networkLoader
                 width: root.contentWidth
                 anchors.horizontalCenter: parent.horizontalCenter
-                network: parent.modelData
+                // Built a couple per frame (see rowTicker), not all at once.
+                active: networkRow.index < root.rowBudget
+                sourceComponent: WifiNetworkItem {
+                    network: networkRow.modelData
+                }
             }
         }
 

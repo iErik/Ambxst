@@ -52,10 +52,13 @@ MouseArea {
         // 8px standard margin + 8px SysTray container padding to ensure correct offset from the main bar
         visualMargin: 16
 
-        // Using QsMenuOpener to access menu items
+        // Using QsMenuOpener to access menu items. Only while the popup is
+        // open: holding the menu open all the time made the shell rebuild it
+        // (on every screen) whenever the app changed it; nm-applet rebuilds
+        // its network menu on every Wi-Fi scan, which froze the shell ~0.6 s.
         QsMenuOpener {
             id: menuOpener
-            menu: root.item.menu
+            menu: systrayPopup.visible ? root.item.menu : null
         }
 
         ScrollView {
@@ -113,9 +116,10 @@ MouseArea {
                             Layout.fillWidth: true
                             spacing: 2
 
+                            // Submenus load when expanded, not up front.
                             QsMenuOpener {
                                 id: subMenuOpener
-                                menu: modelData.hasChildren ? modelData : null
+                                menu: submenuExpanded && modelData.hasChildren ? modelData : null
                             }
 
                             Repeater {

@@ -257,13 +257,6 @@ PanelWindow {
             z: 4
         }
 
-        ControlCenter {
-            id: controlCenter
-            anchors.fill: parent
-            targetScreen: unifiedPanel.targetScreen
-            z: 5
-        }
-
         AssistantSidebar {
             id: assistantSidebar
             targetScreen: unifiedPanel.targetScreen
@@ -316,5 +309,13 @@ PanelWindow {
                 return margin;
             }
         }
+    }
+
+    // Control Center: outside visualContent so its animations don't re-render
+    // the full-screen shadow layer of the bar/notch/dock; it draws its own.
+    ControlCenter {
+        id: controlCenter
+        anchors.fill: parent
+        targetScreen: unifiedPanel.targetScreen
     }
 }

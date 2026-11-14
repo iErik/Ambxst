@@ -269,13 +269,6 @@ ShellRoot {
         source: "modules/tools/MirrorWindow.qml"
     }
 
-    // Settings
-    Loader {
-        id: settingsWindowLoader
-        active: SuspendManager.wakeReady && GlobalStates.settingsWindowVisible
-        source: "modules/widgets/config/SettingsWindow.qml"
-    }
-
     // On-screen display
     Variants {
         model: Quickshell.screens

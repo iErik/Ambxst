@@ -61,13 +61,16 @@ RowLayout {
     }
 
     // Action buttons
+    // Model is the count, not the array: the array is rebuilt whenever any
+    // value in it changes (e.g. a "loading" flag), and using it as the model
+    // destroyed and recreated every button (and its tooltip) each time.
     Repeater {
-        model: root.actions
+        model: root.actions.length
 
         delegate: Button {
             id: actionButton
-            required property var modelData
             required property int index
+            readonly property var modelData: root.actions[index] ?? ({})
             flat: true
             implicitWidth: 28
             implicitHeight: 28
@@ -116,7 +119,10 @@ RowLayout {
         id: toggleSwitch
         visible: root.showToggle
         checked: root.toggleChecked
-        onCheckedChanged: root.toggleChanged(checked)
+        // Only user clicks: reporting every checked change also fired when the
+        // panel was created (re-enabling Wi-Fi and forcing a rescan each time,
+        // which froze the shell while nmcli churned).
+        onToggled: root.toggleChanged(checked)
 
         indicator: Rectangle {
             implicitWidth: 40

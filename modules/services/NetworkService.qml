@@ -70,13 +70,22 @@ Singleton {
     property list<var> friendlyWifiNetworks: []
 
     function updateFriendlyList() {
-        friendlyWifiNetworks = [...wifiNetworks].sort((a, b) => {
+        const sorted = [...wifiNetworks].sort((a, b) => {
             if (a.active && !b.active)
                 return -1;
             if (!a.active && b.active)
                 return 1;
             return b.strength - a.strength;
         });
+        // Reassigning the model rebuilds every row in the lists showing it;
+        // skip that when a scan returns the same networks in the same order
+        // (their properties still update in place).
+        const old = friendlyWifiNetworks;
+        let same = old.length === sorted.length;
+        for (let i = 0; same && i < sorted.length; i++)
+            same = old[i] === sorted[i];
+        if (!same)
+            friendlyWifiNetworks = sorted;
         updateActive();
     }
 
@@ -98,21 +107,32 @@ Singleton {
             }
             
             onExited: (exitCode, exitStatus) => {
-                if (exitCode === 0) resolve(buffer.trim());
-                else reject(errorBuffer.trim() || `Process exited with code ${exitCode}`);
-                destroy();
+                const out = buffer.trim();
+                const err = errorBuffer.trim();
+                const res = resolve;
+                const rej = reject;
+                buffer = "";
+                errorBuffer = "";
+                resolve = null;
+                reject = null;
+                // Back to the pool instead of destroy(): destroying a
+                // finished Process stalled the GUI thread for ~0.6 s.
+                Qt.callLater(() => root._procPool.push(internalProc));
+                if (exitCode === 0) res(out);
+                else rej(err || `Process exited with code ${exitCode}`);
             }
         }
     }
 
+    property var _procPool: []
+
     function runAsync(command, environment = {}) {
         return new Promise((resolve, reject) => {
-            const proc = asyncProcessComp.createObject(root, {
-                command: command,
-                environment: environment,
-                resolve: resolve,
-                reject: reject
-            });
+            const proc = root._procPool.pop() || asyncProcessComp.createObject(root);
+            proc.command = command;
+            proc.environment = environment;
+            proc.resolve = resolve;
+            proc.reject = reject;
             proc.running = true;
         });
     }
@@ -133,9 +153,11 @@ Singleton {
     }
 
     function rescanWifi(): void {
+        // Show NetworkManager's current list right away; the forced rescan
+        // below takes several seconds and refreshes it when done.
+        getNetworks.running = true;
         const now = Date.now();
         if (now - lastScanTime < 10000) { // 10s throttle
-            getNetworks.running = true;
             return;
         }
         
