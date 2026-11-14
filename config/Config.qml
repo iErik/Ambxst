@@ -546,6 +546,7 @@ Singleton {
             property int frameThickness: 6
             // Auto-hide settings
             property bool pinnedOnStartup: true
+            property bool pinPerScreen: false
             property bool hoverToReveal: true
             property int hoverRegionHeight: 8
             property int revealEdgeDepth: 2

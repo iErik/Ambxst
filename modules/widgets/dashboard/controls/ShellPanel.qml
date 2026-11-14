@@ -837,6 +837,19 @@ Item {
                         }
 
                         ToggleRow {
+                            // Off: pinning the bar on one monitor pins it on all.
+                            // On: each monitor keeps its own pin state.
+                            label: "Pin Per Screen"
+                            checked: Config.bar.pinPerScreen ?? false
+                            onToggled: value => {
+                                if (value !== Config.bar.pinPerScreen) {
+                                    GlobalStates.markShellChanged();
+                                    Config.bar.pinPerScreen = value;
+                                }
+                            }
+                        }
+
+                        ToggleRow {
                             label: "Hover to Reveal"
                             checked: Config.bar.hoverToReveal ?? true
                             onToggled: value => {

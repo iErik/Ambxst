@@ -167,6 +167,7 @@ QtObject {
         { label: "Firefox Player", keywords: "browser media music", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
         { label: "Bar Auto-hide", keywords: "autohide hide show reveal", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
         { label: "Pinned on Startup", keywords: "show visible default", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
+        { label: "Pin Per Screen", keywords: "monitor display independent separate individual pinned pin each", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
         { label: "Hover to Reveal", keywords: "mouse show hide edge", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
         { label: "Hover Region Height", keywords: "pixels trigger area", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
         { label: "Edge Trigger Depth", keywords: "edge pixels distance reveal auto-hide autohide touch", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },

@@ -13,6 +13,7 @@ var data = {
     "frameEnabled": false,
     "frameThickness": 6,
     "pinnedOnStartup": true,
+    "pinPerScreen": false,
     "hoverToReveal": true,
     "hoverRegionHeight": 8,
     "revealEdgeDepth": 2,

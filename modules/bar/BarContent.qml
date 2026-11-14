@@ -27,14 +27,67 @@ Item {
     property string barPosition: (Config.bar && Config.bar.position !== undefined && ["top", "bottom", "left", "right"].includes(Config.bar.position) ? Config.bar.position : "top")
     property string orientation: barPosition === "left" || barPosition === "right" ? "vertical" : "horizontal"
 
-    // Auto-hide properties
-    onPinnedChanged: {
-        if (Config.bar && Config.bar.pinnedOnStartup !== pinned) {
-            Config.bar.pinnedOnStartup = pinned;
+    // Pin state. With "Pin Per Screen" off (the default) one shared state,
+    // Config.bar.pinnedOnStartup, drives every monitor. With it on, each monitor
+    // keeps its own state, persisted per screen name through StateService.
+    // Always change it through setPinned()/togglePinned(); `pinned` is derived.
+    readonly property bool pinPerScreen: (Config.bar && Config.bar.pinPerScreen !== undefined ? Config.bar.pinPerScreen : false)
+    readonly property bool sharedPinned: (Config.bar && Config.bar.pinnedOnStartup !== undefined ? Config.bar.pinnedOnStartup : true)
+    // Follows the shared state until this screen gets a state of its own.
+    property bool screenPinned: sharedPinned
+    property bool screenPinnedSynced: false
+    readonly property bool pinned: pinPerScreen ? screenPinned : sharedPinned
+
+    readonly property string pinnedStateKey: "barPinnedByScreen"
+
+    function setPinned(value) {
+        value = !!value;
+        if (pinPerScreen) {
+            screenPinned = value;
+            screenPinnedSynced = true;
+            persistScreenPinned();
+        } else if (Config.bar && Config.bar.pinnedOnStartup !== value) {
+            Config.bar.pinnedOnStartup = value;
         }
     }
 
-    property bool pinned: (Config.bar && Config.bar.pinnedOnStartup !== undefined ? Config.bar.pinnedOnStartup : true)
+    function togglePinned() {
+        setPinned(!pinned);
+    }
+
+    function persistScreenPinned() {
+        if (!StateService.initialized || !screen)
+            return;
+        const map = Object.assign({}, StateService.get(pinnedStateKey, {}) || {});
+        map[screen.name] = screenPinned;
+        StateService.set(pinnedStateKey, map);
+    }
+
+    function loadScreenPinned() {
+        if (!StateService.initialized || !screen)
+            return;
+        // Keep a toggle made before state was ready, and write it now.
+        if (screenPinnedSynced) {
+            persistScreenPinned();
+            return;
+        }
+        const map = StateService.get(pinnedStateKey, {}) || {};
+        if (map[screen.name] !== undefined)
+            screenPinned = !!map[screen.name];
+        screenPinnedSynced = true;
+    }
+
+    // Switching to per-screen starts every monitor from the shared state, so no
+    // bar moves at the moment of switching. Skipped while bar.json is still
+    // loading: that change is the saved setting arriving, not a switch, and
+    // must not overwrite the per-screen states saved last session.
+    onPinPerScreenChanged: {
+        if (pinPerScreen && Config.barReady) {
+            screenPinned = sharedPinned;
+            screenPinnedSynced = true;
+            persistScreenPinned();
+        }
+    }
 
     // Monitor reference and reference to toplevels on monitor
     readonly property var compositorMonitor: AxctlService.monitorFor(screen)
@@ -297,10 +350,14 @@ Item {
         target: StateService
         function onStateLoaded() {
             root.loadUtilityCollapsed();
+            root.loadScreenPinned();
         }
     }
 
-    Component.onCompleted: loadUtilityCollapsed()
+    Component.onCompleted: {
+        loadUtilityCollapsed();
+        loadScreenPinned();
+    }
 
     // The hitbox for the mask
     property alias barHitbox: barMouseArea
@@ -589,7 +646,7 @@ Item {
                                         anchors.fill: parent
                                         hoverEnabled: false
                                         cursorShape: Qt.PointingHandCursor
-                                        onClicked: root.pinned = !root.pinned
+                                        onClicked: root.togglePinned()
                                     }
 
                                     StyledToolTip {
@@ -965,7 +1022,7 @@ Item {
                                                 anchors.fill: parent
                                                 hoverEnabled: false
                                                 cursorShape: Qt.PointingHandCursor
-                                                onClicked: root.pinned = !root.pinned
+                                                onClicked: root.togglePinned()
                                             }
 
                                             StyledToolTip {
