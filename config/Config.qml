@@ -146,6 +146,7 @@ Singleton {
             property bool tintIcons: false
             property string iconTheme: ""
             property string cursorTheme: ""
+            property int cursorSize: 24
             property bool enableCorners: true
             property int animDuration: 300
             property real shadowOpacity: 0.5
@@ -3504,6 +3505,7 @@ Singleton {
     property bool tintIcons: theme.tintIcons
     property string iconTheme: theme.iconTheme
     property string cursorTheme: theme.cursorTheme
+    property int cursorSize: theme.cursorSize > 0 ? theme.cursorSize : 24
 
     // Handle lightMode changes
     onLightModeChanged: {

@@ -44,6 +44,7 @@ QtObject {
 
         // Theme > Cursors
         { label: "Cursor Theme", keywords: "cursors mouse pointer bibata breeze xcursor", section: 5, subSection: "cursors", subLabel: "Theme > Cursors", icon: Icons.cursor, isIcon: true },
+        { label: "Cursor Size", keywords: "cursors mouse pointer size big small large xcursor", section: 5, subSection: "cursors", subLabel: "Theme > Cursors", icon: Icons.cursor, isIcon: true },
         
         // Theme > Shadow
         { label: "Shadow Opacity", keywords: "darkness alpha transparency", section: 5, subSection: "shadow", subLabel: "Theme > Shadow", icon: Icons.drop, isIcon: true },

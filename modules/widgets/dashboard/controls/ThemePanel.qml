@@ -866,6 +866,60 @@ Item {
                                 Layout.bottomMargin: -4
                             }
 
+                            // Cursor size: 16–96 px in steps of 8 (slider is 0–1).
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                Text {
+                                    text: "Size"
+                                    font.family: Config.theme.font
+                                    font.pixelSize: Styling.fontSize(0)
+                                    color: Colors.overBackground
+                                    Layout.preferredWidth: 80
+                                }
+
+                                StyledSlider {
+                                    id: cursorSizeSlider
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 20
+                                    progressColor: Styling.srItem("overprimary")
+                                    tooltipText: `${sizeValue}px`
+                                    scroll: true
+                                    stepSize: 1 / 10
+                                    snapMode: "always"
+
+                                    readonly property int minSize: 16
+                                    readonly property int maxSize: 96
+                                    readonly property int sizeValue: Math.round(minSize + value * (maxSize - minSize))
+                                    readonly property int configValue: Config.theme.cursorSize > 0 ? Config.theme.cursorSize : 24
+                                    readonly property real configPosition: Math.max(0, Math.min(1, (configValue - minSize) / (maxSize - minSize)))
+
+                                    onConfigPositionChanged: {
+                                        if (Math.abs(value - configPosition) > 0.001)
+                                            value = configPosition;
+                                    }
+
+                                    Component.onCompleted: value = configPosition
+
+                                    onValueChanged: {
+                                        if (sizeValue !== Config.theme.cursorSize) {
+                                            GlobalStates.markThemeChanged();
+                                            Config.theme.cursorSize = sizeValue;
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    text: cursorSizeSlider.sizeValue + "px"
+                                    font.family: Config.theme.font
+                                    font.pixelSize: Styling.fontSize(0)
+                                    color: Colors.overBackground
+                                    horizontalAlignment: Text.AlignRight
+                                    Layout.preferredWidth: 40
+                                }
+                            }
+
                             CursorThemeSelector {
                                 Layout.fillWidth: true
                             }

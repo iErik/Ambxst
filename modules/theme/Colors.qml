@@ -77,6 +77,10 @@ FileView {
             if (Config.cursorTheme)
                 colors.applyCursorTheme(Config.cursorTheme);
         }
+        function onCursorSizeChanged() {
+            if (Config.cursorTheme)
+                colors.applyCursorTheme(Config.cursorTheme);
+        }
     }
 
     property Timer generationTimer: Timer {
@@ -166,14 +170,11 @@ update_qtct_icon "${qt6Conf}" "$theme_id"
 
         const cmd = `
 theme_id=${JSON.stringify(themeId)}
+cursor_size=${Config.cursorSize > 0 ? Config.cursorSize : 24}
 
-cursor_size=""
 if command -v gsettings >/dev/null 2>&1; then
     gsettings set org.gnome.desktop.interface cursor-theme "$theme_id" || true
-    cursor_size=$(gsettings get org.gnome.desktop.interface cursor-size 2>/dev/null | tr -d "'" || true)
-fi
-if [ -z "$cursor_size" ] || [ "$cursor_size" = "0" ]; then
-    cursor_size=24
+    gsettings set org.gnome.desktop.interface cursor-size "$cursor_size" || true
 fi
 
 update_ini_key() {
@@ -213,6 +214,8 @@ update_qtct_cursor() {
 
 update_ini_key "${gtk3Ini}" "gtk-cursor-theme-name" "$theme_id"
 update_ini_key "${gtk4Ini}" "gtk-cursor-theme-name" "$theme_id"
+update_ini_key "${gtk3Ini}" "gtk-cursor-theme-size" "$cursor_size"
+update_ini_key "${gtk4Ini}" "gtk-cursor-theme-size" "$cursor_size"
 update_qtct_cursor "${qt5Conf}" "$theme_id"
 update_qtct_cursor "${qt6Conf}" "$theme_id"
 

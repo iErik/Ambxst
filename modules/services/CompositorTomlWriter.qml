@@ -304,7 +304,7 @@ Singleton {
         if (Config.cursorTheme) {
             toml += "[appearance.cursor]\n";
             toml += `theme = ${tomlString(Config.cursorTheme)}\n`;
-            toml += `size = 24\n`;
+            toml += `size = ${Config.cursorSize}\n`;
         }
 
         // Layout (Hyprland only)
@@ -517,6 +517,7 @@ Singleton {
     property Connections cursorConnections: Connections {
         target: Config
         function onCursorThemeChanged() { writeTomlFile(); }
+        function onCursorSizeChanged() { writeTomlFile(); }
     }
 
     // Compositor section connections

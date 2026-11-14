@@ -11,6 +11,7 @@ var data = {
     "tintIcons": false,
     "iconTheme": "",
     "cursorTheme": "",
+    "cursorSize": 24,
     "enableCorners": true,
     "animDuration": 300,
     "shadowOpacity": 0.5,

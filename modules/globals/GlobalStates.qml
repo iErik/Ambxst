@@ -269,7 +269,7 @@ Singleton {
 
     readonly property var _simpleThemeProps: [
         "roundness", "oledMode", "lightMode", "font", "fontSize", "monoFont", "monoFontSize",
-        "tintIcons", "iconTheme", "cursorTheme", "enableCorners", "animDuration",
+        "tintIcons", "iconTheme", "cursorTheme", "cursorSize", "enableCorners", "animDuration",
         "shadowOpacity", "shadowColor", "shadowXOffset", "shadowYOffset", "shadowBlur"
     ]
     readonly property var _srVariantProps: [
