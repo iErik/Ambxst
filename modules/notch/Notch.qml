@@ -12,6 +12,18 @@ Item {
     id: notchContainer
 
     property bool unifiedEffectActive: false
+
+    // Merged into the bar: the notch sits inside the bar in the bar's colour
+    // and is at least as tall as it, so when closed it is part of the bar.
+    // Opened, it grows out of the bar, its corners curving out of the bar's
+    // inner edge the way they otherwise curve out of the screen edge.
+    property bool mergedWithBar: false
+    property int barThickness: 0
+    readonly property int flareFullSize: Config.roundness > 0 ? Config.roundness + 4 : 0
+    readonly property int flareOffset: mergedWithBar ? barThickness : 0
+    // How far the notch reaches past the bar bounds the curve, so it grows in
+    // as the notch opens instead of popping in.
+    readonly property real flareSize: mergedWithBar ? Math.max(0, Math.min(flareFullSize, implicitHeight - barThickness)) : flareFullSize
     z: 1000
 
     property Component defaultViewComponent
@@ -45,7 +57,8 @@ Item {
     readonly property bool screenNotchOpen: visibilities ? (visibilities.launcher || visibilities.dashboard || visibilities.powermenu || visibilities.tools) : false
     readonly property bool hasActiveNotifications: Notifications.popupList.length > 0
 
-    property int defaultHeight: Config.showBackground ? (screenNotchOpen || hasActiveNotifications ? Math.max(stackContainer.height, 44) : 44) : (screenNotchOpen || hasActiveNotifications ? Math.max(stackContainer.height, 40) : 40)
+    readonly property int baseDefaultHeight: Math.max(Config.showBackground ? 44 : 40, mergedWithBar ? barThickness : 0)
+    property int defaultHeight: screenNotchOpen || hasActiveNotifications ? Math.max(stackContainer.height, baseDefaultHeight) : baseDefaultHeight
     property int islandHeight: screenNotchOpen || hasActiveNotifications ? Math.max(stackContainer.height, 36) : 36
 
     readonly property string position: Config.notchPosition ?? "top"
@@ -84,7 +97,7 @@ Item {
     // StyledRect extendido que cubre todo (notch + corners) para usar como máscara
     StyledRect {
         id: notchFullBackground
-        variant: "bg"
+        variant: notchContainer.mergedWithBar ? "barbg" : "bg"
         visible: Config.notchTheme === "default"
         anchors.centerIn: parent
         width: parent.implicitWidth
@@ -162,12 +175,21 @@ Item {
             id: leftCornerMaskPart
             anchors.top: notchContainer.position === "top" ? parent.top : undefined
             anchors.bottom: notchContainer.position === "bottom" ? parent.bottom : undefined
+            anchors.topMargin: notchContainer.flareOffset
+            anchors.bottomMargin: notchContainer.flareOffset
             anchors.left: parent.left
-            width: Config.notchTheme === "default" && Config.roundness > 0 ? Config.roundness + 4 : 0
+            width: Config.notchTheme === "default" ? notchContainer.flareFullSize : 0
             height: width
 
+            readonly property real flare: Config.notchTheme === "default" ? notchContainer.flareSize : 0
+
             RoundCorner {
+                // Painted once at full size and scaled from the corner that
+                // meets the notch body and the bar: a Canvas resized from zero
+                // every frame doesn't reliably repaint.
                 anchors.fill: parent
+                scale: parent.width > 0 ? leftCornerMaskPart.flare / parent.width : 0
+                transformOrigin: notchContainer.position === "top" ? Item.TopRight : Item.BottomRight
                 corner: notchContainer.position === "top" ? RoundCorner.CornerEnum.TopRight : RoundCorner.CornerEnum.BottomRight
                 size: Math.max(parent.width, 1)
                 color: "white"
@@ -195,12 +217,21 @@ Item {
             id: rightCornerMaskPart
             anchors.top: notchContainer.position === "top" ? parent.top : undefined
             anchors.bottom: notchContainer.position === "bottom" ? parent.bottom : undefined
+            anchors.topMargin: notchContainer.flareOffset
+            anchors.bottomMargin: notchContainer.flareOffset
             anchors.right: parent.right
-            width: Config.notchTheme === "default" && Config.roundness > 0 ? Config.roundness + 4 : 0
+            width: Config.notchTheme === "default" ? notchContainer.flareFullSize : 0
             height: width
 
+            readonly property real flare: Config.notchTheme === "default" ? notchContainer.flareSize : 0
+
             RoundCorner {
+                // Painted once at full size and scaled from the corner that
+                // meets the notch body and the bar: a Canvas resized from zero
+                // every frame doesn't reliably repaint.
                 anchors.fill: parent
+                scale: parent.width > 0 ? rightCornerMaskPart.flare / parent.width : 0
+                transformOrigin: notchContainer.position === "top" ? Item.TopLeft : Item.BottomLeft
                 corner: notchContainer.position === "top" ? RoundCorner.CornerEnum.TopLeft : RoundCorner.CornerEnum.BottomLeft
                 size: Math.max(parent.width, 1)
                 color: "white"
@@ -485,7 +516,7 @@ Item {
         readonly property int borderWidth: borderData[1]
         readonly property color borderColor: Config.resolveColor(borderData[0])
 
-        visible: Config.notchTheme === "default" && borderWidth > 0 && !notchContainer.unifiedEffectActive
+        visible: Config.notchTheme === "default" && borderWidth > 0 && !notchContainer.unifiedEffectActive && !notchContainer.mergedWithBar
 
         onPaint: {
             if (Config.notchTheme !== "default")

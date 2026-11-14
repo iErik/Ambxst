@@ -164,6 +164,8 @@ QtObject {
         { label: "Launcher Icon Full Tint", keywords: "monochrome color", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.palette, isIcon: true },
         { label: "Launcher Icon Size", keywords: "width height pixels", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
         { label: "Pill Style", keywords: "squished roundness radius bar", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
+        { label: "Floating", keywords: "flush edge margin gap attached docked bar", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
+        { label: "Merge Notch into Bar", keywords: "notch island integrated attached join combine bar", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
         { label: "Firefox Player", keywords: "browser media music", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
         { label: "Bar Auto-hide", keywords: "autohide hide show reveal", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },
         { label: "Pinned on Startup", keywords: "show visible default", section: 8, subSection: "bar", subLabel: "Ambxst > Bar", icon: Icons.layout, isIcon: true },

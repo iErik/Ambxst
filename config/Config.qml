@@ -562,6 +562,10 @@ Singleton {
             property bool availableOnFullscreen: false
             property bool use12hFormat: false
             property bool containBar: false
+            // false: the bar sits flush on its screen edge instead of floating
+            property bool floating: true
+            // The notch grows out of the bar (same edge, "default" notch theme)
+            property bool mergeNotch: false
             property bool keepBarShadow: false
             property bool keepBarBorder: false
         }

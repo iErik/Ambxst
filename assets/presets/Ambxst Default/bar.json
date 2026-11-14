@@ -7,6 +7,8 @@
         ]
     ],
     "containBar": false,
+    "floating": true,
+    "mergeNotch": false,
     "enableFirefoxPlayer": false,
     "frameEnabled": false,
     "frameThickness": 8,

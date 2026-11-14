@@ -28,14 +28,17 @@ Item {
 
     // Combined outer margin for screen/frame edges
     // This margin (4px) should only exist when bar is floating (!effectiveContainBar)
-    readonly property int outerMargin: !effectiveContainBar ? 4 : 0
+    // A non-floating bar sits flush on the edge (no margin).
+    readonly property bool floating: Config.bar.floating ?? true
+    readonly property int outerMargin: (!effectiveContainBar && floating) ? 4 : 0
 
     // StyledRect expanded that covers bar + corners
     StyledRect {
         id: barBackground
         variant: "barbg"
         visible: Config.showBackground
-        radius: Styling.radius(effectiveContainBar ? 4 : 0)
+        // Flush: square against the screen edges; the corner flares round it off.
+        radius: effectiveContainBar ? Styling.radius(4) : (root.outerMargin === 0 ? 0 : Styling.radius(0))
         enableBorder: !effectiveContainBar || (Config.bar.keepBarBorder ?? false)
 
         // Position and size expanded to cover corners

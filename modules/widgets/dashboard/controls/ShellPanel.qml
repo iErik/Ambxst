@@ -791,6 +791,28 @@ Item {
                         }
 
                         ToggleRow {
+                            label: "Floating"
+                            checked: Config.bar.floating ?? true
+                            onToggled: value => {
+                                if (value !== Config.bar.floating) {
+                                    GlobalStates.markShellChanged();
+                                    Config.bar.floating = value;
+                                }
+                            }
+                        }
+
+                        ToggleRow {
+                            label: "Merge Notch into Bar"
+                            checked: Config.bar.mergeNotch ?? false
+                            onToggled: value => {
+                                if (value !== Config.bar.mergeNotch) {
+                                    GlobalStates.markShellChanged();
+                                    Config.bar.mergeNotch = value;
+                                }
+                            }
+                        }
+
+                        ToggleRow {
                             label: "Use 12h Format"
                             checked: Config.bar.use12hFormat ?? false
                             onToggled: value => {

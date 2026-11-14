@@ -327,9 +327,9 @@ Item {
                 y: {
                     if (root.reveal) return 0;
                     if (root.notchPosition === "top")
-                        return -(Math.max(notchContainer.height, 50) + 16);
+                        return -(Math.max(notchContainer.height, 50) + 16 + notchContainer.anchors.topMargin);
                     else
-                        return (Math.max(notchContainer.height, 50) + 16);
+                        return (Math.max(notchContainer.height, 50) + 16 + notchContainer.anchors.bottomMargin);
                 }
                 Behavior on y {
                     enabled: Config.animDuration > 0
@@ -345,14 +345,19 @@ Item {
                 id: notchContainer
                 unifiedEffectActive: root.unifiedEffectActive
                 parentHovered: root.isMouseOverNotch
+
+                // Grow out of the bar instead of sitting on the edge on its own.
+                readonly property var screenBar: Visibilities.bars[root.screen.name] ?? null
+                mergedWithBar: (Config.bar?.mergeNotch ?? false) && Config.notchTheme === "default" && root.barPosition === root.notchPosition && (root.barPosition === "top" || root.barPosition === "bottom") && screenBar !== null && !root.activeWindowFullscreen
+                barThickness: mergedWithBar ? (screenBar.totalBarHeight ?? 0) : 0
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: root.notchPosition === "top" ? parent.top : undefined
                 anchors.bottom: root.notchPosition === "bottom" ? parent.bottom : undefined
 
                 readonly property int frameOffset: (Config.bar && Config.bar.frameEnabled && !root.activeWindowFullscreen) ? ((Config.bar.frameThickness !== undefined) ? Config.bar.frameThickness : 6) : 0
 
-                anchors.topMargin: (root.notchPosition === "top" ? (Config.notchTheme === "default" ? 0 : (Config.notchTheme === "island" ? 4 : 0)) : 0) + (root.notchPosition === "top" ? frameOffset : 0)
-                anchors.bottomMargin: (root.notchPosition === "bottom" ? (Config.notchTheme === "default" ? 0 : (Config.notchTheme === "island" ? 4 : 0)) : 0) + (root.notchPosition === "bottom" ? frameOffset : 0)
+                anchors.topMargin: (root.notchPosition === "top" ? (Config.notchTheme === "default" ? 0 : (Config.notchTheme === "island" ? 4 : 0)) : 0) + (root.notchPosition === "top" ? (mergedWithBar ? 0 : frameOffset) : 0)
+                anchors.bottomMargin: (root.notchPosition === "bottom" ? (Config.notchTheme === "default" ? 0 : (Config.notchTheme === "island" ? 4 : 0)) : 0) + (root.notchPosition === "bottom" ? (mergedWithBar ? 0 : frameOffset) : 0)
 
                 // layer.enabled: true
                 // layer.effect: Shadow {}
