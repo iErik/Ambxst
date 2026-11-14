@@ -15,7 +15,8 @@ import "calendar"
 Rectangle {
     id: root
     color: "transparent"
-    implicitWidth: 760
+    // Player (216) + controls/calendar column + circular controls (48) + gaps.
+    implicitWidth: 216 + 8 + controlsWidth + 8 + 48
     // Collapsed quick-controls (5×48 + gaps + padding) + gap + square calendar.
     // Keep this explicit — binding through nested Layout geometry collapsed the notch.
     readonly property int controlsButtonSize: 48
@@ -76,14 +77,6 @@ Rectangle {
                     }
                 }
             }
-        }
-
-        // Notification History
-        NotificationHistory {
-            Layout.fillWidth: true
-            Layout.minimumWidth: 180
-            Layout.fillHeight: true
-            clip: true
         }
 
         // Circular controls column

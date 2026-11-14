@@ -184,6 +184,10 @@ Singleton {
     readonly property bool launcherOpen: getActiveLauncher()
     readonly property bool dashboardOpen: getActiveDashboard()
 
+    // How long the open notch takes to resize in place (e.g. between dashboard
+    // pages). Content that needs the new size waits this long before showing.
+    readonly property int notchResizeDuration: Config.animDuration > 0 ? Math.round(Config.animDuration * 0.75) : 0
+
     // Bumped by GlobalShortcuts when Super+Tab is pressed while the switcher is already open.
     property int taskSwitcherAdvanceRequest: 0
     // Bumped by GlobalShortcuts / compositor bindr when the hold modifier is released.

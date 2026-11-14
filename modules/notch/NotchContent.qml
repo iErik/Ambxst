@@ -429,10 +429,10 @@ Item {
                 if (!root.hasActiveNotifications || !root.screenNotchOpen)
                     return false;
 
-                // NO mostrar si estamos en el launcher (widgets tab con currentTab === 0)
+                // Don't show while the dashboard's notifications tab (3) is
+                // open: the history is already on screen.
                 if (screenVisibilities.dashboard) {
-                    // Solo ocultar si estamos en el widgets tab (dashboard tab 0) Y mostrando el launcher (widgetsTab index 0)
-                    return !(GlobalStates.dashboardCurrentTab === 0 && GlobalStates.widgetsTabCurrentIndex === 0);
+                    return GlobalStates.dashboardCurrentTab !== 3;
                 }
 
                 return true;

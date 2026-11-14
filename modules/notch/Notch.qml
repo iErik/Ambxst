@@ -57,21 +57,27 @@ Item {
     implicitWidth: screenNotchOpen ? Math.max(stackContainer.width + totalCornerWidth, 290) : stackContainer.width + totalCornerWidth
     implicitHeight: Config.notchTheme === "default" ? defaultHeight : (Config.notchTheme === "island" ? islandHeight : defaultHeight)
 
+    // An open module changing size in place (e.g. switching dashboard pages),
+    // as opposed to opening/closing: resize without overshoot, clipping the
+    // content to the background (contentClip). Modules fade their content in
+    // over the same duration and easing (GlobalStates) so the two move together.
+    readonly property bool resizingInPlace: screenNotchOpen && !stackViewInternal.busy && isExpanded
+
     Behavior on implicitWidth {
         enabled: (screenNotchOpen || stackViewInternal.busy) && Config.animDuration > 0
         NumberAnimation {
-            duration: Config.animDuration
-            easing.type: isExpanded ? Easing.OutBack : Easing.OutQuart
-            easing.overshoot: isExpanded ? 1.2 : 1.0
+            duration: resizingInPlace ? GlobalStates.notchResizeDuration : Config.animDuration
+            easing.type: resizingInPlace ? Easing.OutCubic : (isExpanded ? Easing.OutBack : Easing.OutQuart)
+            easing.overshoot: (isExpanded && !resizingInPlace) ? 1.2 : 1.0
         }
     }
 
     Behavior on implicitHeight {
         enabled: (screenNotchOpen || stackViewInternal.busy) && Config.animDuration > 0
         NumberAnimation {
-            duration: Config.animDuration
-            easing.type: isExpanded ? Easing.OutBack : Easing.OutQuart
-            easing.overshoot: isExpanded ? 1.2 : 1.0
+            duration: resizingInPlace ? GlobalStates.notchResizeDuration : Config.animDuration
+            easing.type: resizingInPlace ? Easing.OutCubic : (isExpanded ? Easing.OutBack : Easing.OutQuart)
+            easing.overshoot: (isExpanded && !resizingInPlace) ? 1.2 : 1.0
         }
     }
 
@@ -294,159 +300,168 @@ Item {
             }
         }
 
+        // While an open module resizes in place, clip its content to the
+        // animated background so the content is revealed (or trimmed) with
+        // the background instead of jumping to its final size ahead of it.
         Item {
-            id: stackContainer
-            anchors.centerIn: parent
-            width: stackViewInternal.currentItem ? stackViewInternal.currentItem.implicitWidth + (screenNotchOpen ? 32 : 0) : (screenNotchOpen ? 32 : 0)
-            height: stackViewInternal.currentItem ? stackViewInternal.currentItem.implicitHeight + (screenNotchOpen ? 32 : 0) : (screenNotchOpen ? 32 : 0)
-            clip: true
+            id: contentClip
+            anchors.fill: parent
+            clip: notchContainer.resizingInPlace
 
-            // Propiedad para controlar el blur durante las transiciones
-            property real transitionBlur: 0.0
+            Item {
+                id: stackContainer
+                anchors.centerIn: parent
+                width: stackViewInternal.currentItem ? stackViewInternal.currentItem.implicitWidth + (screenNotchOpen ? 32 : 0) : (screenNotchOpen ? 32 : 0)
+                height: stackViewInternal.currentItem ? stackViewInternal.currentItem.implicitHeight + (screenNotchOpen ? 32 : 0) : (screenNotchOpen ? 32 : 0)
+                clip: true
 
-            // Aplicar MultiEffect con blur animable
-            layer.enabled: transitionBlur > 0.0
-            layer.effect: MultiEffect {
-                blurEnabled: Config.performance.blurTransition
-                blurMax: 64
-                blur: Math.min(Math.max(stackContainer.transitionBlur, 0.0), 1.0)
-            }
+                // Propiedad para controlar el blur durante las transiciones
+                property real transitionBlur: 0.0
 
-            // Animación simple de blur → nitidez durante transiciones
-            PropertyAnimation {
-                id: blurTransitionAnimation
-                target: stackContainer
-                property: "transitionBlur"
-                from: 1.0
-                to: 0.0
-                duration: Config.animDuration
-                easing.type: Easing.OutQuart
-            }
-
-            StackView {
-                id: stackViewInternal
-                anchors.fill: parent
-                anchors.margins: screenNotchOpen ? 16 : 0
-                initialItem: defaultViewComponent
-
-                onCurrentItemChanged: {
-                    notchContainer.updateChildHover();
+                // Aplicar MultiEffect con blur animable
+                layer.enabled: transitionBlur > 0.0
+                layer.effect: MultiEffect {
+                    blurEnabled: Config.performance.blurTransition
+                    blurMax: 64
+                    blur: Math.min(Math.max(stackContainer.transitionBlur, 0.0), 1.0)
                 }
 
-                Component.onCompleted: {
-                    isShowingDefault = true;
-                    isShowingNotifications = false;
+                // Animación simple de blur → nitidez durante transiciones
+                PropertyAnimation {
+                    id: blurTransitionAnimation
+                    target: stackContainer
+                    property: "transitionBlur"
+                    from: 1.0
+                    to: 0.0
+                    duration: Config.animDuration
+                    easing.type: Easing.OutQuart
                 }
 
-                // Activar blur al inicio de transición y animarlo a nítido
-                onBusyChanged: {
-                    if (busy) {
-                        stackContainer.transitionBlur = 1.0;
-                        blurTransitionAnimation.start();
-                    }
-                }
+                StackView {
+                    id: stackViewInternal
+                    anchors.fill: parent
+                    anchors.margins: screenNotchOpen ? 16 : 0
+                    initialItem: defaultViewComponent
 
-                pushEnter: Transition {
-                    PropertyAnimation {
-                        property: "opacity"
-                        from: 0
-                        to: 1
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
+                    onCurrentItemChanged: {
+                        notchContainer.updateChildHover();
                     }
-                    PropertyAnimation {
-                        property: "scale"
-                        from: 0.8
-                        to: 1
-                        duration: Config.animDuration
-                        easing.type: Easing.OutBack
-                        easing.overshoot: 1.2
-                    }
-                }
 
-                pushExit: Transition {
-                    PropertyAnimation {
-                        property: "opacity"
-                        from: 1
-                        to: 0
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
+                    Component.onCompleted: {
+                        isShowingDefault = true;
+                        isShowingNotifications = false;
                     }
-                    PropertyAnimation {
-                        property: "scale"
-                        from: 1
-                        to: 1.05
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
-                    }
-                }
 
-                popEnter: Transition {
-                    PropertyAnimation {
-                        property: "opacity"
-                        from: 0
-                        to: 1
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
+                    // Activar blur al inicio de transición y animarlo a nítido
+                    onBusyChanged: {
+                        if (busy) {
+                            stackContainer.transitionBlur = 1.0;
+                            blurTransitionAnimation.start();
+                        }
                     }
-                    PropertyAnimation {
-                        property: "scale"
-                        from: 1.05
-                        to: 1
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
-                    }
-                }
 
-                popExit: Transition {
-                    PropertyAnimation {
-                        property: "opacity"
-                        from: 1
-                        to: 0
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
+                    pushEnter: Transition {
+                        PropertyAnimation {
+                            property: "opacity"
+                            from: 0
+                            to: 1
+                            duration: Config.animDuration
+                            easing.type: Easing.OutQuart
+                        }
+                        PropertyAnimation {
+                            property: "scale"
+                            from: 0.8
+                            to: 1
+                            duration: Config.animDuration
+                            easing.type: Easing.OutBack
+                            easing.overshoot: 1.2
+                        }
                     }
-                    PropertyAnimation {
-                        property: "scale"
-                        from: 1
-                        to: 0.95
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
-                    }
-                }
 
-                replaceEnter: Transition {
-                    PropertyAnimation {
-                        property: "opacity"
-                        from: 0
-                        to: 1
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
+                    pushExit: Transition {
+                        PropertyAnimation {
+                            property: "opacity"
+                            from: 1
+                            to: 0
+                            duration: Config.animDuration
+                            easing.type: Easing.OutQuart
+                        }
+                        PropertyAnimation {
+                            property: "scale"
+                            from: 1
+                            to: 1.05
+                            duration: Config.animDuration
+                            easing.type: Easing.OutQuart
+                        }
                     }
-                    PropertyAnimation {
-                        property: "scale"
-                        from: 0.8
-                        to: 1
-                        duration: Config.animDuration
-                        easing.type: Easing.OutBack
-                        easing.overshoot: 1.2
-                    }
-                }
 
-                replaceExit: Transition {
-                    PropertyAnimation {
-                        property: "opacity"
-                        from: 1
-                        to: 0
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
+                    popEnter: Transition {
+                        PropertyAnimation {
+                            property: "opacity"
+                            from: 0
+                            to: 1
+                            duration: Config.animDuration
+                            easing.type: Easing.OutQuart
+                        }
+                        PropertyAnimation {
+                            property: "scale"
+                            from: 1.05
+                            to: 1
+                            duration: Config.animDuration
+                            easing.type: Easing.OutQuart
+                        }
                     }
-                    PropertyAnimation {
-                        property: "scale"
-                        from: 1
-                        to: 1.05
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
+
+                    popExit: Transition {
+                        PropertyAnimation {
+                            property: "opacity"
+                            from: 1
+                            to: 0
+                            duration: Config.animDuration
+                            easing.type: Easing.OutQuart
+                        }
+                        PropertyAnimation {
+                            property: "scale"
+                            from: 1
+                            to: 0.95
+                            duration: Config.animDuration
+                            easing.type: Easing.OutQuart
+                        }
+                    }
+
+                    replaceEnter: Transition {
+                        PropertyAnimation {
+                            property: "opacity"
+                            from: 0
+                            to: 1
+                            duration: Config.animDuration
+                            easing.type: Easing.OutQuart
+                        }
+                        PropertyAnimation {
+                            property: "scale"
+                            from: 0.8
+                            to: 1
+                            duration: Config.animDuration
+                            easing.type: Easing.OutBack
+                            easing.overshoot: 1.2
+                        }
+                    }
+
+                    replaceExit: Transition {
+                        PropertyAnimation {
+                            property: "opacity"
+                            from: 1
+                            to: 0
+                            duration: Config.animDuration
+                            easing.type: Easing.OutQuart
+                        }
+                        PropertyAnimation {
+                            property: "scale"
+                            from: 1
+                            to: 1.05
+                            duration: Config.animDuration
+                            easing.type: Easing.OutQuart
+                        }
                     }
                 }
             }

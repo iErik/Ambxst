@@ -23,27 +23,33 @@ NotchAnimationBehavior {
         property int currentTab: GlobalStates.dashboardCurrentTab
     }
 
-    readonly property var tabModel: [Icons.widgets, Icons.wallpapers, Icons.heartbeat]
+    readonly property var tabModel: [Icons.widgets, Icons.wallpapers, Icons.heartbeat, Icons.bell]
     readonly property int tabCount: tabModel.length
     readonly property int tabSpacing: 8
 
     readonly property int tabWidth: 48
     // Per-tab content widths. Tabs 1/2 were designed around the old 900px DashboardView shell.
-    readonly property real contentWidth: {
-        switch (state.currentTab) {
+    function widthForTab(tab) {
+        switch (tab) {
         case 0:
-            return 760; // widgets: player + controls/calendar + notifications + circulars
+            return 552; // widgets: player + controls/calendar + circulars
         case 1:
             return 836; // wallpapers: 7-col grid + filter bar (900 total with chrome)
         case 2:
             return 836; // metrics: resources + charts
+        case 3:
+            return 600; // notifications: history list
         default:
             return 400;
         }
     }
-    readonly property real nonAnimWidth: contentWidth + tabWidth + 16
     // Widgets tab: controls + calendar (344). Other tabs keep the taller shell.
-    readonly property real contentHeight: state.currentTab === 0 ? 344 : 430
+    function heightForTab(tab) {
+        return tab === 0 ? 344 : 430;
+    }
+    readonly property real contentWidth: widthForTab(state.currentTab)
+    readonly property real nonAnimWidth: contentWidth + tabWidth + 16
+    readonly property real contentHeight: heightForTab(state.currentTab)
 
     implicitWidth: nonAnimWidth
     implicitHeight: contentHeight
@@ -114,11 +120,15 @@ NotchAnimationBehavior {
     // Focus search input when dashboard opens to different tabs
     onIsVisibleChanged: {
         if (isVisible) {
+            // Opening straight onto the notification history: popups would
+            // only duplicate it.
+            if (GlobalStates.dashboardCurrentTab === 3)
+                Notifications.hideAllPopups();
+
             // Check if current item supports focus, otherwise default logic for launcher
             if (stack.currentItem && stack.currentItem.focusSearchInput) {
                 focusUnifiedLauncherTimer.restart();
             } else if (GlobalStates.dashboardCurrentTab === 0) {
-                Notifications.hideAllPopups();
                 focusUnifiedLauncherTimer.restart();
             }
         } else {
@@ -203,14 +213,10 @@ NotchAnimationBehavior {
                 property real idx1: root.state.currentTab
                 property real idx2: root.state.currentTab
 
-                // Calcular posición Y para un índice dado
+                // Y position of a tab in the column. (The settings button at the
+                // bottom is not a tab; it styles itself.)
                 function getYForIndex(idx) {
-                    if (idx <= 2) {
-                        return idx * (width + root.tabSpacing);
-                    } else {
-                        // Controls button at the bottom
-                        return controlsButtonContainer.y;
-                    }
+                    return idx * (width + root.tabSpacing);
                 }
 
                 property real targetY1: getYForIndex(idx1)
@@ -397,8 +403,11 @@ NotchAnimationBehavior {
                         // Update LRU when tab is accessed
                         root.updateLRUAccess(index);
 
-                        if (index === 0) {
+                        // The history is on screen: popups would only duplicate it.
+                        if (index === 3)
                             Notifications.hideAllPopups();
+
+                        if (index === 0) {
                             focusUnifiedLauncherTimer.restart();
                         }
                     }
@@ -406,6 +415,7 @@ NotchAnimationBehavior {
 
                 // Generic Tab Loader Component
                 component TabLoader : Loader {
+                    id: tabLoader
                     anchors.fill: parent
                     // Load based on LRU strategy or if currently active
                     active: root.shouldTabBeLoaded(index) || root.state.currentTab === index
@@ -413,19 +423,41 @@ NotchAnimationBehavior {
                     // Visibility handles the "switching"
                     visible: root.state.currentTab === index
                     
-                    // Transitions
-                    opacity: visible ? 1 : 0
+                    // Transitions. The page fades in over the notch's resize, with
+                    // the same duration and easing, while the notch clips it to
+                    // the growing/shrinking background, so both move as one.
+                    opacity: 0
+                    Component.onCompleted: opacity = visible ? 1 : 0
+                    onVisibleChanged: {
+                        revealAnimation.stop();
+                        if (!visible) {
+                            opacity = 0;
+                        } else if (Config.animDuration > 0) {
+                            opacity = 0;
+                            revealAnimation.start();
+                        } else {
+                            opacity = 1;
+                        }
+                        if (visible && item && item.focusSearchInput) {
+                            focusUnifiedLauncherTimer.restart();
+                        }
+                    }
+
+                    NumberAnimation {
+                        id: revealAnimation
+                        target: tabLoader
+                        property: "opacity"
+                        to: 1
+                        duration: GlobalStates.notchResizeDuration
+                        easing.type: Easing.OutCubic
+                    }
+
                     transform: Translate {
                         y: visible ? 0 : (root.state.currentTab > index ? -20 : 20)
                         Behavior on y {
                              enabled: Config.animDuration > 0
-                             NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } 
+                             NumberAnimation { duration: GlobalStates.notchResizeDuration; easing.type: Easing.OutCubic }
                         }
-                    }
-
-                    Behavior on opacity {
-                        enabled: Config.animDuration > 0
-                        NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart }
                     }
 
                     // Forward focus
@@ -435,12 +467,6 @@ NotchAnimationBehavior {
                         }
                     }
                     
-                    // Ensure focus when becoming visible
-                    onVisibleChanged: {
-                        if (visible && item && item.focusSearchInput) {
-                            focusUnifiedLauncherTimer.restart();
-                        }
-                    }
                 }
 
                 // Tab 0: Unified Launcher
@@ -463,6 +489,13 @@ NotchAnimationBehavior {
                     sourceComponent: metricsComponent
                     z: visible ? 1 : 0
                 }
+
+                // Tab 3: Notifications
+                TabLoader {
+                    property int index: 3
+                    sourceComponent: notificationsComponent
+                    z: visible ? 1 : 0
+                }
                 
                 // Helper to access current item for focus
                 property var currentItem: {
@@ -470,6 +503,7 @@ NotchAnimationBehavior {
                         case 0: return children[0].item;
                         case 1: return children[1].item;
                         case 2: return children[2].item;
+                        case 3: return children[3].item;
                         default: return null;
                     }
                 }
@@ -549,34 +583,12 @@ NotchAnimationBehavior {
         }
     }
 
-    // Animated size properties for smooth transitions
-    property real animatedWidth: implicitWidth
-    property real animatedHeight: implicitHeight
-
-    width: animatedWidth
-    height: animatedHeight
-
-    // Update animated properties when implicit properties change
-    onImplicitWidthChanged: animatedWidth = implicitWidth
-    onImplicitHeightChanged: animatedHeight = implicitHeight
-
-    Behavior on animatedWidth {
-        enabled: Config.animDuration > 0
-        NumberAnimation {
-            duration: Config.animDuration
-            easing.type: Easing.OutBack
-            easing.overshoot: 1.1
-        }
-    }
-
-    Behavior on animatedHeight {
-        enabled: Config.animDuration > 0
-        NumberAnimation {
-            duration: Config.animDuration
-            easing.type: Easing.OutBack
-            easing.overshoot: 1.1
-        }
-    }
+    // Take the new page size at once. The notch background animates the resize
+    // (GlobalStates.notchResizeDuration); animating here too made the content
+    // re-flow every frame and trail the background. The notch clips the page
+    // to its background while it resizes, and the page fades in alongside.
+    width: implicitWidth
+    height: implicitHeight
 
     // Component definitions for better performance (defined once, reused)
     Component {
@@ -595,5 +607,12 @@ NotchAnimationBehavior {
     Component {
         id: wallpapersComponent
         WallpapersTab {}
+    }
+
+    Component {
+        id: notificationsComponent
+        NotificationHistory {
+            clip: true
+        }
     }
 }
