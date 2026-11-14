@@ -145,14 +145,19 @@ Singleton {
         let cmdArgs = [];
 
         if (action === "workspace") {
-            const rel = String(rawArgs).trim();
-            if (rel === "r+1" || rel === "e+1" || rel === "+1" || rel === "m+1") {
-                root.switchRelativeWorkspace(1);
-                return;
-            }
-            if (rel === "r-1" || rel === "e-1" || rel === "-1" || rel === "m-1") {
-                root.switchRelativeWorkspace(-1);
-                return;
+            // Niri has no relative workspace targets, so step through the list
+            // here. Hyprland resolves r/e/m offsets natively (per monitor), so
+            // pass them straight through.
+            if (root.isNiri) {
+                const rel = String(rawArgs).trim();
+                if (rel === "r+1" || rel === "e+1" || rel === "+1" || rel === "m+1") {
+                    root.switchRelativeWorkspace(1);
+                    return;
+                }
+                if (rel === "r-1" || rel === "e-1" || rel === "-1" || rel === "m-1") {
+                    root.switchRelativeWorkspace(-1);
+                    return;
+                }
             }
             cmdArgs = ["workspace", "switch", rawArgs];
         } else if (action === "closewindow") {
