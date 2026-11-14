@@ -2,3 +2,7 @@
 .ruff_cache/
 scripts/__pycache__
 .sisyphus
+
+# Nix build output links
+result
+result-*
