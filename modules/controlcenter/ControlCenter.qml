@@ -77,6 +77,21 @@ Item {
         { image: Qt.resolvedUrl("../../assets/ambxst/ambxst-icon.svg"), label: "Ambxst" }
     ]
 
+    // Tabs that can be hidden (their section isn't available).
+    function tabShown(index) {
+        if (index === 5)
+            return EasyEffectsService.installed;
+        return true;
+    }
+    // If the current tab gets hidden, fall back to the Control Center tab.
+    Connections {
+        target: EasyEffectsService
+        function onInstalledChanged() {
+            if (!root.tabShown(root.currentTab))
+                root.selectTab(0);
+        }
+    }
+
     function selectTab(index) {
         PerfProbe.mark("tab " + index);
         GlobalStates.controlCenterTab = index;
@@ -141,7 +156,7 @@ Item {
             const section = i;
             jobs.push({
                 label: name + " section " + section,
-                run: () => settingsLoader.item ? settingsLoader.item.warmSection(section) : null
+                run: () => settingsLoader.item && root.tabShown(section + 1) ? settingsLoader.item.warmSection(section) : null
             });
         }
         for (const detail of controlsPage.detailNames) {
@@ -344,7 +359,11 @@ Item {
                             height: root.tabSize
                             radius: Styling.radius(4)
                             visible: root.currentTab < root.searchTab
-                            y: Math.min(root.currentTab, root.tabModel.length - 1) * (root.tabSize + tabsColumn.spacing)
+                            // Follow the selected button (hidden tabs shift the rest up).
+                            y: {
+                                const item = tabRepeater.count > root.currentTab ? tabRepeater.itemAt(root.currentTab) : null;
+                                return item ? item.y : 0;
+                            }
 
                             Behavior on y {
                                 enabled: Config.animDuration > 0
@@ -361,6 +380,7 @@ Item {
                             spacing: 4
 
                             Repeater {
+                                id: tabRepeater
                                 model: root.tabModel
 
                                 Item {
@@ -368,6 +388,7 @@ Item {
                                     required property var modelData
                                     required property int index
                                     readonly property bool selected: root.currentTab === index
+                                    visible: root.tabShown(index)
                                     width: root.tabSize
                                     height: root.tabSize
 
@@ -441,11 +462,12 @@ Item {
                             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                             onWheel: event => {
                                 const last = root.tabModel.length - 1;
-                                const cur = Math.min(root.currentTab, last);
-                                if (event.angleDelta.y > 0 && cur > 0)
-                                    root.selectTab(cur - 1);
-                                else if (event.angleDelta.y < 0 && cur < last)
-                                    root.selectTab(cur + 1);
+                                const step = event.angleDelta.y > 0 ? -1 : 1;
+                                let next = Math.min(root.currentTab, last) + step;
+                                while (next >= 0 && next <= last && !root.tabShown(next))
+                                    next += step;
+                                if (next >= 0 && next <= last)
+                                    root.selectTab(next);
                             }
                         }
                     }

@@ -63,6 +63,17 @@ Singleton {
 
     property bool _initialized: false
 
+    // Whether the easyeffects binary exists at all. Checked once at start-up so
+    // the Effects settings section can be hidden when it isn't installed;
+    // `available` (set by initialize()) also starts polling its state.
+    property bool installed: false
+
+    property var installCheck: Process {
+        command: ["sh", "-c", "command -v easyeffects"]
+        running: true
+        onExited: (exitCode, exitStatus) => root.installed = (exitCode === 0)
+    }
+
     function initialize() {
         if (_initialized) return;
         _initialized = true;

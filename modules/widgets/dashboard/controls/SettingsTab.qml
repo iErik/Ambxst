@@ -71,8 +71,10 @@ Rectangle {
             searchInput.clear();
             root.searchQuery = "";
         }
-        if (root.selectedIndex !== sectionId)
-            root.selectedIndex = sectionId;
+        // List position, not the section id: hidden sections shift the list.
+        const index = root.getFilteredIndex(sectionId);
+        if (index >= 0 && root.selectedIndex !== index)
+            root.selectedIndex = index;
         else
             root.currentSection = sectionId;
     }
@@ -279,14 +281,23 @@ Rectangle {
         }
     ]
 
+    // Sections whose backing app isn't installed are hidden.
+    function sectionShown(sectionId) {
+        if (sectionId === 4)
+            return EasyEffectsService.installed;
+        return true;
+    }
+
     // Filtered sections based on search query
     readonly property var filteredSections: {
         if (searchQuery.length === 0)
-            return sectionModel;
+            return sectionModel.filter(s => root.sectionShown(s.section));
 
         const query = searchQuery.toLowerCase();
         return searchIndex.items.filter(item => {
             if (item.hyprlandOnly && AxctlService.isNiri)
+                return false;
+            if (!root.sectionShown(item.section))
                 return false;
             return fuzzyMatch(query, item.label) || (item.keywords && item.keywords.includes(query));
         }).map(item => {
