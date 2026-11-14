@@ -12,6 +12,7 @@ import qs.modules.globals
 import qs.modules.components
 import qs.config
 import qs.modules.sidebar
+import qs.modules.controlcenter
 
 PanelWindow {
     id: unifiedPanel
@@ -31,7 +32,7 @@ PanelWindow {
     // Dynamic keyboard focus: Exclusive when a notch module is open (so text fields work),
     // None otherwise (so compositor receives normal input).
     WlrLayershell.keyboardFocus: {
-        if (notchContent.screenNotchOpen) {
+        if (notchContent.screenNotchOpen || controlCenter.active) {
             return WlrKeyboardFocus.Exclusive;
         }
         if (assistantSidebar.active && assistantSidebar.wantsFocus) {
@@ -45,7 +46,7 @@ PanelWindow {
 
     // Whether we need to capture full-screen input for click-outside detection.
     // True when notch modules are open OR any FocusGrab is active (e.g., BarPopups).
-    readonly property bool needsFullScreenInput: notchContent.screenNotchOpen || FocusGrabManager.hasActiveGrab || (assistantSidebar.active && assistantSidebar.wantsFocus)
+    readonly property bool needsFullScreenInput: notchContent.screenNotchOpen || controlCenter.active || FocusGrabManager.hasActiveGrab || (assistantSidebar.active && assistantSidebar.wantsFocus)
 
     readonly property bool barEnabled: {
         if (!Config.barReady) return false;
@@ -163,6 +164,9 @@ PanelWindow {
             },
             Region {
                 item: (assistantSidebar.active || assistantSidebar.hitbox.visible) ? assistantSidebar.hitbox : null
+            },
+            Region {
+                item: controlCenter.hitbox.visible ? controlCenter.hitbox : null
             }
         ]
     }
@@ -175,6 +179,17 @@ PanelWindow {
 
         onCleared: {
             Visibilities.setActiveModule("");
+        }
+    }
+
+    // Focus Grab for the Control Center: clicking outside closes it.
+    FocusGrab {
+        windows: [unifiedPanel]
+        active: controlCenter.active
+
+        onCleared: {
+            if (Visibilities.currentActiveModule === "controlcenter")
+                Visibilities.setActiveModule("");
         }
     }
 
@@ -240,6 +255,13 @@ PanelWindow {
             anchors.fill: parent
             screen: unifiedPanel.targetScreen
             z: 4
+        }
+
+        ControlCenter {
+            id: controlCenter
+            anchors.fill: parent
+            targetScreen: unifiedPanel.targetScreen
+            z: 5
         }
 
         AssistantSidebar {

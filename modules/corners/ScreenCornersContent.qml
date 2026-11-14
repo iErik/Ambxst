@@ -8,6 +8,9 @@ Item {
     id: root
 
     property bool hasFullscreenWindow: false
+    // Edge a flush bar covers ("top", "bottom", "left", "right" or ""): its two
+    // corners are left to the bar.
+    property string flushBarEdge: ""
 
     readonly property bool frameEnabled: Config.bar?.frameEnabled ?? false
     readonly property int thickness: {
@@ -21,7 +24,7 @@ Item {
 
     RoundCorner {
         id: topLeft
-        visible: !root.hasFullscreenWindow
+        visible: !root.hasFullscreenWindow && root.flushBarEdge !== "top" && root.flushBarEdge !== "left"
         size: root.cornerSize
         anchors.left: root.left
         anchors.top: root.top
@@ -30,7 +33,7 @@ Item {
 
     RoundCorner {
         id: topRight
-        visible: !root.hasFullscreenWindow
+        visible: !root.hasFullscreenWindow && root.flushBarEdge !== "top" && root.flushBarEdge !== "right"
         size: root.cornerSize
         anchors.right: root.right
         anchors.top: root.top
@@ -39,7 +42,7 @@ Item {
 
     RoundCorner {
         id: bottomLeft
-        visible: !root.hasFullscreenWindow
+        visible: !root.hasFullscreenWindow && root.flushBarEdge !== "bottom" && root.flushBarEdge !== "left"
         size: root.cornerSize
         anchors.left: root.left
         anchors.bottom: root.bottom
@@ -48,7 +51,7 @@ Item {
 
     RoundCorner {
         id: bottomRight
-        visible: !root.hasFullscreenWindow
+        visible: !root.hasFullscreenWindow && root.flushBarEdge !== "bottom" && root.flushBarEdge !== "right"
         size: root.cornerSize
         anchors.right: root.right
         anchors.bottom: root.bottom

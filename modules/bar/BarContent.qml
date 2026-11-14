@@ -152,7 +152,7 @@ Item {
 
     // Check if notch is open (dashboard, powermenu, etc.)
     readonly property var screenVisibilities: Visibilities.getForScreen(screen.name)
-    readonly property bool notchOpen: screenVisibilities ? (screenVisibilities.launcher || screenVisibilities.dashboard || screenVisibilities.powermenu || screenVisibilities.tools) : false
+    readonly property bool notchOpen: screenVisibilities ? (screenVisibilities.launcher || screenVisibilities.dashboard || screenVisibilities.powermenu || screenVisibilities.tools || screenVisibilities.controlcenter) : false
 
     // Radius logic for "Squished" style
     readonly property real outerRadius: Styling.radius(0)
@@ -321,57 +321,14 @@ Item {
     // Shadow logic for bar components
     readonly property bool shadowsEnabled: Config.showBackground && (!actualContainBar || (Config.bar && Config.bar.keepBarShadow !== undefined ? Config.bar.keepBarShadow : false))
 
-    // Per-monitor utility cluster collapse (Presets→Battery). Persisted via StateService.
-    property bool utilityCollapsed: false
-    property bool utilityCollapsedSynced: false
-    readonly property bool utilityClusterVisible: !utilityCollapsed
-
-    readonly property string utilityCollapsedStateKey: "barUtilityCollapsedByScreen"
-
-    function persistUtilityCollapsed() {
-        if (!StateService.initialized || !screen)
-            return;
-        const prev = StateService.get(utilityCollapsedStateKey, {}) || {};
-        const map = Object.assign({}, prev);
-        map[screen.name] = utilityCollapsed;
-        StateService.set(utilityCollapsedStateKey, map);
-    }
-
-    function loadUtilityCollapsed() {
-        if (!StateService.initialized || !screen)
-            return;
-        // Keep a pre-init toggle and write it once state is ready.
-        if (utilityCollapsedSynced) {
-            persistUtilityCollapsed();
-            return;
-        }
-        const map = StateService.get(utilityCollapsedStateKey, {}) || {};
-        utilityCollapsed = !!map[screen.name];
-        utilityCollapsedSynced = true;
-    }
-
-    function setUtilityCollapsed(collapsed) {
-        if (!screen)
-            return;
-        utilityCollapsed = !!collapsed;
-        utilityCollapsedSynced = true;
-        persistUtilityCollapsed();
-    }
-
-    function toggleUtilityCollapsed() {
-        setUtilityCollapsed(!utilityCollapsed);
-    }
-
     Connections {
         target: StateService
         function onStateLoaded() {
-            root.loadUtilityCollapsed();
             root.loadScreenPinned();
         }
     }
 
     Component.onCompleted: {
-        loadUtilityCollapsed();
         loadScreenPinned();
     }
 
@@ -713,100 +670,16 @@ Item {
                             visible: !(root.orientation === "horizontal" && integratedDockEnabled)
                         }
 
-                        // Toggle sits on the left edge of the utility cluster (before Presets).
-                        // Collapses Presets→Battery; SysTray/Clock/Power stay visible.
-                        Bar.UtilityClusterToggle {
-                            id: utilityClusterToggle
-                            bar: root
-                            collapsed: root.utilityCollapsed
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.dockAtEnd ? root.innerRadius : root.outerRadius
-                            endRadius: root.innerRadius
-                            onToggled: root.toggleUtilityCollapsed()
-                        }
-
-                        PresetsButton {
-                            id: presetsButton
-                            clusterVisible: root.utilityClusterVisible
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                            enableShadow: root.shadowsEnabled
-                        }
-
-                        ToolsButton {
-                            id: toolsButton
-                            clusterVisible: root.utilityClusterVisible
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                            enableShadow: root.shadowsEnabled
-                        }
-
-                        Bar.WifiButton {
-                            id: wifiButton
-                            bar: root
-                            clusterVisible: root.utilityClusterVisible
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        Bar.BluetoothButton {
-                            id: bluetoothButton
-                            bar: root
-                            clusterVisible: root.utilityClusterVisible
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        Bar.NordVpnButton {
-                            id: nordVpnButton
-                            bar: root
-                            clusterVisible: root.utilityClusterVisible
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        Bar.PcloudButton {
-                            id: pcloudButton
-                            bar: root
-                            clusterVisible: root.utilityClusterVisible
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        Bar.SoundButton {
-                            id: soundButton
-                            bar: root
-                            clusterVisible: root.utilityClusterVisible
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        ControlsButton {
-                            id: controlsButton
-                            bar: root
-                            clusterVisible: root.utilityClusterVisible
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        Bar.BatteryIndicator {
-                            id: batteryIndicator
-                            bar: root
-                            clusterVisible: root.utilityClusterVisible
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
                         SysTray {
                             bar: root
                             enableShadow: root.shadowsEnabled
+                            startRadius: root.dockAtEnd ? root.innerRadius : root.outerRadius
+                            endRadius: root.innerRadius
+                        }
+
+                        Bar.ControlCenterButton {
+                            bar: root
+                            layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
                         }
@@ -840,71 +713,6 @@ Item {
                             Layout.preferredHeight: 36
                             startRadius: root.outerRadius
                             endRadius: root.innerRadius
-                            vertical: true
-                            enableShadow: root.shadowsEnabled
-                        }
-
-                        // Left/top edge of the vertical utility cluster (before Tools).
-                        Bar.UtilityClusterToggle {
-                            id: utilityClusterToggleVert
-                            bar: root
-                            collapsed: root.utilityCollapsed
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                            onToggled: root.toggleUtilityCollapsed()
-                        }
-
-                        ToolsButton {
-                            id: toolsButtonVert
-                            clusterVisible: root.utilityClusterVisible
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                            vertical: true
-                            enableShadow: root.shadowsEnabled
-                        }
-
-                        Bar.WifiButton {
-                            id: wifiButtonVert
-                            bar: root
-                            clusterVisible: root.utilityClusterVisible
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        Bar.BluetoothButton {
-                            id: bluetoothButtonVert
-                            bar: root
-                            clusterVisible: root.utilityClusterVisible
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        Bar.NordVpnButton {
-                            id: nordVpnButtonVert
-                            bar: root
-                            clusterVisible: root.utilityClusterVisible
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        Bar.PcloudButton {
-                            id: pcloudButtonVert
-                            bar: root
-                            clusterVisible: root.utilityClusterVisible
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        PresetsButton {
-                            id: presetsButtonVert
-                            clusterVisible: root.utilityClusterVisible
-                            startRadius: root.innerRadius
-                            endRadius: root.outerRadius
                             vertical: true
                             enableShadow: root.shadowsEnabled
                         }
@@ -1063,36 +871,16 @@ Item {
                             }
                         }
 
-                        Bar.SoundButton {
-                            id: soundButtonVert
-                            bar: root
-                            clusterVisible: root.utilityClusterVisible
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.outerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        ControlsButton {
-                            id: controlsButtonVert
-                            bar: root
-                            clusterVisible: root.utilityClusterVisible
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        Bar.BatteryIndicator {
-                            id: batteryIndicatorVert
-                            bar: root
-                            clusterVisible: root.utilityClusterVisible
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
                         SysTray {
                             bar: root
                             enableShadow: root.shadowsEnabled
+                            startRadius: root.innerRadius
+                            endRadius: root.innerRadius
+                        }
+
+                        Bar.ControlCenterButton {
+                            bar: root
+                            layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
                             endRadius: root.innerRadius
                         }

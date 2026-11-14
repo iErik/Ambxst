@@ -77,9 +77,24 @@ PanelWindow {
         bottom: true
     }
 
+    // A revealed bar sitting flush on an edge already rounds itself off with
+    // its own flares; the (black) screen corners on that edge would only show
+    // as curves cut into the bar's square ends.
+    readonly property var screenBar: Visibilities.bars[screen?.name ?? ""] ?? null
+    readonly property string flushBarEdge: {
+        if (!screenBar || !screenBar.reveal)
+            return "";
+        if (Config.bar?.floating ?? true)
+            return "";
+        if ((Config.bar?.frameEnabled ?? false) && (Config.bar?.containBar ?? false))
+            return "";
+        return screenBar.barPosition ?? "";
+    }
+
     ScreenCornersContent {
         id: cornersContent
         anchors.fill: parent
         hasFullscreenWindow: screenCorners.activeWindowFullscreen
+        flushBarEdge: screenCorners.flushBarEdge
     }
 }

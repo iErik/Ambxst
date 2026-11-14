@@ -19,7 +19,7 @@ Singleton {
     property string lastFocusedScreen: ""
     property var contextMenu: null
     property bool playerMenuOpen: false
-    readonly property var moduleNames: ["launcher", "dashboard", "overview", "powermenu", "tools", "presets", "taskswitcher"]
+    readonly property var moduleNames: ["launcher", "dashboard", "overview", "powermenu", "tools", "presets", "taskswitcher", "controlcenter"]
 
     function setContextMenu(menu) {
         contextMenu = menu;
@@ -179,6 +179,7 @@ Singleton {
             property bool tools: false
             property bool presets: false
             property bool taskswitcher: false
+            property bool controlcenter: false
         }
     }
 

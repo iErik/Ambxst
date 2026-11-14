@@ -136,8 +136,10 @@ Item {
     readonly property string traits: {
         const b = configs.bar || {}, n = configs.notch || {}, d = configs.dock || {}, t = configs.theme || {};
         const parts = [];
-        parts.push("Bar " + (b.position || "top") + (b.frameEnabled ? (b.containBar ? ", framed" : ", with frame") : ""));
-        parts.push("Notch " + (n.theme || "default") + ((n.position || "top") === "bottom" ? ", bottom" : ""));
+        const contained = b.frameEnabled && b.containBar;
+        parts.push("Bar " + (b.position || "top") + (b.frameEnabled ? (contained ? ", framed" : ", with frame") : "") + (!contained && b.floating === false ? ", flush" : ""));
+        const merged = b.mergeNotch === true && (n.theme || "default") === "default" && (b.position || "top") === (n.position || "top") && ["top", "bottom"].includes(b.position || "top");
+        parts.push(merged ? "Notch in bar" : "Notch " + (n.theme || "default") + ((n.position || "top") === "bottom" ? ", bottom" : ""));
         if (d.enabled)
             parts.push("Dock " + (d.theme || "default") + (d.theme === "integrated" ? "" : ", " + (d.position || "bottom")));
         else

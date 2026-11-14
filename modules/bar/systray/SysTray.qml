@@ -29,16 +29,17 @@ StyledRect {
     // Hide completely when empty - check both orientations
     readonly property bool hasItems: rowRepeater.count > 0 || columnRepeater.count > 0
 
-    readonly property bool collapsed: Config.bar?.trayCollapsed ?? false
+    // The tray is always expanded (its collapse arrow was removed).
+    readonly property bool collapsed: false
     readonly property int toggleSize: 16
     readonly property int contentPadding: 8
     readonly property int contentSpacing: 8
 
     readonly property real itemsMainExtent: vertical ? columnItems.implicitHeight : rowItems.implicitWidth
     readonly property real itemsCrossExtent: vertical ? columnItems.implicitWidth : rowItems.implicitHeight
-    readonly property real mainExtent: toggleSize + (collapsed ? 0 : contentSpacing + itemsMainExtent)
+    readonly property real mainExtent: itemsMainExtent
     // Keep pill cross-size from tray icons even while collapsed (items stay laid out, just clipped)
-    readonly property real crossExtent: Math.max(toggleSize, itemsCrossExtent)
+    readonly property real crossExtent: itemsCrossExtent
     readonly property int layoutSpacing: collapsed ? 0 : contentSpacing
 
     // Ajustes de tamaño dinámicos según orientación
@@ -81,9 +82,6 @@ StyledRect {
     }
 
     function toggleCollapsed() {
-        if (!Config.bar)
-            return;
-        Config.bar.trayCollapsed = !root.collapsed;
     }
 
     component TrayToggle: MouseArea {
@@ -134,6 +132,7 @@ StyledRect {
         spacing: root.layoutSpacing
 
         TrayToggle {
+            visible: false
             verticalLayout: false
         }
 
@@ -191,6 +190,7 @@ StyledRect {
         spacing: root.layoutSpacing
 
         TrayToggle {
+            visible: false
             verticalLayout: true
         }
 

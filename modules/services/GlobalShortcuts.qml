@@ -52,6 +52,8 @@ QtObject {
             case "dashboard-notifications": toggleDashboardTab(3); break;
             case "dashboard-assistant": toggleAssistant(); break;
             case "dashboard-controls": toggleSettings(); break;
+            case "controlcenter":
+            case "control-center": toggleControlCenter("controls"); break;
 
             // System
             case "overview": toggleSimpleModule("overview"); break;
@@ -66,7 +68,8 @@ QtObject {
             case "powermenu": toggleSimpleModule("powermenu"); break;
             case "tools": toggleSimpleModule("tools"); break;
             case "toggle-bar": GlobalStates.toggleBarForceHidden(); break;
-            case "config": toggleSettings(); break;
+            case "config":
+            case "settings": toggleSettings(); break;
             case "screenshot": Screenshot.initialize(); GlobalStates.screenshotToolVisible = true; break;
             case "screenrecord":
                 ScreenRecorder.initialize();
@@ -104,18 +107,28 @@ QtObject {
         }
     }
 
-    function toggleSettings(screenName) {
-        const willOpen = !GlobalStates.settingsWindowVisible;
-        if (willOpen) {
-            const targetMonitor = screenName ? AxctlService.monitorFor(screenName) : AxctlService.focusedMonitor;
-            GlobalStates.settingsTargetWorkspaceId = targetMonitor?.activeWorkspace?.id || AxctlService.focusedMonitor?.activeWorkspace?.id || AxctlService.focusedWorkspace?.id || 0;
-            GlobalStates.settingsTargetScreenName = targetMonitor?.name || AxctlService.focusedMonitor?.name || "";
-            if (targetMonitor && targetMonitor.id !== AxctlService.focusedMonitor?.id) {
-                AxctlService.dispatch(`focusmonitor ${targetMonitor.id}`);
-            }
-            Qt.callLater(() => Visibilities.setActiveModule(""));
+    // Open the Control Center on `page` ("controls" or "settings"); toggling
+    // the page that is already showing closes it.
+    function toggleControlCenter(page) {
+        const target = page || "controls";
+        const open = Visibilities.currentActiveModule === "controlcenter";
+        if (open && GlobalStates.controlCenterPage === target) {
+            Visibilities.setActiveModule("");
+            return;
         }
-        GlobalStates.settingsWindowVisible = willOpen;
+        GlobalStates.controlCenterPage = target;
+        if (!open)
+            Visibilities.setActiveModule("controlcenter");
+    }
+
+    // Settings now lives in the Control Center.
+    function toggleSettings(screenName) {
+        if (screenName) {
+            const targetMonitor = AxctlService.monitorFor(screenName);
+            if (targetMonitor && targetMonitor.id !== AxctlService.focusedMonitor?.id)
+                AxctlService.dispatch(`focusmonitor ${targetMonitor.id}`);
+        }
+        toggleControlCenter("settings");
     }
 
     function toggleSimpleModule(moduleName) {

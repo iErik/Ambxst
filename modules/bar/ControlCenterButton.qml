@@ -1,15 +1,16 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
+import qs.modules.services
 import qs.modules.components
 import qs.modules.theme
 import qs.config
 
+// Gear on the bar: opens the Control Center (quick settings + Settings).
 Item {
     id: root
 
     required property var bar
-    required property bool collapsed
 
     property bool vertical: bar.orientation === "vertical"
     property bool isHovered: false
@@ -19,7 +20,8 @@ Item {
     property real startRadius: radius
     property real endRadius: radius
 
-    signal toggled
+    readonly property var screenVisibilities: Visibilities.getForScreen(bar.screen.name)
+    readonly property bool open: screenVisibilities ? screenVisibilities.controlcenter : false
 
     Layout.preferredWidth: 36
     Layout.preferredHeight: 36
@@ -32,60 +34,60 @@ Item {
 
     StyledRect {
         id: buttonBg
-        variant: "bg"
+        variant: root.open ? "primary" : "bg"
         anchors.fill: parent
         enableShadow: root.layerEnabled
 
-        topLeftRadius: root.vertical ? root.startRadius : root.startRadius
+        topLeftRadius: root.startRadius
         topRightRadius: root.vertical ? root.startRadius : root.endRadius
         bottomLeftRadius: root.vertical ? root.endRadius : root.startRadius
-        bottomRightRadius: root.vertical ? root.endRadius : root.endRadius
+        bottomRightRadius: root.endRadius
 
         Rectangle {
             anchors.fill: parent
             color: Styling.srItem("overprimary")
-            opacity: root.isHovered ? 0.25 : 0
+            opacity: root.open ? 0 : (root.isHovered ? 0.25 : 0)
             radius: parent.radius ?? 0
 
             Behavior on opacity {
-                enabled: (Config.animDuration ?? 0) > 0
+                enabled: Config.animDuration > 0
                 NumberAnimation {
-                    duration: (Config.animDuration ?? 0) / 2
+                    duration: Config.animDuration / 2
                 }
             }
         }
 
         Text {
             anchors.centerIn: parent
-            text: {
-                if (root.vertical)
-                    return root.collapsed ? Icons.caretDown : Icons.caretUp;
-                return root.collapsed ? Icons.caretRight : Icons.caretLeft;
-            }
-            textFormat: Text.PlainText
+            text: Icons.gear
             font.family: Icons.font
-            font.pixelSize: 12
-            color: Styling.srItem("overprimary")
-            opacity: root.isHovered ? 1 : 0.75
+            font.pixelSize: 18
+            color: root.open ? buttonBg.item : Styling.srItem("overprimary")
+            rotation: root.open ? 90 : 0
 
-            Behavior on opacity {
-                enabled: (Config.animDuration ?? 0) > 0
+            Behavior on rotation {
+                enabled: Config.animDuration > 0
                 NumberAnimation {
-                    duration: (Config.animDuration ?? 0) / 2
+                    duration: Config.animDuration
+                    easing.type: Easing.OutCubic
                 }
             }
         }
 
         MouseArea {
             anchors.fill: parent
-            hoverEnabled: false
             cursorShape: Qt.PointingHandCursor
-            onClicked: root.toggled()
+            onClicked: {
+                if (root.open)
+                    Visibilities.setActiveModule("");
+                else
+                    GlobalShortcuts.toggleControlCenter("controls");
+            }
         }
 
         StyledToolTip {
-            show: root.isHovered
-            tooltipText: root.collapsed ? "Expand utilities" : "Collapse utilities"
+            show: root.isHovered && !root.open
+            tooltipText: "Control Center"
         }
     }
 }

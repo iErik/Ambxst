@@ -247,7 +247,11 @@ Singleton {
     // Mirror Tool state
     property bool mirrorWindowVisible: false
 
-    // Settings Window state
+    // Control Center page: "controls" or "settings".
+    property string controlCenterPage: "controls"
+
+    // Settings Window state (the window is no longer opened: Settings lives in
+    // the Control Center; see GlobalShortcuts.toggleSettings)
     property bool settingsWindowVisible: false
     property int settingsTargetWorkspaceId: 0
     property string settingsTargetScreenName: ""

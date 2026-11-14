@@ -553,12 +553,6 @@ Singleton {
             property int revealPressure: 250
             property int revealPressureMs: 250
             property bool showPinButton: true
-            property bool showNordVpn: true
-            property bool showPcloud: true
-            property bool showWifi: true
-            property bool showBluetooth: true
-            property bool showSound: true
-            property bool trayCollapsed: false
             property bool availableOnFullscreen: false
             property bool use12hFormat: false
             property bool containBar: false

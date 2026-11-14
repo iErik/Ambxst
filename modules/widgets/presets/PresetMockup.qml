@@ -86,11 +86,16 @@ Item {
     readonly property real frameT: frameOn ? Math.max(3, val(bar, "frameThickness", 6)) * k : 0
     readonly property bool containBar: frameOn && val(bar, "containBar", false)
     readonly property bool squished: val(bar, "pillStyle", "default") === "squished"
+    // Not floating: the bar sits flush on its edge, square, without a gap.
+    readonly property bool barFlush: !containBar && !val(bar, "floating", true)
     readonly property real roundness: Math.max(0, val(theme, "roundness", 16))
     readonly property string fontFamily: val(theme, "font", "")
 
     readonly property string notchPos: val(notch, "position", "top") === "bottom" ? "bottom" : "top"
     readonly property bool notchIsland: val(notch, "theme", "default") === "island"
+    // Merged: the (closed) notch is part of the bar, so only its label shows,
+    // centred in the bar. Same conditions as NotchContent.
+    readonly property bool notchMerged: val(bar, "mergeNotch", false) && !notchIsland && !barVertical && barPos === notchPos
 
     readonly property bool dockOn: val(dock, "enabled", false)
     readonly property string dockTheme: val(dock, "theme", "default")
@@ -139,7 +144,7 @@ Item {
 
     // --- Geometry (real pixels) -------------------------------------------------
     readonly property real barT: barVertical ? 40 * 1.3 : 40 * k
-    readonly property real barGap: containBar ? 0 : 4 * k
+    readonly property real barGap: (containBar || barFlush) ? 0 : 4 * k
     readonly property real barInset: frameT + barGap
 
     // The desktop: inside the frame, and also beside the bar when the frame
@@ -174,6 +179,8 @@ Item {
         const w = (notchIsland ? 200 : 190) * k;
         const h = (notchIsland ? 32 : 30) * k;
         const x = (screenW - w) / 2;
+        if (notchMerged)
+            return { x: x, y: barRect.y, w: w, h: barRect.h };
         const gap = notchIsland ? 6 * k + frameT : 0;
         return { x: x, y: notchPos === "bottom" ? screenH - gap - h : gap, w: w, h: h };
     }
@@ -409,7 +416,7 @@ Item {
             y: root.barRect.y * root.s
             width: root.barRect.w * root.s
             height: root.barRect.h * root.s
-            radius: root.containBar ? 0 : root.roundness * root.s * root.k * 0.6
+            radius: (root.containBar || root.barFlush) ? 0 : root.roundness * root.s * root.k * 0.6
 
             readonly property real pad: 6 * root.k * root.s
             readonly property real pillT: (root.barT - 12 * root.k) * root.s
@@ -438,8 +445,10 @@ Item {
                 }
             }
 
-            // Center: workspace dots, or the integrated dock's icons.
+            // Center: workspace dots, or the integrated dock's icons. A notch
+            // merged into the bar takes the centre instead.
             Grid {
+                visible: !root.notchMerged || root.dockIntegrated
                 readonly property int count: root.dockIntegrated ? root.dockIcons : 5
                 rows: root.barVertical ? count : 1
                 columns: root.barVertical ? 1 : count
@@ -469,17 +478,34 @@ Item {
                 anchors.bottomMargin: barShape.pad
                 x: root.barVertical ? barShape.pad : 0
                 y: root.barVertical ? 0 : barShape.pad
-                rows: root.barVertical ? 2 : 1
-                columns: root.barVertical ? 1 : 2
+                rows: root.barVertical ? 3 : 1
+                columns: root.barVertical ? 1 : 3
                 spacing: 4 * root.s
+                // Tray icons, then the Control Center gear.
                 StyledRect {
                     variant: "common"
                     configOverride: root.srCommon
                     enableBorder: false
                     animateRadius: false
-                    width: root.barVertical ? barShape.pillT : barShape.pillT * 2.4
-                    height: root.barVertical ? barShape.pillT * 2.4 : barShape.pillT
+                    width: root.barVertical ? barShape.pillT : barShape.pillT * 1.8
+                    height: root.barVertical ? barShape.pillT * 1.8 : barShape.pillT
                     radius: barShape.pillR
+                }
+                StyledRect {
+                    variant: "common"
+                    configOverride: root.srCommon
+                    enableBorder: false
+                    animateRadius: false
+                    width: barShape.pillT
+                    height: barShape.pillT
+                    radius: barShape.pillR
+                    Text {
+                        anchors.centerIn: parent
+                        text: Icons.gear
+                        font.family: Icons.font
+                        font.pixelSize: Math.max(6, parent.height * 0.55)
+                        color: root.itemColorOf(root.srCommon, barShape.ink)
+                    }
                 }
                 StyledRect {
                     variant: "common"
@@ -510,7 +536,7 @@ Item {
         Item {
             id: notchItem
             readonly property bool atTop: root.notchPos === "top"
-            readonly property real cs: root.notchIsland ? 0 : root.notchCorner * root.s
+            readonly property real cs: (root.notchIsland || root.notchMerged) ? 0 : root.notchCorner * root.s
             readonly property real r: root.notchIsland ? root.notchRect.h * root.s / 2 : Math.min(root.notchCorner * root.s, root.notchRect.h * root.s / 2)
             x: root.notchRect.x * root.s - cs
             y: root.notchRect.y * root.s
@@ -519,6 +545,7 @@ Item {
 
             StyledRect {
                 anchors.fill: parent
+                visible: !root.notchMerged
                 variant: "bg"
                 configOverride: root.srBg
                 enableBorder: root.notchIsland
@@ -577,7 +604,7 @@ Item {
                 text: "user@host"
                 font.family: root.fontFamily
                 font.pixelSize: Math.max(7, 12 * root.s * root.k)
-                color: root.itemColorOf(root.srBg, Colors.overBackground)
+                color: root.notchMerged ? barShape.ink : root.itemColorOf(root.srBg, Colors.overBackground)
             }
         }
 
