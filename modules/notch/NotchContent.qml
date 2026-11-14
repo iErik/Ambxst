@@ -138,15 +138,15 @@ Item {
             if (GlobalStates.barForceHidden) {
                 root.hoverActive = false;
                 hideDelayTimer.stop();
-                edgePressureTimer.stop();
             }
         }
     }
 
     // Edge-pressure reveal (shares Config.bar's settings so the notch and the
     // bar open the same way): while hidden, the pointer must touch the screen
-    // edge and stay pressed against it for revealPressureMs.
+    // edge and push against it (see EdgePressureGate).
     readonly property int revealEdgeDepth: Math.max((Config.bar && Config.bar.revealEdgeDepth !== undefined) ? Config.bar.revealEdgeDepth : 2, 1)
+    readonly property int revealPressure: Math.max((Config.bar && Config.bar.revealPressure !== undefined) ? Config.bar.revealPressure : 250, 0)
     readonly property int revealPressureMs: Math.max((Config.bar && Config.bar.revealPressureMs !== undefined) ? Config.bar.revealPressureMs : 250, 0)
     // On the bar's edge the notch reveals the bar too, so honour the bar's
     // "Hover to Reveal" there; otherwise turning it off would still let the
@@ -162,33 +162,15 @@ Item {
         return y < revealEdgeDepth;
     }
 
-    Timer {
-        id: edgePressureTimer
-        interval: root.revealPressureMs
-        repeat: false
+    EdgePressureGate {
+        id: edgeGate
+        edge: root.notchPosition === "bottom" ? "bottom" : "top"
+        armed: root.pointerAtEdge && !root.reveal && root.shouldAutoHide && root.hoverToReveal && !GlobalStates.barForceHidden
+        threshold: root.revealPressure
+        dwellMs: root.revealPressureMs
         onTriggered: {
-            if (root.pointerAtEdge && root.hoverToReveal && !GlobalStates.barForceHidden) {
-                hideDelayTimer.stop();
-                root.hoverActive = true;
-            }
-        }
-    }
-
-    onPointerAtEdgeChanged: armEdgePressure()
-    onRevealChanged: if (!reveal) armEdgePressure()
-
-    function armEdgePressure() {
-        if (!pointerAtEdge) {
-            edgePressureTimer.stop();
-            return;
-        }
-        if (reveal || !shouldAutoHide || !hoverToReveal || GlobalStates.barForceHidden)
-            return;
-        if (revealPressureMs === 0) {
             hideDelayTimer.stop();
-            hoverActive = true;
-        } else {
-            edgePressureTimer.restart();
+            root.hoverActive = true;
         }
     }
 

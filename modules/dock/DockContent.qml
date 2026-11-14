@@ -126,10 +126,11 @@ Item {
     }
 
     // Edge-pressure reveal: while hidden, the pointer has to touch the screen
-    // edge and stay pressed against it for revealPressureMs. Wayland clamps the
-    // pointer at the edge and stops sending motion, so holding still at the edge
-    // is the closest a shell client can get to measuring push.
+    // edge and push against it (see EdgePressureGate). revealPressure is the
+    // raw push needed; revealPressureMs is the dwell used when relative pointer
+    // motion is unavailable.
     readonly property int revealEdgeDepth: Math.max(Config.dock?.revealEdgeDepth ?? 2, 1)
+    readonly property int revealPressure: Math.max(Config.dock?.revealPressure ?? 250, 0)
     readonly property int revealPressureMs: Math.max(Config.dock?.revealPressureMs ?? 250, 0)
 
     readonly property bool pointerAtEdge: {
@@ -142,32 +143,13 @@ Item {
         return dockMouseArea.mouseY >= dockMouseArea.height - revealEdgeDepth;
     }
 
-    Timer {
-        id: edgePressureTimer
-        interval: root.revealPressureMs
-        repeat: false
-        onTriggered: {
-            if (root.pointerAtEdge && root.hoverToReveal)
-                root.hoverActive = true;
-        }
-    }
-
-    onPointerAtEdgeChanged: armEdgePressure()
-    // The dock can hide while the pointer is still resting at the edge (e.g. a
-    // window opening); re-arm so holding there still reveals it.
-    onRevealChanged: if (!reveal) armEdgePressure()
-
-    function armEdgePressure() {
-        if (!pointerAtEdge) {
-            edgePressureTimer.stop();
-            return;
-        }
-        if (reveal || !hoverToReveal)
-            return;
-        if (revealPressureMs === 0)
-            hoverActive = true;
-        else
-            edgePressureTimer.restart();
+    EdgePressureGate {
+        id: edgeGate
+        edge: root.isLeft ? "left" : (root.isRight ? "right" : "bottom")
+        armed: root.pointerAtEdge && !root.reveal && root.hoverToReveal
+        threshold: root.revealPressure
+        dwellMs: root.revealPressureMs
+        onTriggered: root.hoverActive = true
     }
 
     readonly property int totalMargin: root.windowSideMargin + root.edgeSideMargin
@@ -201,7 +183,6 @@ Item {
                 if (root.reveal)
                     root.hoverActive = true;
             } else {
-                edgePressureTimer.stop();
                 root.hoverActive = false;
             }
         }

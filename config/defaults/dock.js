@@ -10,6 +10,7 @@ var data = {
     "margin": 4,
     "hoverRegionHeight": 16,
     "revealEdgeDepth": 2,
+    "revealPressure": 250,
     "revealPressureMs": 250,
     "pinnedOnStartup": false,
     "hoverToReveal": true,

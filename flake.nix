@@ -40,6 +40,9 @@
         in {
           default = Ambxst;
           Ambxst = Ambxst;
+          input-plugin = import ./nix/packages/input-plugin.nix {
+            inherit pkgs lib version;
+          };
         }
       );
 

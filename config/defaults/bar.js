@@ -16,6 +16,7 @@ var data = {
     "hoverToReveal": true,
     "hoverRegionHeight": 8,
     "revealEdgeDepth": 2,
+    "revealPressure": 250,
     "revealPressureMs": 250,
     "showPinButton": true,
     "showNordVpn": true,

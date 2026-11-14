@@ -7,6 +7,7 @@ import Quickshell
 import qs.modules.theme
 import qs.modules.components
 import qs.modules.globals
+import qs.modules.services
 import qs.config
 
 Item {
@@ -876,6 +877,24 @@ Item {
 
                         NumberInputRow {
                             label: "Reveal Pressure"
+                            // Raw push against the edge; needs relative pointer motion.
+                            visible: RelativePointerService.available
+                            value: Config.bar.revealPressure ?? 250
+                            minValue: 0
+                            maxValue: 2000
+                            suffix: ""
+                            onValueEdited: newValue => {
+                                if (newValue !== Config.bar.revealPressure) {
+                                    GlobalStates.markShellChanged();
+                                    Config.bar.revealPressure = newValue;
+                                }
+                            }
+                        }
+
+                        NumberInputRow {
+                            label: "Reveal Delay"
+                            // Fallback when relative pointer motion is unavailable.
+                            visible: !RelativePointerService.available
                             value: Config.bar.revealPressureMs ?? 250
                             minValue: 0
                             maxValue: 1000
@@ -1635,7 +1654,22 @@ Item {
 
                         NumberInputRow {
                             label: "Reveal Pressure"
-                            visible: (Config.dock.theme ?? "default") !== "integrated"
+                            visible: (Config.dock.theme ?? "default") !== "integrated" && RelativePointerService.available
+                            value: Config.dock.revealPressure ?? 250
+                            minValue: 0
+                            maxValue: 2000
+                            suffix: ""
+                            onValueEdited: newValue => {
+                                if (newValue !== Config.dock.revealPressure) {
+                                    GlobalStates.markShellChanged();
+                                    Config.dock.revealPressure = newValue;
+                                }
+                            }
+                        }
+
+                        NumberInputRow {
+                            label: "Reveal Delay"
+                            visible: (Config.dock.theme ?? "default") !== "integrated" && !RelativePointerService.available
                             value: Config.dock.revealPressureMs ?? 250
                             minValue: 0
                             maxValue: 1000

@@ -56,7 +56,6 @@ Item {
         if (!shouldAutoHide) {
             hoverActive = false;
             hideDelayTimer.stop();
-            edgePressureTimer.stop();
         }
     }
 
@@ -66,7 +65,6 @@ Item {
             if (GlobalStates.barForceHidden) {
                 root.hoverActive = false;
                 hideDelayTimer.stop();
-                edgePressureTimer.stop();
             }
         }
     }
@@ -132,10 +130,11 @@ Item {
     }
 
     // Edge-pressure reveal: while hidden, the pointer has to touch the screen
-    // edge and stay pressed against it for revealPressureMs. Wayland clamps the
-    // pointer at the edge and stops sending motion, so holding still at the edge
-    // is the closest a shell client can get to measuring push.
+    // edge and push against it (see EdgePressureGate). revealPressure is the
+    // raw push needed; revealPressureMs is the dwell used when relative pointer
+    // motion is unavailable.
     readonly property int revealEdgeDepth: Math.max((Config.bar && Config.bar.revealEdgeDepth !== undefined ? Config.bar.revealEdgeDepth : 2), 1)
+    readonly property int revealPressure: Math.max((Config.bar && Config.bar.revealPressure !== undefined ? Config.bar.revealPressure : 250), 0)
     readonly property int revealPressureMs: Math.max((Config.bar && Config.bar.revealPressureMs !== undefined ? Config.bar.revealPressureMs : 250), 0)
     // "Hover to Reveal" off: the hidden bar never reveals from the pointer; only
     // the keybind toggle, pinning, or an open notch module bring it back.
@@ -157,35 +156,15 @@ Item {
         }
     }
 
-    Timer {
-        id: edgePressureTimer
-        interval: root.revealPressureMs
-        repeat: false
+    EdgePressureGate {
+        id: edgeGate
+        edge: root.barPosition
+        armed: root.pointerAtEdge && !root.reveal && root.shouldAutoHide && root.hoverToReveal && !GlobalStates.barForceHidden
+        threshold: root.revealPressure
+        dwellMs: root.revealPressureMs
         onTriggered: {
-            if (root.pointerAtEdge && root.hoverToReveal && !GlobalStates.barForceHidden) {
-                hideDelayTimer.stop();
-                root.hoverActive = true;
-            }
-        }
-    }
-
-    onPointerAtEdgeChanged: armEdgePressure()
-    // The bar can hide while the pointer is still resting at the edge (e.g. the
-    // notch closing); re-arm so holding there still reveals it.
-    onRevealChanged: if (!reveal) armEdgePressure()
-
-    function armEdgePressure() {
-        if (!pointerAtEdge) {
-            edgePressureTimer.stop();
-            return;
-        }
-        if (reveal || !shouldAutoHide || !hoverToReveal || GlobalStates.barForceHidden)
-            return;
-        if (revealPressureMs === 0) {
             hideDelayTimer.stop();
-            hoverActive = true;
-        } else {
-            edgePressureTimer.restart();
+            root.hoverActive = true;
         }
     }
 

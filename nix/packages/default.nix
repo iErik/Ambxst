@@ -15,6 +15,7 @@ let
   appsPkgs = import ./apps.nix { inherit pkgs; };
   fontsPkgs = import ./fonts.nix { inherit pkgs ttf-phosphor-icons; };
   tesseractPkgs = import ./tesseract.nix { inherit pkgs; };
+  inputPlugin = import ./input-plugin.nix { inherit pkgs lib version; };
 
   # Combine all packages (NixOS-specific deps handled by the module)
   baseEnv = corePkgs
@@ -23,7 +24,8 @@ let
     ++ mediaPkgs
     ++ appsPkgs
     ++ fontsPkgs
-    ++ tesseractPkgs;
+    ++ tesseractPkgs
+    ++ [ inputPlugin ];
 
   envAmbxst = pkgs.buildEnv {
     name = "Ambxst-env";

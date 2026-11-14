@@ -549,6 +549,7 @@ Singleton {
             property bool hoverToReveal: true
             property int hoverRegionHeight: 8
             property int revealEdgeDepth: 2
+            property int revealPressure: 250
             property int revealPressureMs: 250
             property bool showPinButton: true
             property bool showNordVpn: true
@@ -1110,6 +1111,7 @@ Singleton {
             property int margin: 8
             property int hoverRegionHeight: 4
             property int revealEdgeDepth: 2
+            property int revealPressure: 250
             property int revealPressureMs: 250
             property bool pinnedOnStartup: false
             property bool hoverToReveal: true
