@@ -141,7 +141,9 @@ PanelWindow {
                 anchors.centerIn: parent
                 active: presetsOpen
 
-                sourceComponent: PresetsTab {}
+                sourceComponent: PresetsTab {
+                    targetScreen: presetsPopup.screen
+                }
             }
         }
 

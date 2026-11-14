@@ -21,6 +21,127 @@ Singleton {
     readonly property string assetsPresetsDir: Qt.resolvedUrl("../../assets/presets").toString().replace("file://", "")
     readonly property string activePresetFile: presetsDir + "/active_preset"
 
+    // Preset previews. A user preset keeps its screenshot as preview.png in its
+    // own folder (rename/delete carry it along). Official presets live in the
+    // read-only assets tree, so their captured screenshots go to the cache.
+    readonly property string previewCacheDir: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/ambxst/preset-previews"
+    // Bumped after every capture so preview images reload instead of using a
+    // cached copy.
+    property int previewRevision: 0
+    signal previewCaptured(string presetName)
+
+    // Where a preview may be found, in order. The first entry also covers
+    // screenshots shipped inside an official preset's assets folder.
+    function previewCandidates(preset) {
+        if (!preset || !preset.path)
+            return [];
+        return [preset.path + "/preview.png", previewCacheDir + "/" + preset.name + ".png"];
+    }
+
+    // Preview files known to exist (path -> true). Refreshed on every scan and
+    // after each capture, so the UI only loads images that are really there.
+    property var previewFiles: ({})
+
+    // The preview image to show for a preset, or "" for none.
+    function previewSourceFor(preset) {
+        const candidates = previewCandidates(preset);
+        for (let i = 0; i < candidates.length; i++) {
+            if (previewFiles[candidates[i]])
+                return candidates[i];
+        }
+        return "";
+    }
+
+    function refreshPreviewFiles() {
+        previewScanProcess.running = true;
+    }
+
+    Process {
+        id: previewScanProcess
+        running: false
+        command: ["sh", "-c", "find \"$1\" \"$2\" -mindepth 2 -maxdepth 2 -name preview.png 2>/dev/null; find \"$3\" -maxdepth 1 -name '*.png' 2>/dev/null; true", "sh", root.presetsDir, root.assetsPresetsDir, root.previewCacheDir]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const files = {};
+                for (const line of text.split("\n")) {
+                    if (line.length > 0)
+                        files[line] = true;
+                }
+                root.previewFiles = files;
+            }
+        }
+    }
+
+    function previewTargetFor(preset) {
+        if (!preset)
+            return "";
+        return preset.isOfficial ? previewCacheDir + "/" + preset.name + ".png" : preset.path + "/preview.png";
+    }
+
+    property var _captureQueue: []
+
+    // Screenshot the focused monitor into `targetPath` as a ~960px-wide
+    // thumbnail, then call onDone(success). Waits briefly first so the presets
+    // popup has finished closing and isn't in the shot.
+    function capturePreview(presetName, targetPath, onDone) {
+        if (!targetPath) {
+            if (onDone)
+                onDone(false);
+            return;
+        }
+        const outputName = (AxctlService.focusedMonitor && AxctlService.focusedMonitor.name) || (Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "");
+        let screen = null;
+        for (let i = 0; i < Quickshell.screens.length; i++) {
+            if (Quickshell.screens[i].name === outputName)
+                screen = Quickshell.screens[i];
+        }
+        if (!screen && Quickshell.screens.length > 0)
+            screen = Quickshell.screens[0];
+        const scale = screen && screen.width > 0 ? Math.min(1, 960 / screen.width) : 0.5;
+        const dir = targetPath.substring(0, targetPath.lastIndexOf("/"));
+        const tmp = targetPath + ".tmp.png";
+        const q = str => "'" + String(str).replace(/'/g, "'\\''") + "'";
+        const cmd = "sleep 0.8 && mkdir -p " + q(dir)
+            + " && grim " + (outputName ? "-o " + q(outputName) + " " : "")
+            + "-s " + scale.toFixed(3) + " -t png " + q(tmp)
+            + " && mv " + q(tmp) + " " + q(targetPath);
+        _captureQueue.push({ name: presetName, cmd: cmd, onDone: onDone });
+        if (!captureProcess.running)
+            _runNextCapture();
+    }
+
+    function _runNextCapture() {
+        const job = _captureQueue[0];
+        if (!job)
+            return;
+        captureProcess.job = job;
+        captureProcess.command = ["sh", "-c", job.cmd];
+        captureProcess.running = true;
+    }
+
+    Process {
+        id: captureProcess
+        property var job: null
+        running: false
+        onExited: function(exitCode) {
+            const job = captureProcess.job;
+            root._captureQueue.shift();
+            captureProcess.job = null;
+            const ok = exitCode === 0;
+            if (ok) {
+                root.refreshPreviewFiles();
+                root.previewRevision++;
+                root.previewCaptured(job ? job.name : "");
+            } else {
+                console.warn("PresetsService: preview capture failed for", job ? job.name : "?", "exit", exitCode);
+            }
+            if (job && job.onDone)
+                job.onDone(ok);
+            if (root._captureQueue.length > 0)
+                root._runNextCapture();
+        }
+    }
+
     // Files to exclude from presets (never saved, loaded, or shown)
     readonly property var excludedFiles: ["system.json", "ai.json", "prefix.json", "weather.json"]
 
@@ -30,6 +151,7 @@ Singleton {
     // Scan presets directory
     function scanPresets() {
         scanProcess.running = true
+        refreshPreviewFiles()
         readActivePresetProcess.running = true
     }
 
@@ -358,10 +480,14 @@ Singleton {
 
         onExited: function(exitCode) {
             if (exitCode === 0) {
-                console.log("Preset saved successfully:", root.pendingPresetName)
-                Quickshell.execDetached(["notify-send", "Preset Saved", `Preset "${root.pendingPresetName}" saved successfully.`])
-                // Trigger scan
-                root.scanProcess.running = true
+                const savedName = root.pendingPresetName
+                console.log("Preset saved successfully:", savedName)
+                // Capture the preview before notifying, or the notification
+                // popup ends up in the screenshot.
+                root.capturePreview(savedName, root.presetsDir + "/" + savedName + "/preview.png", () => {
+                    Quickshell.execDetached(["notify-send", "Preset Saved", `Preset "${savedName}" saved successfully.`])
+                    root.scanProcess.running = true
+                })
             } else {
                 console.warn("Failed to save preset:", root.pendingPresetName)
                 Quickshell.execDetached(["notify-send", "Error", `Failed to save preset "${root.pendingPresetName}".`])
@@ -402,9 +528,12 @@ Singleton {
 
         onExited: function(exitCode) {
             if (exitCode === 0) {
-                console.log("Preset updated successfully:", root.pendingUpdateName)
-                Quickshell.execDetached(["notify-send", "Preset Updated", `Preset "${root.pendingUpdateName}" updated successfully.`])
-                root.scanProcess.running = true
+                const updatedName = root.pendingUpdateName
+                console.log("Preset updated successfully:", updatedName)
+                root.capturePreview(updatedName, root.presetsDir + "/" + updatedName + "/preview.png", () => {
+                    Quickshell.execDetached(["notify-send", "Preset Updated", `Preset "${updatedName}" updated successfully.`])
+                    root.scanProcess.running = true
+                })
             } else {
                 console.warn("Failed to update preset:", root.pendingUpdateName)
                 Quickshell.execDetached(["notify-send", "Error", `Failed to update preset "${root.pendingUpdateName}".`])

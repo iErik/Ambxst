@@ -18,8 +18,12 @@ ClippingRectangle {
     property bool enableBorder: true
     property bool animateRadius: true
     property real backgroundOpacity: -1  // -1 means use config value
+    // Optional styling object (same shape as Config.theme.sr*) used instead of
+    // the current theme's config for `variant`. Lets previews draw surfaces the
+    // way another preset styles them. null keeps the normal behaviour.
+    property var configOverride: null
 
-    readonly property var variantConfig: Styling.getStyledRectConfig(variant) || {}
+    readonly property var variantConfig: configOverride || Styling.getStyledRectConfig(variant) || {}
 
     readonly property var gradientStops: variantConfig.gradient
 
