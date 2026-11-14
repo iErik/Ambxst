@@ -548,6 +548,8 @@ Singleton {
             property bool pinnedOnStartup: true
             property bool hoverToReveal: true
             property int hoverRegionHeight: 8
+            property int revealEdgeDepth: 2
+            property int revealPressureMs: 250
             property bool showPinButton: true
             property bool showNordVpn: true
             property bool showPcloud: true

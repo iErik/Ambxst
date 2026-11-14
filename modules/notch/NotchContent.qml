@@ -138,7 +138,53 @@ Item {
             if (GlobalStates.barForceHidden) {
                 root.hoverActive = false;
                 hideDelayTimer.stop();
+                edgePressureTimer.stop();
             }
+        }
+    }
+
+    // Edge-pressure reveal (shares Config.bar's settings so the notch and the
+    // bar open the same way): while hidden, the pointer must touch the screen
+    // edge and stay pressed against it for revealPressureMs.
+    readonly property int revealEdgeDepth: Math.max((Config.bar && Config.bar.revealEdgeDepth !== undefined) ? Config.bar.revealEdgeDepth : 2, 1)
+    readonly property int revealPressureMs: Math.max((Config.bar && Config.bar.revealPressureMs !== undefined) ? Config.bar.revealPressureMs : 250, 0)
+
+    readonly property bool pointerAtEdge: {
+        if (!notchMouseAreaHover.hovered)
+            return false;
+        const y = notchMouseAreaHover.point.position.y;
+        if (root.notchPosition === "bottom")
+            return y >= notchHoverRegion.height - revealEdgeDepth;
+        return y < revealEdgeDepth;
+    }
+
+    Timer {
+        id: edgePressureTimer
+        interval: root.revealPressureMs
+        repeat: false
+        onTriggered: {
+            if (root.pointerAtEdge && !GlobalStates.barForceHidden) {
+                hideDelayTimer.stop();
+                root.hoverActive = true;
+            }
+        }
+    }
+
+    onPointerAtEdgeChanged: armEdgePressure()
+    onRevealChanged: if (!reveal) armEdgePressure()
+
+    function armEdgePressure() {
+        if (!pointerAtEdge) {
+            edgePressureTimer.stop();
+            return;
+        }
+        if (reveal || !shouldAutoHide || GlobalStates.barForceHidden)
+            return;
+        if (revealPressureMs === 0) {
+            hideDelayTimer.stop();
+            hoverActive = true;
+        } else {
+            edgePressureTimer.restart();
         }
     }
 
@@ -159,9 +205,12 @@ Item {
         if (GlobalStates.barForceHidden)
             return;
         if (isMouseOverNotch) {
-            // Immediately show when mouse enters any notch area
-            hideDelayTimer.stop();
-            hoverActive = true;
+            // Keep an already revealed notch open; revealing a hidden one goes
+            // through the edge-pressure gate.
+            if (reveal) {
+                hideDelayTimer.stop();
+                hoverActive = true;
+            }
         } else {
             // Delay hiding when mouse leaves
             hideDelayTimer.restart();

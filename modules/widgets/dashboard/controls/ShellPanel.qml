@@ -860,6 +860,34 @@ Item {
                             }
                         }
 
+                        NumberInputRow {
+                            label: "Edge Trigger Depth"
+                            value: Config.bar.revealEdgeDepth ?? 2
+                            minValue: 1
+                            maxValue: 8
+                            suffix: "px"
+                            onValueEdited: newValue => {
+                                if (newValue !== Config.bar.revealEdgeDepth) {
+                                    GlobalStates.markShellChanged();
+                                    Config.bar.revealEdgeDepth = newValue;
+                                }
+                            }
+                        }
+
+                        NumberInputRow {
+                            label: "Reveal Pressure"
+                            value: Config.bar.revealPressureMs ?? 250
+                            minValue: 0
+                            maxValue: 1000
+                            suffix: "ms"
+                            onValueEdited: newValue => {
+                                if (newValue !== Config.bar.revealPressureMs) {
+                                    GlobalStates.markShellChanged();
+                                    Config.bar.revealPressureMs = newValue;
+                                }
+                            }
+                        }
+
                         ToggleRow {
                             label: "Show Pin Button"
                             checked: Config.bar.showPinButton ?? true

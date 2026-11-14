@@ -56,6 +56,7 @@ Item {
         if (!shouldAutoHide) {
             hoverActive = false;
             hideDelayTimer.stop();
+            edgePressureTimer.stop();
         }
     }
 
@@ -65,6 +66,7 @@ Item {
             if (GlobalStates.barForceHidden) {
                 root.hoverActive = false;
                 hideDelayTimer.stop();
+                edgePressureTimer.stop();
             }
         }
     }
@@ -123,7 +125,64 @@ Item {
 
         // Show if: hovering, notch hovering (when at top), notch open
         // IMPORTANT: notchHoverActive must be checked to synchronize with notch
-        return isMouseOverBar || hoverActive || notchHoverActive || notchOpen;
+        // Plain hover over the hidden strip is not enough: hoverActive is only
+        // raised through the edge-pressure gate below (or by hovering the bar
+        // once it is already revealed).
+        return hoverActive || notchHoverActive || notchOpen;
+    }
+
+    // Edge-pressure reveal: while hidden, the pointer has to touch the screen
+    // edge and stay pressed against it for revealPressureMs. Wayland clamps the
+    // pointer at the edge and stops sending motion, so holding still at the edge
+    // is the closest a shell client can get to measuring push.
+    readonly property int revealEdgeDepth: Math.max((Config.bar && Config.bar.revealEdgeDepth !== undefined ? Config.bar.revealEdgeDepth : 2), 1)
+    readonly property int revealPressureMs: Math.max((Config.bar && Config.bar.revealPressureMs !== undefined ? Config.bar.revealPressureMs : 250), 0)
+
+    readonly property bool pointerAtEdge: {
+        if (!barMouseArea.containsMouse)
+            return false;
+        switch (barPosition) {
+        case "bottom":
+            return barMouseArea.mouseY >= barMouseArea.height - revealEdgeDepth;
+        case "left":
+            return barMouseArea.mouseX < revealEdgeDepth;
+        case "right":
+            return barMouseArea.mouseX >= barMouseArea.width - revealEdgeDepth;
+        default:
+            return barMouseArea.mouseY < revealEdgeDepth;
+        }
+    }
+
+    Timer {
+        id: edgePressureTimer
+        interval: root.revealPressureMs
+        repeat: false
+        onTriggered: {
+            if (root.pointerAtEdge && !GlobalStates.barForceHidden) {
+                hideDelayTimer.stop();
+                root.hoverActive = true;
+            }
+        }
+    }
+
+    onPointerAtEdgeChanged: armEdgePressure()
+    // The bar can hide while the pointer is still resting at the edge (e.g. the
+    // notch closing); re-arm so holding there still reveals it.
+    onRevealChanged: if (!reveal) armEdgePressure()
+
+    function armEdgePressure() {
+        if (!pointerAtEdge) {
+            edgePressureTimer.stop();
+            return;
+        }
+        if (reveal || !shouldAutoHide || GlobalStates.barForceHidden)
+            return;
+        if (revealPressureMs === 0) {
+            hideDelayTimer.stop();
+            hoverActive = true;
+        } else {
+            edgePressureTimer.restart();
+        }
     }
 
     // Timer to delay hiding the bar after mouse leaves
@@ -141,8 +200,12 @@ Item {
     // Watch for mouse state changes
     onIsMouseOverBarChanged: {
         if (isMouseOverBar) {
-            hideDelayTimer.stop();
-            hoverActive = true;
+            // Only keep an already revealed bar open; revealing a hidden one
+            // goes through the edge-pressure gate.
+            if (reveal) {
+                hideDelayTimer.stop();
+                hoverActive = true;
+            }
         } else {
             // Si está fijada, podemos resetear el hoverActive inmediatamente
             // Si está en auto-hide, usamos el timer para dar margen

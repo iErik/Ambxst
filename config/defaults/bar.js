@@ -15,6 +15,8 @@ var data = {
     "pinnedOnStartup": true,
     "hoverToReveal": true,
     "hoverRegionHeight": 8,
+    "revealEdgeDepth": 2,
+    "revealPressureMs": 250,
     "showPinButton": true,
     "showNordVpn": true,
     "showPcloud": true,
