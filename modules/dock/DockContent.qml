@@ -102,20 +102,72 @@ Item {
         return false;
     }
 
+    // Hover state. Raised by the edge-pressure gate while hidden, or by moving
+    // over the dock once it is already shown; dropped as soon as the pointer
+    // leaves.
+    property bool hoverActive: false
+    readonly property bool hoverToReveal: Config.dock?.hoverToReveal ?? true
+    readonly property bool hoverRevealed: hoverToReveal && hoverActive
+
     // Reveal logic
     property bool reveal: {
         // Priority: Fullscreen check
         if (activeWindowFullscreen) {
-            return (Config.dock?.availableOnFullscreen ?? false) && (Config.dock?.hoverToReveal && dockMouseArea.containsMouse);
+            return (Config.dock?.availableOnFullscreen ?? false) && hoverRevealed;
         }
 
         // If keepHidden is true, ONLY show on hover
         // IMPORTANT: keepHidden overrides pinned and desktop mode
         if (keepHidden) {
-            return (Config.dock?.hoverToReveal && dockMouseArea.containsMouse);
+            return hoverRevealed;
         }
 
-        return root.pinned || (Config.dock?.hoverToReveal && dockMouseArea.containsMouse) || !hasWindows
+        return root.pinned || hoverRevealed || !hasWindows
+    }
+
+    // Edge-pressure reveal: while hidden, the pointer has to touch the screen
+    // edge and stay pressed against it for revealPressureMs. Wayland clamps the
+    // pointer at the edge and stops sending motion, so holding still at the edge
+    // is the closest a shell client can get to measuring push.
+    readonly property int revealEdgeDepth: Math.max(Config.dock?.revealEdgeDepth ?? 2, 1)
+    readonly property int revealPressureMs: Math.max(Config.dock?.revealPressureMs ?? 250, 0)
+
+    readonly property bool pointerAtEdge: {
+        if (!dockMouseArea.containsMouse)
+            return false;
+        if (isLeft)
+            return dockMouseArea.mouseX < revealEdgeDepth;
+        if (isRight)
+            return dockMouseArea.mouseX >= dockMouseArea.width - revealEdgeDepth;
+        return dockMouseArea.mouseY >= dockMouseArea.height - revealEdgeDepth;
+    }
+
+    Timer {
+        id: edgePressureTimer
+        interval: root.revealPressureMs
+        repeat: false
+        onTriggered: {
+            if (root.pointerAtEdge && root.hoverToReveal)
+                root.hoverActive = true;
+        }
+    }
+
+    onPointerAtEdgeChanged: armEdgePressure()
+    // The dock can hide while the pointer is still resting at the edge (e.g. a
+    // window opening); re-arm so holding there still reveals it.
+    onRevealChanged: if (!reveal) armEdgePressure()
+
+    function armEdgePressure() {
+        if (!pointerAtEdge) {
+            edgePressureTimer.stop();
+            return;
+        }
+        if (reveal || !hoverToReveal)
+            return;
+        if (revealPressureMs === 0)
+            hoverActive = true;
+        else
+            edgePressureTimer.restart();
     }
 
     readonly property int totalMargin: root.windowSideMargin + root.edgeSideMargin
@@ -140,6 +192,19 @@ Item {
     MouseArea {
         id: dockMouseArea
         hoverEnabled: true
+
+        // Keep an already shown dock open while hovered; revealing a hidden one
+        // goes through the edge-pressure gate. Leaving hides it right away, as
+        // before.
+        onContainsMouseChanged: {
+            if (containsMouse) {
+                if (root.reveal)
+                    root.hoverActive = true;
+            } else {
+                edgePressureTimer.stop();
+                root.hoverActive = false;
+            }
+        }
 
         // Size
         width: root.isVertical ? (root.reveal ? root.dockSize + root.totalMargin + root.shadowSpace : (Config.dock?.hoverRegionHeight ?? 4) + root.frameOffset) : dockContent.implicitWidth + 20

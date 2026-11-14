@@ -9,6 +9,8 @@ var data = {
     "spacing": 4,
     "margin": 4,
     "hoverRegionHeight": 16,
+    "revealEdgeDepth": 2,
+    "revealPressureMs": 250,
     "pinnedOnStartup": false,
     "hoverToReveal": true,
     "availableOnFullscreen": false,

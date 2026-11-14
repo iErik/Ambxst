@@ -1109,6 +1109,8 @@ Singleton {
             property int spacing: 4
             property int margin: 8
             property int hoverRegionHeight: 4
+            property int revealEdgeDepth: 2
+            property int revealPressureMs: 250
             property bool pinnedOnStartup: false
             property bool hoverToReveal: true
             property bool availableOnFullscreen: false

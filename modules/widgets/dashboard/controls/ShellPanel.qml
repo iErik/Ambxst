@@ -1618,6 +1618,36 @@ Item {
                             }
                         }
 
+                        NumberInputRow {
+                            label: "Edge Trigger Depth"
+                            visible: (Config.dock.theme ?? "default") !== "integrated"
+                            value: Config.dock.revealEdgeDepth ?? 2
+                            minValue: 1
+                            maxValue: 8
+                            suffix: "px"
+                            onValueEdited: newValue => {
+                                if (newValue !== Config.dock.revealEdgeDepth) {
+                                    GlobalStates.markShellChanged();
+                                    Config.dock.revealEdgeDepth = newValue;
+                                }
+                            }
+                        }
+
+                        NumberInputRow {
+                            label: "Reveal Pressure"
+                            visible: (Config.dock.theme ?? "default") !== "integrated"
+                            value: Config.dock.revealPressureMs ?? 250
+                            minValue: 0
+                            maxValue: 1000
+                            suffix: "ms"
+                            onValueEdited: newValue => {
+                                if (newValue !== Config.dock.revealPressureMs) {
+                                    GlobalStates.markShellChanged();
+                                    Config.dock.revealPressureMs = newValue;
+                                }
+                            }
+                        }
+
                         ToggleRow {
                             label: "Pinned on Startup"
                             visible: (Config.dock.theme ?? "default") !== "integrated"

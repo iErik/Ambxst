@@ -137,6 +137,10 @@ Item {
     // is the closest a shell client can get to measuring push.
     readonly property int revealEdgeDepth: Math.max((Config.bar && Config.bar.revealEdgeDepth !== undefined ? Config.bar.revealEdgeDepth : 2), 1)
     readonly property int revealPressureMs: Math.max((Config.bar && Config.bar.revealPressureMs !== undefined ? Config.bar.revealPressureMs : 250), 0)
+    // "Hover to Reveal" off: the hidden bar never reveals from the pointer; only
+    // the keybind toggle, pinning, or an open notch module bring it back.
+    readonly property bool hoverToReveal: (Config.bar && Config.bar.hoverToReveal !== undefined ? Config.bar.hoverToReveal : true)
+    readonly property int hiddenHoverRegion: hoverToReveal ? Math.max((Config.bar && Config.bar.hoverRegionHeight !== undefined ? Config.bar.hoverRegionHeight : 8), 4) + frameOffset : 0
 
     readonly property bool pointerAtEdge: {
         if (!barMouseArea.containsMouse)
@@ -158,7 +162,7 @@ Item {
         interval: root.revealPressureMs
         repeat: false
         onTriggered: {
-            if (root.pointerAtEdge && !GlobalStates.barForceHidden) {
+            if (root.pointerAtEdge && root.hoverToReveal && !GlobalStates.barForceHidden) {
                 hideDelayTimer.stop();
                 root.hoverActive = true;
             }
@@ -175,7 +179,7 @@ Item {
             edgePressureTimer.stop();
             return;
         }
-        if (reveal || !shouldAutoHide || GlobalStates.barForceHidden)
+        if (reveal || !shouldAutoHide || !hoverToReveal || GlobalStates.barForceHidden)
             return;
         if (revealPressureMs === 0) {
             hideDelayTimer.stop();
@@ -334,14 +338,14 @@ Item {
                 return 0;
             if (root.orientation === "horizontal")
                 return root.width;
-            return root.reveal ? root.totalBarWidth : Math.max((Config.bar && Config.bar.hoverRegionHeight !== undefined ? Config.bar.hoverRegionHeight : 8), 4) + root.frameOffset;
+            return root.reveal ? root.totalBarWidth : root.hiddenHoverRegion;
         }
         height: {
             if (GlobalStates.barForceHidden && root.orientation === "horizontal")
                 return 0;
             if (root.orientation === "vertical")
                 return root.height;
-            return root.reveal ? root.totalBarHeight : Math.max((Config.bar && Config.bar.hoverRegionHeight !== undefined ? Config.bar.hoverRegionHeight : 8), 4) + root.frameOffset;
+            return root.reveal ? root.totalBarHeight : root.hiddenHoverRegion;
         }
 
 

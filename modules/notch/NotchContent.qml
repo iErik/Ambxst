@@ -148,6 +148,10 @@ Item {
     // edge and stay pressed against it for revealPressureMs.
     readonly property int revealEdgeDepth: Math.max((Config.bar && Config.bar.revealEdgeDepth !== undefined) ? Config.bar.revealEdgeDepth : 2, 1)
     readonly property int revealPressureMs: Math.max((Config.bar && Config.bar.revealPressureMs !== undefined) ? Config.bar.revealPressureMs : 250, 0)
+    // On the bar's edge the notch reveals the bar too, so honour the bar's
+    // "Hover to Reveal" there; otherwise turning it off would still let the
+    // pointer bring the bar back through the notch.
+    readonly property bool hoverToReveal: barPosition !== notchPosition || ((Config.bar && Config.bar.hoverToReveal !== undefined) ? Config.bar.hoverToReveal : true)
 
     readonly property bool pointerAtEdge: {
         if (!notchMouseAreaHover.hovered)
@@ -163,7 +167,7 @@ Item {
         interval: root.revealPressureMs
         repeat: false
         onTriggered: {
-            if (root.pointerAtEdge && !GlobalStates.barForceHidden) {
+            if (root.pointerAtEdge && root.hoverToReveal && !GlobalStates.barForceHidden) {
                 hideDelayTimer.stop();
                 root.hoverActive = true;
             }
@@ -178,7 +182,7 @@ Item {
             edgePressureTimer.stop();
             return;
         }
-        if (reveal || !shouldAutoHide || GlobalStates.barForceHidden)
+        if (reveal || !shouldAutoHide || !hoverToReveal || GlobalStates.barForceHidden)
             return;
         if (revealPressureMs === 0) {
             hideDelayTimer.stop();
@@ -267,6 +271,8 @@ Item {
         width: notchRegionContainer.width + 20
         height: {
             if (GlobalStates.barForceHidden)
+                return 0;
+            if (!root.reveal && !root.hoverToReveal)
                 return 0;
             return root.reveal ? notchRegionContainer.height : Math.max((Config.notch && Config.notch.hoverRegionHeight !== undefined) ? Config.notch.hoverRegionHeight : 8, 8);
         }
