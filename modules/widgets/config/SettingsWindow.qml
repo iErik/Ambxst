@@ -14,7 +14,12 @@ FloatingWindow {
     implicitWidth: 900
     implicitHeight: 650
     title: "Ambxst Settings"
-    visible: GlobalStates.settingsWindowVisible
+    // Shown from Component.onCompleted, after the target screen is set.
+    // Reassigning `screen` on a visible window makes Quickshell hide and
+    // re-show it, and the brief hide would trip onVisibleChanged below and
+    // close the window before it ever appears (any time the focused monitor
+    // isn't Quickshell's first screen).
+    visible: false
 
     // Center on screen (approximate, since FloatingWindow usually centers by default or relies on WM)
     // We can't easily force center without screen geometry, but WM usually handles it.
@@ -33,14 +38,24 @@ FloatingWindow {
         return null;
     }
 
-    function preparePlacement() {
+    // Only while hidden: see the note on `visible` above.
+    function applyTargetScreen() {
+        if (settingsWindow.visible)
+            return;
         const targetScreen = screenByName(GlobalStates.settingsTargetScreenName || AxctlService.focusedMonitor?.name || "");
-        if (targetScreen) {
+        if (targetScreen && targetScreen !== settingsWindow.screen) {
             settingsWindow.screen = targetScreen;
         }
+    }
 
+    function preparePlacement() {
         placementTimer.attempts = 0;
         placementTimer.restart();
+    }
+
+    Component.onCompleted: {
+        applyTargetScreen();
+        visible = GlobalStates.settingsWindowVisible;
     }
 
     function placeOnTargetWorkspace() {
@@ -104,7 +119,7 @@ FloatingWindow {
         target: GlobalStates
         function onSettingsWindowVisibleChanged() {
             if (GlobalStates.settingsWindowVisible) {
-                settingsWindow.preparePlacement();
+                settingsWindow.applyTargetScreen();
             }
             settingsWindow.visible = GlobalStates.settingsWindowVisible;
         }
