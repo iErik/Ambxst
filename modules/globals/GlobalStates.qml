@@ -247,7 +247,7 @@ Singleton {
     // Mirror Tool state
     property bool mirrorWindowVisible: false
 
-    // Control Center tab: 0 Control Center, 1–10 Settings sections, 11 search.
+    // Control Center tab: 0 Control Center, 1 Lights, 2–11 Settings sections, 12 search.
     property int controlCenterTab: 0
 
     // Theme editor state - persists across tab switches

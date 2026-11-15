@@ -54,6 +54,7 @@ QtObject {
             case "dashboard-controls": toggleSettings(); break;
             case "controlcenter":
             case "control-center": toggleControlCenter(0); break;
+            case "lights": toggleControlCenter(1); break;
 
             // System
             case "overview": toggleSimpleModule("overview"); break;
@@ -107,8 +108,9 @@ QtObject {
         }
     }
 
-    // Open the Control Center on `tab` (0 Control Center, 1–10 Settings
-    // sections, 11 Settings search); toggling the tab already showing closes it.
+    // Open the Control Center on `tab` (0 Control Center, 1 Lights, 2–11
+    // Settings sections, 12 Settings search); toggling the tab already showing
+    // closes it.
     function toggleControlCenter(tab) {
         const target = tab || 0;
         const open = Visibilities.currentActiveModule === "controlcenter";
@@ -128,7 +130,7 @@ QtObject {
             if (targetMonitor && targetMonitor.id !== AxctlService.focusedMonitor?.id)
                 AxctlService.dispatch(`focusmonitor ${targetMonitor.id}`);
         }
-        toggleControlCenter(11);
+        toggleControlCenter(12);
     }
 
     function toggleSimpleModule(moduleName) {

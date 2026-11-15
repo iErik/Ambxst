@@ -54,17 +54,22 @@ Item {
     readonly property bool blendWithBar: barShown && barPosition === "top" && !barFloating && !barContained
 
     // ── Tabs ────────────────────────────────────────────────────────────
-    // 0: Control Center, 1–10: the Settings sections (SettingsTab sections
-    // 0–9), 11: Settings search (the full Settings layout with its list).
-    readonly property int searchTab: 11
+    // 0: Control Center, 1: Lights, 2–11: the Settings sections (SettingsTab
+    // sections 0–9), 12: Settings search (the full Settings layout and list).
+    readonly property int lightsTab: 1
+    readonly property int firstSettingsTab: 2
+    readonly property int settingsSectionCount: 10
+    readonly property int searchTab: firstSettingsTab + settingsSectionCount
     readonly property int currentTab: GlobalStates.controlCenterTab
-    readonly property bool onSettings: currentTab > 0
+    readonly property bool onSettings: currentTab >= firstSettingsTab
     property bool settingsVisited: onSettings
+    property bool lightsVisited: currentTab === lightsTab
     onOnSettingsChanged: if (onSettings)
         settingsVisited = true
 
     readonly property var tabModel: [
         { icon: Icons.squaresFour, label: "Control Center" },
+        { icon: Icons.lightbulb, label: "Lights" },
         { icon: Icons.wifiHigh, label: "Network" },
         { icon: Icons.bluetooth, label: "Bluetooth" },
         { icon: Icons.faders, label: "Mixer" },
@@ -79,7 +84,7 @@ Item {
 
     // Tabs that can be hidden (their section isn't available).
     function tabShown(index) {
-        if (index === 5)
+        if (index === firstSettingsTab + 4) // Effects
             return EasyEffectsService.installed;
         return true;
     }
@@ -103,16 +108,20 @@ Item {
         if (!settings)
             return;
         settings.showSidebar = root.currentTab === root.searchTab;
-        if (root.currentTab > 0 && root.currentTab < root.searchTab)
-            settings.showSection(root.currentTab - 1);
+        if (root.currentTab >= root.firstSettingsTab && root.currentTab < root.searchTab)
+            settings.showSection(root.currentTab - root.firstSettingsTab);
         if (root.currentTab === root.searchTab)
             Qt.callLater(() => settings.focusSearchInput());
     }
-    onCurrentTabChanged: syncSettings()
+    onCurrentTabChanged: {
+        if (currentTab === lightsTab)
+            lightsVisited = true;
+        syncSettings();
+    }
 
     // ── Size ────────────────────────────────────────────────────────────
     readonly property int tabSize: 44
-    readonly property int contentWidth: currentTab === 0 ? 404 : (currentTab === searchTab ? 840 : 620)
+    readonly property int contentWidth: (currentTab === 0 || currentTab === lightsTab) ? 404 : (currentTab === searchTab ? 840 : 620)
     readonly property int bodyWidth: tabSize + 2 + 12 + contentWidth + 32
     readonly property int flareSize: Config.roundness > 0 ? Config.roundness + 4 : 0
     readonly property int cornerRadius: Config.roundness > 0 ? Config.roundness + 20 : 0
@@ -152,11 +161,11 @@ Item {
                 return settingsLoader;
             }
         });
-        for (let i = 0; i < root.tabModel.length - 1; i++) {
+        for (let i = 0; i < root.settingsSectionCount; i++) {
             const section = i;
             jobs.push({
                 label: name + " section " + section,
-                run: () => settingsLoader.item && root.tabShown(section + 1) ? settingsLoader.item.warmSection(section) : null
+                run: () => settingsLoader.item && root.tabShown(section + root.firstSettingsTab) ? settingsLoader.item.warmSection(section) : null
             });
         }
         for (const detail of controlsPage.detailNames) {
@@ -521,7 +530,15 @@ Item {
                         id: controlsPage
                         anchors.fill: parent
                         screen: root.targetScreen
-                        visible: !root.onSettings
+                        visible: root.currentTab === 0
+                    }
+
+                    // Lights: built on first open (it starts the bulb helper).
+                    Loader {
+                        anchors.fill: parent
+                        active: root.lightsVisited
+                        visible: root.currentTab === root.lightsTab
+                        sourceComponent: LightsPage {}
                     }
 
                     // One Settings view shared by the section tabs and search;

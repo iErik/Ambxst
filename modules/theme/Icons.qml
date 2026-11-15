@@ -177,6 +177,7 @@ QtObject {
     readonly property string help: ""
     readonly property string sun: ""
     readonly property string sunDim: ""
+    readonly property string lightbulb: "\ue2dc"
     readonly property string moon: ""
     readonly property string user: ""
     readonly property string spinnerGap: ""
