@@ -35,7 +35,10 @@ StyledRect {
             z: 0
             radius: Styling.radius(-6)
 
-            property Item activeItem: repeater.itemAt(root.currentIndex)
+            // Depend on count too: itemAt() isn't reactive, so a switch that
+            // starts on a later option found no button yet and the highlight
+            // stuck at a small square on the left.
+            property Item activeItem: repeater.count > root.currentIndex ? repeater.itemAt(root.currentIndex) : null
             width: activeItem ? activeItem.width : root.buttonSize
             height: parent.height
             x: activeItem ? activeItem.x : 0
