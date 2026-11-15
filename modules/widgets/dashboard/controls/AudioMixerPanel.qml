@@ -29,8 +29,7 @@ Item {
         ColumnLayout {
             id: contentColumn
             width: flickable.width
-            spacing: 8
-
+            spacing: 10
             // Header wrapper
             Item {
                 Layout.fillWidth: true
@@ -61,8 +60,7 @@ Item {
 
                     // Output/Input toggle buttons
                     RowLayout {
-                        spacing: 4
-
+                        spacing: 6
                         // Output Button
                         StyledRect {
                             id: outputBtn
@@ -77,8 +75,7 @@ Item {
                             Row {
                                 id: outputContent
                                 anchors.centerIn: parent
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: Icons.speakerHigh
                                     font.family: Icons.font
@@ -90,7 +87,7 @@ Item {
                                 Text {
                                     text: "Output"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(-1)
+                                    font.pixelSize: Styling.settingsFontSize(-1)
                                     font.weight: Font.Medium
                                     color: outputBtn.item
                                     anchors.verticalCenter: parent.verticalCenter
@@ -121,8 +118,7 @@ Item {
                             Row {
                                 id: inputContent
                                 anchors.centerIn: parent
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: Icons.mic
                                     font.family: Icons.font
@@ -134,7 +130,7 @@ Item {
                                 Text {
                                     text: "Input"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(-1)
+                                    font.pixelSize: Styling.settingsFontSize(-1)
                                     font.weight: Font.Medium
                                     color: inputBtn.item
                                     anchors.verticalCenter: parent.verticalCenter
@@ -163,13 +159,12 @@ Item {
                     id: innerContent
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 8
-
+                    spacing: 10
                     // Section: Devices
                     Text {
                         text: root.showOutput ? "Output Device" : "Input Device"
                         font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-1)
+                        font.pixelSize: Styling.settingsFontSize(-1)
                         font.weight: Font.Medium
                         color: Colors.overSurfaceVariant
                     }
@@ -177,8 +172,7 @@ Item {
                     // Device list
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 4
-
+                        spacing: 6
                         Repeater {
                             model: root.showOutput ? Audio.outputDevices : Audio.inputDevices
 
@@ -204,7 +198,7 @@ Item {
                     Text {
                         text: "Volume Mixer"
                         font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-1)
+                        font.pixelSize: Styling.settingsFontSize(-1)
                         font.weight: Font.Medium
                         color: Colors.overSurfaceVariant
                     }
@@ -280,7 +274,7 @@ Item {
                                 Layout.fillWidth: true
                                 text: "Over-amplification"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overBackground
                                 elide: Text.ElideRight
@@ -290,7 +284,7 @@ Item {
                                 Layout.fillWidth: true
                                 text: "Allow output volume up to 150%"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-2)
+                                font.pixelSize: Styling.settingsFontSize(-2)
                                 color: Colors.overSurfaceVariant
                                 elide: Text.ElideRight
                             }
@@ -322,7 +316,7 @@ Item {
                         visible: (root.showOutput ? Audio.outputAppNodes : Audio.inputAppNodes).length === 0
                         text: "No applications using audio"
                         font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-1)
+                        font.pixelSize: Styling.settingsFontSize(-1)
                         color: Colors.outline
                         Layout.alignment: Qt.AlignHCenter
                         Layout.topMargin: 16

@@ -63,7 +63,7 @@ Item {
             Layout.fillWidth: true
             text: Audio.friendlyDeviceName(root.node)
             font.family: Config.theme.font
-            font.pixelSize: Config.theme.fontSize
+            font.pixelSize: Styling.settingsFontSize(0)
             font.weight: root.isSelected ? Font.Bold : Font.Normal
             color: root.isSelected ? Styling.srItem("primary") : Colors.overBackground
             elide: Text.ElideRight

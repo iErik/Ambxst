@@ -28,13 +28,12 @@ RowLayout {
 
     Layout.fillWidth: true
     Layout.preferredHeight: 36
-    spacing: 8
-
+    spacing: 10
     // Title
     Text {
         text: root.title
         font.family: Config.theme.font
-        font.pixelSize: Styling.fontSize(0)
+        font.pixelSize: Styling.settingsFontSize(0)
         font.weight: Font.Medium
         color: Colors.overBackground
     }
@@ -44,7 +43,7 @@ RowLayout {
         visible: root.statusText !== ""
         text: root.statusText
         font.family: Config.theme.font
-        font.pixelSize: Styling.fontSize(-2)
+        font.pixelSize: Styling.settingsFontSize(-2)
         color: root.statusColor
     }
 

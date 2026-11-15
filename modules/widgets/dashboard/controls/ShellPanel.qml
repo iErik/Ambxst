@@ -69,7 +69,7 @@ Item {
             Text {
                 text: sectionBtn.text
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 font.bold: true
                 color: Colors.overBackground
                 Layout.fillWidth: true
@@ -122,7 +122,7 @@ Item {
             Text {
                 text: actionBtn.text
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 font.bold: true
                 color: Colors.overBackground
                 Layout.fillWidth: true
@@ -165,12 +165,11 @@ Item {
         }
 
         Layout.fillWidth: true
-        spacing: 8
-
+        spacing: 10
         Text {
             text: toggleRowRoot.label
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overBackground
             Layout.fillWidth: true
         }
@@ -233,12 +232,11 @@ Item {
         signal valueEdited(int newValue)
 
         Layout.fillWidth: true
-        spacing: 8
-
+        spacing: 10
         Text {
             text: numberInputRowRoot.label
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overBackground
             Layout.fillWidth: true
         }
@@ -254,7 +252,7 @@ Item {
                 anchors.fill: parent
                 anchors.margins: 8
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 color: Colors.overBackground
                 selectByMouse: true
                 clip: true
@@ -287,7 +285,7 @@ Item {
         Text {
             text: numberInputRowRoot.suffix
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overSurfaceVariant
             visible: suffix !== ""
         }
@@ -302,12 +300,11 @@ Item {
         signal valueEdited(string newValue)
 
         Layout.fillWidth: true
-        spacing: 8
-
+        spacing: 10
         Text {
             text: textInputRowRoot.label
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overBackground
             Layout.preferredWidth: 100
         }
@@ -323,7 +320,7 @@ Item {
                 anchors.fill: parent
                 anchors.margins: 8
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 color: Colors.overBackground
                 selectByMouse: true
                 clip: true
@@ -343,7 +340,7 @@ Item {
                     verticalAlignment: Text.AlignVCenter
                     text: textInputRowRoot.placeholder
                     font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(0)
+                    font.pixelSize: Styling.settingsFontSize(0)
                     color: Colors.overSurfaceVariant
                     visible: textInputField.text === ""
                 }
@@ -372,12 +369,11 @@ Item {
         }
 
         Layout.fillWidth: true
-        spacing: 4
-
+        spacing: 6
         Text {
             text: selectorRowRoot.label
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(-1)
+            font.pixelSize: Styling.settingsFontSize(-1)
             font.weight: Font.Medium
             color: Colors.overSurfaceVariant
             visible: selectorRowRoot.label !== ""
@@ -385,8 +381,7 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 4
-
+            spacing: 6
             Repeater {
                 model: selectorRowRoot.options
 
@@ -420,7 +415,7 @@ Item {
                         anchors.centerIn: parent
                         text: optionButton.modelData.label
                         font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(0)
+                        font.pixelSize: Styling.settingsFontSize(0)
                         font.bold: true
                         color: optionButton.item
                     }
@@ -448,12 +443,11 @@ Item {
         signal screensChanged(var newList)
 
         Layout.fillWidth: true
-        spacing: 4
-
+        spacing: 6
         Text {
             text: screenListRowRoot.label
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(-1)
+            font.pixelSize: Styling.settingsFontSize(-1)
             font.weight: Font.Medium
             color: Colors.overSurfaceVariant
         }
@@ -461,15 +455,14 @@ Item {
         Text {
             text: "Empty = all screens"
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(-2)
+            font.pixelSize: Styling.settingsFontSize(-2)
             color: Colors.outline
             Layout.bottomMargin: 4
         }
 
         Flow {
             Layout.fillWidth: true
-            spacing: 4
-
+            spacing: 6
             Repeater {
                 model: Quickshell.screens
 
@@ -495,7 +488,7 @@ Item {
                         anchors.centerIn: parent
                         text: screenButton.screenName
                         font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-1)
+                        font.pixelSize: Styling.settingsFontSize(-1)
                         font.bold: screenButton.isSelected
                         color: screenButton.item
                     }
@@ -558,8 +551,7 @@ Item {
         ColumnLayout {
             id: mainColumn
             width: mainFlickable.width
-            spacing: 8
-
+            spacing: 10
             // Header wrapper
             Item {
                 Layout.fillWidth: true
@@ -627,8 +619,7 @@ Item {
                     ColumnLayout {
                         visible: root.currentSection === ""
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         SectionButton {
                             text: "Bar"
                             sectionId: "bar"
@@ -677,12 +668,11 @@ Item {
                     ColumnLayout {
                         visible: root.currentSection === "bar"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "Bar"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -841,7 +831,7 @@ Item {
                         Text {
                             text: "Auto-hide"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -980,12 +970,11 @@ Item {
                     ColumnLayout {
                         visible: root.currentSection === "frame"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "Frame"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -1063,12 +1052,11 @@ Item {
                     ColumnLayout {
                         visible: root.currentSection === "notch"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "Notch"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -1161,7 +1149,7 @@ Item {
                         Text {
                             text: "No Media Display"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -1220,12 +1208,11 @@ Item {
                     ColumnLayout {
                         visible: root.currentSection === "workspaces"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "Workspaces"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -1260,7 +1247,7 @@ Item {
                         Text {
                             text: "Per-monitor workspace stride (hyprsome / decade prefixes: 1–10, 11–20, …). Independent of Shown. Set 0 to match Shown."
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-3)
+                            font.pixelSize: Styling.settingsFontSize(-3)
                             color: Colors.overSurfaceVariant
                             wrapMode: Text.WordWrap
                             Layout.fillWidth: true
@@ -1325,12 +1312,11 @@ Item {
                     ColumnLayout {
                         visible: root.currentSection === "overview"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "Overview"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -1364,12 +1350,11 @@ Item {
 
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 8
-
+                            spacing: 10
                             Text {
                                 text: "Scale"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(0)
+                                font.pixelSize: Styling.settingsFontSize(0)
                                 color: Colors.overBackground
                                 Layout.preferredWidth: 100
                             }
@@ -1406,7 +1391,7 @@ Item {
                             Text {
                                 text: ((Config.overview.scale ?? 0.15)).toFixed(2)
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(0)
+                                font.pixelSize: Styling.settingsFontSize(0)
                                 color: Colors.overBackground
                                 horizontalAlignment: Text.AlignRight
                                 Layout.preferredWidth: 40
@@ -1439,12 +1424,11 @@ Item {
                     ColumnLayout {
                         visible: root.currentSection === "dock"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "Dock"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -1756,12 +1740,11 @@ Item {
                     ColumnLayout {
                         visible: root.currentSection === "lockscreen"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "Lockscreen"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -1802,12 +1785,11 @@ Item {
                     ColumnLayout {
                         visible: root.currentSection === "desktop"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "Desktop"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -1855,12 +1837,11 @@ Item {
                         // Text Color with ColorButton
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 8
-
+                            spacing: 10
                             Text {
                                 text: "Text Color"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(0)
+                                font.pixelSize: Styling.settingsFontSize(0)
                                 color: Colors.overBackground
                                 Layout.preferredWidth: 100
                             }
@@ -1897,12 +1878,11 @@ Item {
                     ColumnLayout {
                         visible: root.currentSection === "system"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "System"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -1934,7 +1914,7 @@ Item {
                         Text {
                             text: "OCR Languages"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-2)
+                            font.pixelSize: Styling.settingsFontSize(-2)
                             color: Styling.srItem("overprimary")
                             font.bold: true
                             Layout.topMargin: 8
@@ -2024,12 +2004,11 @@ Item {
                     ColumnLayout {
                         visible: root.currentSection === "sidebar"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "Sidebar"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4

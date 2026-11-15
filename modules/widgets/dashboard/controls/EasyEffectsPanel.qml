@@ -29,8 +29,7 @@ Item {
         ColumnLayout {
             id: mainColumn
             width: mainFlickable.width
-            spacing: 8
-
+            spacing: 10
             // Header wrapper
             Item {
                 Layout.fillWidth: true
@@ -87,7 +86,7 @@ Item {
                         visible: !EasyEffectsService.available
                         text: "EasyEffects not installed"
                         font.family: Config.theme.font
-                        font.pixelSize: Config.theme.fontSize
+                        font.pixelSize: Styling.settingsFontSize(0)
                         color: Colors.overSurfaceVariant
                         Layout.alignment: Qt.AlignHCenter
                         Layout.topMargin: 32
@@ -96,13 +95,13 @@ Item {
                     // Output presets
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 4
+                        spacing: 6
                         visible: EasyEffectsService.available && EasyEffectsService.outputPresets.length > 0
 
                         Text {
                             text: "Output Presets"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                         }
@@ -160,7 +159,7 @@ Item {
                                                 id: presetIcon
                                                 text: Icons.sparkle
                                                 font.family: Icons.font
-                                                font.pixelSize: Styling.fontSize(-1)
+                                                font.pixelSize: Styling.settingsFontSize(-1)
                                                 color: Styling.srItem("primary")
                                                 opacity: presetButton.isActive ? 1 : 0
 
@@ -177,7 +176,7 @@ Item {
                                         Text {
                                             text: presetButton.modelData
                                             font.family: Config.theme.font
-                                            font.pixelSize: Styling.fontSize(-1)
+                                            font.pixelSize: Styling.settingsFontSize(-1)
                                             font.weight: presetButton.isActive ? Font.Bold : Font.Normal
                                             color: presetButton.isActive ? Styling.srItem("primary") : Colors.overBackground
                                             anchors.verticalCenter: parent.verticalCenter
@@ -193,13 +192,13 @@ Item {
                     // Input presets
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 4
+                        spacing: 6
                         visible: EasyEffectsService.available && EasyEffectsService.inputPresets.length > 0
 
                         Text {
                             text: "Input Presets"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                         }
@@ -257,7 +256,7 @@ Item {
                                                 id: inputPresetIcon
                                                 text: Icons.sparkle
                                                 font.family: Icons.font
-                                                font.pixelSize: Styling.fontSize(-1)
+                                                font.pixelSize: Styling.settingsFontSize(-1)
                                                 color: Styling.srItem("primary")
                                                 opacity: inputPresetButton.isActive ? 1 : 0
 
@@ -274,7 +273,7 @@ Item {
                                         Text {
                                             text: inputPresetButton.modelData
                                             font.family: Config.theme.font
-                                            font.pixelSize: Styling.fontSize(-1)
+                                            font.pixelSize: Styling.settingsFontSize(-1)
                                             font.weight: inputPresetButton.isActive ? Font.Bold : Font.Normal
                                             color: inputPresetButton.isActive ? Styling.srItem("primary") : Colors.overBackground
                                             anchors.verticalCenter: parent.verticalCenter
@@ -292,7 +291,7 @@ Item {
                         visible: EasyEffectsService.available && EasyEffectsService.outputPresets.length === 0 && EasyEffectsService.inputPresets.length === 0
                         text: "No presets configured"
                         font.family: Config.theme.font
-                        font.pixelSize: Config.theme.fontSize
+                        font.pixelSize: Styling.settingsFontSize(0)
                         color: Colors.overSurfaceVariant
                         Layout.alignment: Qt.AlignHCenter
                         Layout.topMargin: 16
@@ -302,13 +301,13 @@ Item {
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.topMargin: 16
-                        spacing: 4
+                        spacing: 6
                         visible: EasyEffectsService.available && (EasyEffectsService.activeOutputPreset || EasyEffectsService.activeInputPreset)
 
                         Text {
                             text: "Active"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                         }
@@ -326,7 +325,7 @@ Item {
                             Text {
                                 text: EasyEffectsService.activeOutputPreset
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 color: Colors.overBackground
                             }
                         }
@@ -344,7 +343,7 @@ Item {
                             Text {
                                 text: EasyEffectsService.activeInputPreset
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 color: Colors.overBackground
                             }
                         }

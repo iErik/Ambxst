@@ -40,7 +40,7 @@ Item {
             Text {
                 text: sectionBtn.text
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 font.bold: true
                 color: Colors.overBackground
                 Layout.fillWidth: true
@@ -174,8 +174,7 @@ Item {
         ColumnLayout {
             id: mainColumn
             width: mainFlickable.width
-            spacing: 8
-
+            spacing: 10
             // Header wrapper
             Item {
                 Layout.fillWidth: true
@@ -243,8 +242,7 @@ Item {
                     ColumnLayout {
                         visible: root.currentSection === ""
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         SectionButton {
                             text: "General"
                             sectionId: "general"
@@ -278,12 +276,11 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            spacing: 8
-
+                            spacing: 10
                             Text {
                                 text: "General"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                                 Layout.bottomMargin: -4
@@ -292,12 +289,11 @@ Item {
                             // Wallpaper Path
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: "Wallpapers"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     Layout.preferredWidth: 80
                                 }
@@ -313,7 +309,7 @@ Item {
                                         anchors.fill: parent
                                         anchors.margins: 8
                                         font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(0)
+                                        font.pixelSize: Styling.settingsFontSize(0)
                                         color: Colors.overBackground
                                         selectByMouse: true
                                         clip: true
@@ -344,12 +340,11 @@ Item {
                             // Enable Corners toggle
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: "Enable Corners"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     Layout.fillWidth: true
                                 }
@@ -413,12 +408,11 @@ Item {
                             // Animation Duration slider
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: "Animation"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     Layout.preferredWidth: 80
                                 }
@@ -455,7 +449,7 @@ Item {
                                 Text {
                                     text: Config.theme.animDuration + "ms"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 50
@@ -469,7 +463,7 @@ Item {
                             Text {
                                 text: "Fonts"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                                 Layout.bottomMargin: -4
@@ -478,12 +472,11 @@ Item {
                             // UI Font row
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: "UI Font"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     Layout.preferredWidth: 80
                                 }
@@ -499,7 +492,7 @@ Item {
                                         anchors.fill: parent
                                         anchors.margins: 8
                                         font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(0)
+                                        font.pixelSize: Styling.settingsFontSize(0)
                                         color: Colors.overBackground
                                         selectByMouse: true
                                         clip: true
@@ -535,7 +528,7 @@ Item {
                                         anchors.fill: parent
                                         anchors.margins: 8
                                         font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(0)
+                                        font.pixelSize: Styling.settingsFontSize(0)
                                         color: Colors.overBackground
                                         selectByMouse: true
                                         clip: true
@@ -569,7 +562,7 @@ Item {
                                 Text {
                                     text: "px"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overSurfaceVariant
                                 }
                             }
@@ -577,12 +570,11 @@ Item {
                             // Mono Font row
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: "Mono Font"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     Layout.preferredWidth: 80
                                 }
@@ -668,7 +660,7 @@ Item {
                                 Text {
                                     text: "px"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overSurfaceVariant
                                 }
                             }
@@ -680,7 +672,7 @@ Item {
                             Text {
                                 text: "Roundness"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                                 Layout.bottomMargin: -4
@@ -688,8 +680,7 @@ Item {
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 StyledSlider {
                                     id: roundnessSlider
                                     Layout.fillWidth: true
@@ -724,7 +715,7 @@ Item {
                                 Text {
                                     text: Math.round(roundnessSlider.value * 20)
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 24
@@ -745,12 +736,11 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            spacing: 8
-
+                            spacing: 10
                             Text {
                                 text: "Icons"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                                 Layout.bottomMargin: -4
@@ -758,12 +748,11 @@ Item {
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: "Tint Icons"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     Layout.fillWidth: true
                                 }
@@ -831,7 +820,7 @@ Item {
                             Text {
                                 text: "Icon Theme"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                                 Layout.bottomMargin: -4
@@ -855,12 +844,11 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            spacing: 8
-
+                            spacing: 10
                             Text {
                                 text: "Cursor Theme"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                                 Layout.bottomMargin: -4
@@ -869,12 +857,11 @@ Item {
                             // Cursor size: 16–96 px in steps of 8 (slider is 0–1).
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: "Size"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     Layout.preferredWidth: 80
                                 }
@@ -913,7 +900,7 @@ Item {
                                 Text {
                                     text: cursorSizeSlider.sizeValue + "px"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 40
@@ -937,12 +924,11 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            spacing: 8
-
+                            spacing: 10
                             Text {
                                 text: "Shadow"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                                 Layout.bottomMargin: -4
@@ -951,12 +937,11 @@ Item {
                             // Opacity row
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: "Opacity"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     Layout.preferredWidth: 80
                                 }
@@ -992,7 +977,7 @@ Item {
                                 Text {
                                     text: Math.round(shadowOpacitySlider.value * 100) + "%"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 40
@@ -1002,12 +987,11 @@ Item {
                             // Blur row
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: "Blur"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     Layout.preferredWidth: 80
                                 }
@@ -1044,7 +1028,7 @@ Item {
                                 Text {
                                     text: Config.theme.shadowBlur.toFixed(1)
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 40
@@ -1054,12 +1038,11 @@ Item {
                             // Offset row (X and Y)
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: "Offset X"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     Layout.preferredWidth: 80
                                 }
@@ -1096,7 +1079,7 @@ Item {
                                 Text {
                                     text: Config.theme.shadowXOffset
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 40
@@ -1105,12 +1088,11 @@ Item {
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: "Offset Y"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     Layout.preferredWidth: 80
                                 }
@@ -1147,7 +1129,7 @@ Item {
                                 Text {
                                     text: Config.theme.shadowYOffset
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 40
@@ -1157,12 +1139,11 @@ Item {
                             // Color row
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: "Color"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     Layout.preferredWidth: 80
                                 }
@@ -1180,8 +1161,7 @@ Item {
                                         anchors.fill: parent
                                         anchors.leftMargin: 8
                                         anchors.rightMargin: 8
-                                        spacing: 8
-
+                                        spacing: 10
                                         Rectangle {
                                             Layout.preferredWidth: 16
                                             Layout.preferredHeight: 16
@@ -1195,7 +1175,7 @@ Item {
                                             Layout.fillWidth: true
                                             text: Config.theme.shadowColor
                                             font.family: Config.theme.font
-                                            font.pixelSize: Styling.fontSize(0)
+                                            font.pixelSize: Styling.settingsFontSize(0)
                                             color: shadowColorButton.item
                                             elide: Text.ElideRight
                                         }
@@ -1258,12 +1238,11 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            spacing: 8
-
+                            spacing: 10
                             Text {
                                 text: "Variant"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                                 Layout.bottomMargin: -4
@@ -1271,13 +1250,13 @@ Item {
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: 10
                                 Layout.alignment: Qt.AlignTop
 
                                 // Collapsed mode: horizontal scrollable row with scrollbar
                                 ColumnLayout {
                                     Layout.fillWidth: true
-                                    spacing: 4
+                                    spacing: 6
                                     visible: !variantSelectorPane.variantExpanded
 
                                     Flickable {
@@ -1291,8 +1270,7 @@ Item {
 
                                         Row {
                                             id: variantRow
-                                            spacing: 4
-
+                                            spacing: 6
                                             Repeater {
                                                 model: root.allVariants
 
@@ -1363,7 +1341,7 @@ Item {
                                                                 id: tagContentRow
                                                                 text: variantTagRow.modelData.label
                                                                 font.family: Config.theme.font
-                                                                font.pixelSize: Config.theme.fontSize
+                                                                font.pixelSize: Styling.settingsFontSize(0)
                                                                 font.bold: true
                                                                 color: variantTagRow.item
 
@@ -1446,7 +1424,7 @@ Item {
                                 Flow {
                                     id: variantsFlow
                                     Layout.fillWidth: true
-                                    spacing: 4
+                                    spacing: 6
                                     visible: variantSelectorPane.variantExpanded
 
                                     Repeater {
@@ -1519,7 +1497,7 @@ Item {
                                                         id: tagContent
                                                         text: variantTag.modelData.label
                                                         font.family: Config.theme.font
-                                                        font.pixelSize: Config.theme.fontSize
+                                                        font.pixelSize: Styling.settingsFontSize(0)
                                                         font.bold: true
                                                         color: variantTag.item
 
@@ -1610,12 +1588,11 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            spacing: 8
-
+                            spacing: 10
                             Text {
                                 text: "Editor - " + root.getVariantLabel(root.selectedVariant)
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                                 Layout.bottomMargin: -4

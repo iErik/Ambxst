@@ -61,7 +61,7 @@ Item {
         id: networkList
         anchors.fill: parent
         clip: true
-        spacing: 4
+        spacing: 6
         // Rows are built as they scroll into view, not all up front.
         cacheBuffer: 200
         reuseItems: true
@@ -146,7 +146,7 @@ Item {
             visible: networkList.count === 0 && !NetworkService.wifiScanning
             text: NetworkService.wifiEnabled ? "No networks found" : "Wi-Fi is disabled"
             font.family: Config.theme.font
-            font.pixelSize: Config.theme.fontSize
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overSurfaceVariant
         }
     }

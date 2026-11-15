@@ -48,7 +48,8 @@ NotchAnimationBehavior {
         return tab === 0 ? 344 : 430;
     }
     readonly property real contentWidth: widthForTab(state.currentTab)
-    readonly property real nonAnimWidth: contentWidth + tabWidth + 16
+    // Tabs + 2px separator + two 8px row gaps around the page.
+    readonly property real nonAnimWidth: contentWidth + tabWidth + 2 + 16
     readonly property real contentHeight: heightForTab(state.currentTab)
 
     implicitWidth: nonAnimWidth

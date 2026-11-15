@@ -46,8 +46,7 @@ Item {
         anchors.leftMargin: 12
         anchors.rightMargin: 12
         anchors.topMargin: 8
-        spacing: 8
-
+        spacing: 10
         // Main row with device info
         RowLayout {
             Layout.fillWidth: true
@@ -92,7 +91,7 @@ Item {
                     Layout.fillWidth: true
                     text: root.device?.name ?? "Unknown device"
                     font.family: Config.theme.font
-                    font.pixelSize: Config.theme.fontSize
+                    font.pixelSize: Styling.settingsFontSize(0)
                     font.weight: Font.Medium
                     color: Colors.overBackground
                     elide: Text.ElideRight
@@ -118,7 +117,7 @@ Item {
                         return status;
                     }
                     font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(-2)
+                    font.pixelSize: Styling.settingsFontSize(-2)
                     color: Colors.overSurfaceVariant
                     elide: Text.ElideRight
 
@@ -134,8 +133,7 @@ Item {
             // Battery indicator
             Row {
                 visible: root.device?.batteryAvailable ?? false
-                spacing: 4
-
+                spacing: 6
                 Text {
                     text: {
                         const battery = root.device?.battery ?? 0;
@@ -169,7 +167,7 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             visible: root.expanded
-            spacing: 8
+            spacing: 10
             opacity: root.expanded ? 1 : 0
 
             Behavior on opacity {
@@ -195,7 +193,7 @@ Item {
                 contentItem: Text {
                     text: "Forget"
                     font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(-1)
+                    font.pixelSize: Styling.settingsFontSize(-1)
                     color: Styling.srItem("error")
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
@@ -223,7 +221,7 @@ Item {
                 contentItem: Text {
                     text: root.device?.connected ? "Disconnect" : "Connect"
                     font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(-1)
+                    font.pixelSize: Styling.settingsFontSize(-1)
                     color: root.device?.connected ? Colors.overSurfaceVariant : Styling.srItem("primary")
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter

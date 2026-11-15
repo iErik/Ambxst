@@ -40,7 +40,7 @@ Item {
             Text {
                 text: sectionBtn.text
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 font.bold: true
                 color: Colors.overBackground
                 Layout.fillWidth: true
@@ -116,12 +116,11 @@ Item {
         }
 
         Layout.fillWidth: true
-        spacing: 8
-
+        spacing: 10
         Text {
             text: toggleRowRoot.label
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overBackground
             Layout.fillWidth: true
         }
@@ -184,13 +183,13 @@ Item {
         signal valueEdited(int newValue)
 
         Layout.fillWidth: true
-        spacing: 8
+        spacing: 10
         opacity: enabled ? 1.0 : 0.5
 
         Text {
             text: numberInputRowRoot.label
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overBackground
             Layout.fillWidth: true
         }
@@ -206,7 +205,7 @@ Item {
                 anchors.fill: parent
                 anchors.margins: 8
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 color: Colors.overBackground
                 selectByMouse: true
                 clip: true
@@ -239,7 +238,7 @@ Item {
         Text {
             text: numberInputRowRoot.suffix
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overSurfaceVariant
             visible: suffix !== ""
         }
@@ -256,13 +255,13 @@ Item {
         signal valueEdited(real newValue)
 
         Layout.fillWidth: true
-        spacing: 8
+        spacing: 10
         opacity: enabled ? 1.0 : 0.5
 
         Text {
             text: decimalInputRowRoot.label
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overBackground
             Layout.fillWidth: true
         }
@@ -278,7 +277,7 @@ Item {
                 anchors.fill: parent
                 anchors.margins: 8
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 color: Colors.overBackground
                 selectByMouse: true
                 clip: true
@@ -314,7 +313,7 @@ Item {
         Text {
             text: decimalInputRowRoot.suffix
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overSurfaceVariant
             visible: suffix !== ""
         }
@@ -329,7 +328,7 @@ Item {
         property bool enabled: true
         signal colorsEdited(var newColors)
 
-        spacing: 8
+        spacing: 10
         Layout.fillWidth: true
         opacity: enabled ? 1.0 : 0.5
 
@@ -339,14 +338,14 @@ Item {
             Text {
                 text: gradientRow.label
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 color: Colors.overBackground
                 Layout.fillWidth: true
             }
             Text {
                 text: "Right click to remove"
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(-2)
+                font.pixelSize: Styling.settingsFontSize(-2)
                 color: Colors.overSurfaceVariant
                 visible: gradientRow.colors.length > 1
             }
@@ -355,8 +354,7 @@ Item {
         // Color List
         Flow {
             Layout.fillWidth: true
-            spacing: 8
-
+            spacing: 10
             Repeater {
                 id: colorsRepeater
                 model: gradientRow.colors
@@ -472,8 +470,7 @@ Item {
 
         RowLayout {
             anchors.centerIn: parent
-            spacing: 8
-
+            spacing: 10
             // Image Icon (with effect)
             Image {
                 mipmap: true
@@ -505,7 +502,7 @@ Item {
             Text {
                 text: tabBtn.label
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 font.bold: true
                 color: tabBtn.item
             }
@@ -546,8 +543,7 @@ Item {
         ColumnLayout {
             id: mainColumn
             width: mainFlickable.width
-            spacing: 8
-
+            spacing: 10
             // Header wrapper
             Item {
                 Layout.fillWidth: true
@@ -606,8 +602,7 @@ Item {
 
                 RowLayout {
                     anchors.centerIn: parent
-                    spacing: 8
-
+                    spacing: 10
                     CompositorTabButton {
                         label: AxctlService.isNiri ? "Niri" : "AxctlService"
                         image: AxctlService.isNiri
@@ -651,8 +646,7 @@ Item {
                         ColumnLayout {
                             visible: root.currentSection === ""
                             Layout.fillWidth: true
-                            spacing: 8
-
+                            spacing: 10
                             SectionButton {
                                 text: "General"
                                 sectionId: "general"
@@ -676,12 +670,11 @@ Item {
                         ColumnLayout {
                             visible: root.currentSection === "general"
                             Layout.fillWidth: true
-                            spacing: 8
-
+                            spacing: 10
                             Text {
                                 text: "General"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                                 Layout.bottomMargin: -4
@@ -790,12 +783,11 @@ Item {
                         ColumnLayout {
                             visible: root.currentSection === "colors"
                             Layout.fillWidth: true
-                            spacing: 8
-
+                            spacing: 10
                             Text {
                                 text: "Colors"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                                 Layout.bottomMargin: -4
@@ -843,12 +835,11 @@ Item {
                         ColumnLayout {
                             visible: root.currentSection === "shadows"
                             Layout.fillWidth: true
-                            spacing: 8
-
+                            spacing: 10
                             Text {
                                 text: "Shadows"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                                 Layout.bottomMargin: -4
@@ -987,12 +978,11 @@ Item {
                         ColumnLayout {
                             visible: root.currentSection === "blur" && AxctlService.supportsBlur
                             Layout.fillWidth: true
-                            spacing: 8
-
+                            spacing: 10
                             Text {
                                 text: "Blur"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                                 Layout.bottomMargin: -4
@@ -1153,7 +1143,7 @@ Item {
                             Text {
                                 text: "Coming Soon"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(2)
+                                font.pixelSize: Styling.settingsFontSize(2)
                                 font.bold: true
                                 color: Colors.overBackground
                                 Layout.alignment: Qt.AlignHCenter
@@ -1162,7 +1152,7 @@ Item {
                             Text {
                                 text: "Support for more compositors\nis planned for future updates."
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(0)
+                                font.pixelSize: Styling.settingsFontSize(0)
                                 color: Colors.overSurfaceVariant
                                 horizontalAlignment: Text.AlignHCenter
                                 Layout.alignment: Qt.AlignHCenter

@@ -635,16 +635,14 @@ Rectangle {
             // switching back to a section is instant (no rebuild, no re-scan).
             readonly property Loader panelLoader: panelRepeater.count > root.currentSection ? panelRepeater.itemAt(root.currentSection) : null
 
-            // Pages are drawn ~10% larger (text and spacing together) and laid
-            // out across the available width with small side margins, instead
-            // of a narrow centred 480 px column.
+            // Pages are laid out across the available width with small side
+            // margins instead of a narrow centred 480 px column. (Not scaled:
+            // a transform scale stretched StyledRect's clipping textures into
+            // jagged edges; text/spacing are larger in the pages themselves.)
             Item {
                 id: contentScaler
-                readonly property real contentScale: 1.1
-                width: contentArea.width / contentScale
-                height: contentArea.height / contentScale
-                scale: contentScale
-                transformOrigin: Item.TopLeft
+                width: contentArea.width
+                height: contentArea.height
 
                 Repeater {
                     id: panelRepeater

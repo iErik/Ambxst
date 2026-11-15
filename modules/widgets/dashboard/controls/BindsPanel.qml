@@ -553,7 +553,7 @@ Item {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        spacing: 8
+        spacing: 10
         z: 10
 
         // Horizontal slide + fade animation
@@ -618,8 +618,7 @@ Item {
                 id: categoryRow
                 width: root.contentWidth
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 4
-
+                spacing: 6
                 Repeater {
                     model: root.categories
 
@@ -653,7 +652,7 @@ Item {
                             Text {
                                 text: categoryTag.modelData.label
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(0)
+                                font.pixelSize: Styling.settingsFontSize(0)
                                 font.weight: categoryTag.isSelected ? Font.Bold : Font.Normal
                                 color: categoryTag.item
                                 anchors.verticalCenter: parent.verticalCenter
@@ -714,8 +713,7 @@ Item {
             id: contentColumn
             width: root.contentWidth
             x: root.sideMargin
-            spacing: 4
-
+            spacing: 6
             // Ambxst binds view
             Repeater {
                 id: ambxstRepeater
@@ -810,7 +808,7 @@ Item {
                 visible: (root.currentCategory === "ambxst" && ambxstRepeater.count === 0) || (root.currentCategory === "custom" && customRepeater.count === 0)
                 text: root.currentCategory === "ambxst" ? "No Ambxst binds configured" : "No custom binds configured"
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 color: Colors.overSurfaceVariant
             }
         }
@@ -869,8 +867,7 @@ Item {
             ColumnLayout {
                 id: editContent
                 width: editFlickable.width
-                spacing: 8
-
+                spacing: 10
                 // Header with back button
                 Item {
                     Layout.fillWidth: true
@@ -880,8 +877,7 @@ Item {
                         id: editTitlebar
                         width: root.contentWidth
                         anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: 8
-
+                        spacing: 10
                         // Back button
                         StyledRect {
                             id: backButton
@@ -911,7 +907,7 @@ Item {
                         Text {
                             text: root.isCreatingNew ? "New Keybind" : "Edit Keybind"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(0)
+                            font.pixelSize: Styling.settingsFontSize(0)
                             font.weight: Font.Medium
                             color: Colors.overBackground
                             Layout.fillWidth: true
@@ -973,7 +969,7 @@ Item {
                                 Text {
                                     text: "Reset to default"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     font.weight: Font.Medium
                                     color: Styling.srItem(resetButton.variant)
                                     anchors.verticalCenter: parent.verticalCenter
@@ -1038,7 +1034,7 @@ Item {
                                 Text {
                                     text: "Save"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     font.weight: Font.Medium
                                     color: saveButton.item
                                     anchors.verticalCenter: parent.verticalCenter
@@ -1070,13 +1066,13 @@ Item {
                         // Custom name input (only for custom binds)
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: 10
                             visible: !root.isEditingAmbxst
 
                             Text {
                                 text: "Name (optional)"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                             }
@@ -1093,7 +1089,7 @@ Item {
                                     anchors.margins: 12
                                     text: root.editName
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     verticalAlignment: Text.AlignVCenter
                                     selectByMouse: true
@@ -1119,7 +1115,7 @@ Item {
                             visible: root.isEditingAmbxst && root.editingBind !== null
                             text: root.editingBind ? (root.editingBind.name || "") : ""
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(1)
+                            font.pixelSize: Styling.settingsFontSize(1)
                             font.weight: Font.Medium
                             color: Colors.overBackground
                         }
@@ -1146,7 +1142,7 @@ Item {
                                     return formatted.join(", ");
                                 }
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(root.editKeys.length > 2 ? 0 : 2)
+                                font.pixelSize: Styling.settingsFontSize(root.editKeys.length > 2 ? 0 : 2)
                                 font.weight: Font.Bold
                                 color: Styling.srItem("overprimary")
                                 elide: Text.ElideRight
@@ -1160,17 +1156,15 @@ Item {
                         // =====================
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 8
-
+                            spacing: 10
                             // Keys section header with pager controls
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: "Key Combination"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(-1)
+                                    font.pixelSize: Styling.settingsFontSize(-1)
                                     font.weight: Font.Medium
                                     color: Colors.overSurfaceVariant
                                     Layout.fillWidth: true
@@ -1181,7 +1175,7 @@ Item {
                                     visible: root.editKeys.length > 1
                                     text: (root.currentKeyPage + 1) + " / " + root.editKeys.length
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(-1)
+                                    font.pixelSize: Styling.settingsFontSize(-1)
                                     color: Colors.overSurfaceVariant
                                 }
 
@@ -1313,8 +1307,7 @@ Item {
                             // Modifiers
                             Flow {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Repeater {
                                     model: root.availableModifiers
 
@@ -1336,7 +1329,7 @@ Item {
                                             anchors.centerIn: parent
                                             text: modTag.modelData
                                             font.family: Config.theme.font
-                                            font.pixelSize: Styling.fontSize(0)
+                                            font.pixelSize: Styling.settingsFontSize(0)
                                             font.weight: modTag.isSelected ? Font.Bold : Font.Normal
                                             color: modTag.item
                                         }
@@ -1366,7 +1359,7 @@ Item {
                                     anchors.margins: 12
                                     text: root.editKey
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     verticalAlignment: Text.AlignVCenter
                                     selectByMouse: true
@@ -1396,18 +1389,17 @@ Item {
                         // =====================
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: 10
                             // visible: !root.isEditingAmbxst - Removed to allow editing flags for Ambxst binds
 
                             // Actions section header with pager controls
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Text {
                                     text: "Action"
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(-1)
+                                    font.pixelSize: Styling.settingsFontSize(-1)
                                     font.weight: Font.Medium
                                     color: Colors.overSurfaceVariant
                                     Layout.fillWidth: true
@@ -1418,7 +1410,7 @@ Item {
                                     visible: root.editActions.length > 1 && !root.isEditingAmbxst
                                     text: (root.currentActionPage + 1) + " / " + root.editActions.length
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(-1)
+                                    font.pixelSize: Styling.settingsFontSize(-1)
                                     color: Colors.overSurfaceVariant
                                 }
 
@@ -1550,7 +1542,7 @@ Item {
                             Text {
                                 text: "Action"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                             }
@@ -1565,12 +1557,11 @@ Item {
                                 RowLayout {
                                     anchors.fill: parent
                                     anchors.margins: 12
-                                    spacing: 8
-
+                                    spacing: 10
                                     Text {
                                         text: root.getActionLabel(root.editActionId)
                                         font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(0)
+                                        font.pixelSize: Styling.settingsFontSize(0)
                                         color: Colors.overBackground
                                         Layout.fillWidth: true
                                         elide: Text.ElideRight
@@ -1625,8 +1616,7 @@ Item {
                                     ColumnLayout {
                                         id: actionList
                                         width: parent.width
-                                        spacing: 4
-
+                                        spacing: 6
                                         Repeater {
                                             model: root.actionOptions
 
@@ -1658,7 +1648,7 @@ Item {
                                     Text {
                                         text: modelData.label
                                         font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(-1)
+                                        font.pixelSize: Styling.settingsFontSize(-1)
                                         font.weight: Font.Medium
                                         color: Colors.overSurfaceVariant
                                     }
@@ -1675,7 +1665,7 @@ Item {
                                             anchors.margins: 12
                                             text: root.editActionArgs[modelData.key] !== undefined ? root.editActionArgs[modelData.key].toString() : ""
                                             font.family: Config.theme.font
-                                            font.pixelSize: Styling.fontSize(0)
+                                            font.pixelSize: Styling.settingsFontSize(0)
                                             color: Colors.overBackground
                                             verticalAlignment: Text.AlignVCenter
                                             selectByMouse: true
@@ -1702,7 +1692,7 @@ Item {
                                 visible: AxctlService.supportsLayoutSwitch
                                 text: "Layouts (AxctlService)"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
+                                font.pixelSize: Styling.settingsFontSize(-1)
                                 font.weight: Font.Medium
                                 color: Colors.overSurfaceVariant
                                 Layout.topMargin: 8
@@ -1712,7 +1702,7 @@ Item {
                                 visible: AxctlService.supportsLayoutSwitch
                                 text: "Leave all unselected to work in all layouts"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-2)
+                                font.pixelSize: Styling.settingsFontSize(-2)
                                 color: Colors.overSurfaceVariant
                                 Layout.topMargin: -4
                             }
@@ -1720,8 +1710,7 @@ Item {
                             Flow {
                                 visible: AxctlService.supportsLayoutSwitch
                                 Layout.fillWidth: true
-                                spacing: 8
-
+                                spacing: 10
                                 Repeater {
                                     model: root.availableLayouts
 
@@ -1786,7 +1775,7 @@ Item {
                                                 id: layoutContent
                                                 text: layoutTag.modelData.charAt(0).toUpperCase() + layoutTag.modelData.slice(1)
                                                 font.family: Config.theme.font
-                                                font.pixelSize: Styling.fontSize(0)
+                                                font.pixelSize: Styling.settingsFontSize(0)
                                                 font.weight: layoutTag.isSelected ? Font.Bold : Font.Normal
                                                 color: layoutTag.item
                                             }
@@ -1826,12 +1815,11 @@ Item {
         RowLayout {
             anchors.fill: parent
             anchors.margins: 10
-            spacing: 8
-
+            spacing: 10
             Text {
                 text: actionItem.actionLabel
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 color: Colors.overBackground
                 Layout.fillWidth: true
                 elide: Text.ElideRight
@@ -1841,7 +1829,7 @@ Item {
             Text {
                 text: actionItem.actionCategory
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(-2)
+                font.pixelSize: Styling.settingsFontSize(-2)
                 color: Colors.overSurfaceVariant
                 verticalAlignment: Text.AlignVCenter
             }
@@ -1960,7 +1948,7 @@ Item {
                 Text {
                     text: bindItem.displayName
                     font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(0)
+                    font.pixelSize: Styling.settingsFontSize(0)
                     font.weight: Font.Medium
                     color: bindItem.item
                     elide: Text.ElideRight
@@ -1974,7 +1962,7 @@ Item {
                     Text {
                         text: bindItem.displaySubtitle
                         font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-2)
+                        font.pixelSize: Styling.settingsFontSize(-2)
                         color: Colors.overSurfaceVariant
                         elide: Text.ElideRight
                         Layout.fillWidth: true
@@ -1984,7 +1972,7 @@ Item {
                     // Layout indicator
                     Row {
                         visible: !bindItem.isAmbxst
-                        spacing: 4
+                        spacing: 6
                         Layout.alignment: Qt.AlignVCenter
 
                         Repeater {
@@ -2005,7 +1993,7 @@ Item {
                                     anchors.centerIn: parent
                                     text: layoutBadge.modelData.charAt(0).toUpperCase()
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(-3)
+                                    font.pixelSize: Styling.settingsFontSize(-3)
                                     font.weight: Font.Bold
                                     color: Styling.srItem("primary")
                                 }
@@ -2039,7 +2027,7 @@ Item {
                     anchors.centerIn: parent
                     text: bindItem.keybindText
                     font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(-1)
+                    font.pixelSize: Styling.settingsFontSize(-1)
                     font.weight: Font.Medium
                     color: Styling.srItem("overprimary")
                 }

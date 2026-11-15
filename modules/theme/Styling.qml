@@ -13,6 +13,13 @@ QtObject {
         return Math.max(Config.theme.fontSize + offset, 8);
     }
 
+    // Settings pages (Control Center) use text one step larger than the rest
+    // of the shell.
+    readonly property int settingsFontBoost: 1
+    function settingsFontSize(offset) {
+        return fontSize(offset + settingsFontBoost);
+    }
+
     function monoFontSize(offset) {
         return Math.max(Config.theme.monoFontSize + offset, 8);
     }

@@ -55,7 +55,7 @@ Item {
         id: deviceList
         anchors.fill: parent
         clip: true
-        spacing: 4
+        spacing: 6
         cacheBuffer: 200
         reuseItems: true
 
@@ -125,7 +125,7 @@ Item {
             visible: deviceList.count === 0 && !BluetoothService.discovering
             text: BluetoothService.enabled ? "No devices found" : "Bluetooth is disabled"
             font.family: Config.theme.font
-            font.pixelSize: Config.theme.fontSize
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overSurfaceVariant
         }
     }

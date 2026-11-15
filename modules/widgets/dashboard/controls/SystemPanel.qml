@@ -37,7 +37,7 @@ Item {
             Text {
                 text: sectionBtn.text
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 font.bold: true
                 color: Colors.overBackground
                 Layout.fillWidth: true
@@ -72,8 +72,7 @@ Item {
         ColumnLayout {
             id: mainColumn
             width: mainFlickable.width
-            spacing: 8
-
+            spacing: 10
             // Header wrapper
             Item {
                 Layout.fillWidth: true
@@ -120,8 +119,7 @@ Item {
                     ColumnLayout {
                         visible: root.currentSection === ""
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         SectionButton {
                             text: "Prefixes"
                             sectionId: "prefixes"
@@ -155,12 +153,11 @@ Item {
                         visible: root.currentSection === "prefixes"
                         property string settingsSection: "prefixes"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "Prefixes"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -169,7 +166,7 @@ Item {
                         Text {
                             text: "Keyboard shortcuts for quick actions in launcher"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-2)
+                            font.pixelSize: Styling.settingsFontSize(-2)
                             color: Colors.overSurfaceVariant
                             opacity: 0.7
                         }
@@ -232,12 +229,11 @@ Item {
                         visible: root.currentSection === "weather"
                         property string settingsSection: "weather"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "Weather"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -246,12 +242,11 @@ Item {
                         // Location
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 8
-
+                            spacing: 10
                             Text {
                                 text: "Location"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(0)
+                                font.pixelSize: Styling.settingsFontSize(0)
                                 color: Colors.overBackground
                                 Layout.preferredWidth: 100
                             }
@@ -267,7 +262,7 @@ Item {
                                     anchors.fill: parent
                                     anchors.margins: 8
                                     font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
+                                    font.pixelSize: Styling.settingsFontSize(0)
                                     color: Colors.overBackground
                                     selectByMouse: true
                                     clip: true
@@ -303,19 +298,17 @@ Item {
                         // Unit selector
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 8
-
+                            spacing: 10
                             Text {
                                 text: "Unit"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(0)
+                                font.pixelSize: Styling.settingsFontSize(0)
                                 color: Colors.overBackground
                                 Layout.preferredWidth: 100
                             }
 
                             Row {
-                                spacing: 8
-
+                                spacing: 10
                                 Repeater {
                                     model: [
                                         {
@@ -346,7 +339,7 @@ Item {
                                             anchors.centerIn: parent
                                             text: unitButton.modelData.label
                                             font.family: Config.theme.font
-                                            font.pixelSize: Styling.fontSize(0)
+                                            font.pixelSize: Styling.settingsFontSize(0)
                                             font.weight: unitButton.isSelected ? Font.Bold : Font.Normal
                                             color: unitButton.item
                                         }
@@ -372,12 +365,11 @@ Item {
                         visible: root.currentSection === "performance"
                         property string settingsSection: "performance"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "Performance"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -386,7 +378,7 @@ Item {
                         Text {
                             text: "Toggle visual effects to improve performance"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-2)
+                            font.pixelSize: Styling.settingsFontSize(-2)
                             color: Colors.overSurfaceVariant
                             opacity: 0.7
                         }
@@ -443,12 +435,11 @@ Item {
                         visible: root.currentSection === "system"
                         property string settingsSection: "system"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "System Resources"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -457,7 +448,7 @@ Item {
                         Text {
                             text: "Configure which disks to monitor"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-2)
+                            font.pixelSize: Styling.settingsFontSize(-2)
                             color: Colors.overSurfaceVariant
                             opacity: 0.7
                         }
@@ -465,8 +456,7 @@ Item {
                         // Disks list
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 4
-
+                            spacing: 6
                             Repeater {
                                 id: disksRepeater
                                 model: Config.system.disks
@@ -477,8 +467,7 @@ Item {
                                     required property int index
 
                                     Layout.fillWidth: true
-                                    spacing: 8
-
+                                    spacing: 10
                                     StyledRect {
                                         variant: "common"
                                         Layout.fillWidth: true
@@ -576,7 +565,7 @@ Item {
                                     Text {
                                         text: "Add Disk"
                                         font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(0)
+                                        font.pixelSize: Styling.settingsFontSize(0)
                                         color: addDiskButton.item
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
@@ -604,12 +593,11 @@ Item {
                         visible: root.currentSection === "idle"
                         property string settingsSection: "idle"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "Idle"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -654,7 +642,7 @@ Item {
                         Text {
                             text: "Listeners"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(0)
+                            font.pixelSize: Styling.settingsFontSize(0)
                             color: Colors.overBackground
                             Layout.topMargin: 8
                         }
@@ -667,7 +655,7 @@ Item {
                                 required property int index
 
                                 Layout.fillWidth: true
-                                spacing: 4
+                                spacing: 6
                                 Layout.bottomMargin: 8
 
                                 Rectangle {
@@ -682,7 +670,7 @@ Item {
                                     Text {
                                         text: "Listener " + (index + 1)
                                         font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(-1)
+                                        font.pixelSize: Styling.settingsFontSize(-1)
                                         font.bold: true
                                         color: Styling.srItem("overprimary")
                                     }
@@ -774,7 +762,7 @@ Item {
                                 anchors.centerIn: parent
                                 text: "Add Listener"
                                 font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(0)
+                                font.pixelSize: Styling.settingsFontSize(0)
                                 font.bold: true
                                 color: addListenerBtn.item
                             }
@@ -807,12 +795,11 @@ Item {
                         visible: root.currentSection === "terminal"
                         property string settingsSection: "terminal"
                         Layout.fillWidth: true
-                        spacing: 8
-
+                        spacing: 10
                         Text {
                             text: "Terminal"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
@@ -821,7 +808,7 @@ Item {
                         Text {
                             text: "Ambxst uses your terminal to launch the tmux manager and to show update progress."
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-2)
+                            font.pixelSize: Styling.settingsFontSize(-2)
                             color: Colors.overSurfaceVariant
                             opacity: 0.7
                             wrapMode: Text.WordWrap
@@ -851,8 +838,7 @@ Item {
                                 id: advColumn
                                 anchors.fill: parent
                                 anchors.margins: 12
-                                spacing: 8
-
+                                spacing: 10
                                 ToggleRow {
                                     label: "Advanced options"
                                     description: "Use a custom command template for terminals that don't accept the standard `-e` flag"
@@ -867,12 +853,11 @@ Item {
                                 ColumnLayout {
                                     visible: Config.general.terminalAdvanced ?? false
                                     Layout.fillWidth: true
-                                    spacing: 8
-
+                                    spacing: 10
                                     Text {
                                         text: "$TERMINAL is replaced by the value above. $COMMAND is the full bash command Ambxst wants to run."
                                         font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(-2)
+                                        font.pixelSize: Styling.settingsFontSize(-2)
                                         color: Colors.overSurfaceVariant
                                         opacity: 0.7
                                         wrapMode: Text.WordWrap
@@ -894,7 +879,7 @@ Item {
                                     Text {
                                         text: "Examples: \"$TERMINAL -e $COMMAND\" · \"gnome-terminal -- $COMMAND\" · \"konsole -e $COMMAND\""
                                         font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(-3)
+                                        font.pixelSize: Styling.settingsFontSize(-3)
                                         color: Colors.overSurfaceVariant
                                         opacity: 0.7
                                         wrapMode: Text.WordWrap
@@ -930,12 +915,11 @@ Item {
         signal valueEdited(int newValue)
 
         Layout.fillWidth: true
-        spacing: 8
-
+        spacing: 10
         Text {
             text: numberInputRowRoot.label
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overBackground
             Layout.fillWidth: true
         }
@@ -951,7 +935,7 @@ Item {
                 anchors.fill: parent
                 anchors.margins: 8
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 color: Colors.overBackground
                 selectByMouse: true
                 clip: true
@@ -984,7 +968,7 @@ Item {
         Text {
             text: numberInputRowRoot.suffix
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overSurfaceVariant
             visible: suffix !== ""
         }
@@ -1000,12 +984,11 @@ Item {
         signal valueEdited(string newValue)
 
         Layout.fillWidth: true
-        spacing: 8
-
+        spacing: 10
         Text {
             text: textInputRowRoot.label
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overBackground
             Layout.preferredWidth: 100
         }
@@ -1021,7 +1004,7 @@ Item {
                 anchors.fill: parent
                 anchors.margins: 8
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 color: Colors.overBackground
                 selectByMouse: true
                 clip: true
@@ -1041,7 +1024,7 @@ Item {
                     verticalAlignment: Text.AlignVCenter
                     text: textInputRowRoot.placeholder
                     font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(0)
+                    font.pixelSize: Styling.settingsFontSize(0)
                     color: Colors.overSurfaceVariant
                     visible: textInputField.text === ""
                 }
@@ -1060,12 +1043,11 @@ Item {
         property string prefixValue: ""
         signal prefixEdited(string newValue)
 
-        spacing: 8
-
+        spacing: 10
         Text {
             text: prefixRow.label
             font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
+            font.pixelSize: Styling.settingsFontSize(0)
             color: Colors.overBackground
             Layout.preferredWidth: 100
         }
@@ -1110,8 +1092,7 @@ Item {
         property bool checked: false
         signal toggled(bool checked)
 
-        spacing: 8
-
+        spacing: 10
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 2
@@ -1119,7 +1100,7 @@ Item {
             Text {
                 text: label
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
+                font.pixelSize: Styling.settingsFontSize(0)
                 color: Colors.overBackground
             }
 
@@ -1127,7 +1108,7 @@ Item {
                 visible: description !== ""
                 text: description
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(-2)
+                font.pixelSize: Styling.settingsFontSize(-2)
                 color: Colors.overSurfaceVariant
                 opacity: 0.7
             }

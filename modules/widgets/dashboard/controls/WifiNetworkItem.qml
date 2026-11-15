@@ -46,8 +46,7 @@ Item {
         anchors.leftMargin: 12
         anchors.rightMargin: 12
         anchors.topMargin: 8
-        spacing: 8
-
+        spacing: 10
         // Main row with network info
         RowLayout {
             Layout.fillWidth: true
@@ -98,7 +97,7 @@ Item {
                     Layout.fillWidth: true
                     text: root.network?.ssid ?? "Unknown"
                     font.family: Config.theme.font
-                    font.pixelSize: Config.theme.fontSize
+                    font.pixelSize: Styling.settingsFontSize(0)
                     font.weight: Font.Medium
                     color: Colors.overBackground
                     elide: Text.ElideRight
@@ -115,7 +114,7 @@ Item {
                         return "Open";
                     }
                     font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(-2)
+                    font.pixelSize: Styling.settingsFontSize(-2)
                     color: Colors.overSurfaceVariant
                     elide: Text.ElideRight
 
@@ -155,7 +154,7 @@ Item {
             active: root.expanded
             visible: active
             sourceComponent: ColumnLayout {
-                spacing: 8
+                spacing: 10
                 opacity: root.expanded ? 1 : 0
 
                 Behavior on opacity {
@@ -186,8 +185,7 @@ Item {
                 // Action buttons
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 8
-
+                    spacing: 10
                     Item {
                         Layout.fillWidth: true
                     }
@@ -206,7 +204,7 @@ Item {
                         contentItem: Text {
                             text: root.network?.active ? "Disconnect" : "Connect"
                             font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
+                            font.pixelSize: Styling.settingsFontSize(-1)
                             color: root.network?.active ? Colors.overSurfaceVariant : Styling.srItem("primary")
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter

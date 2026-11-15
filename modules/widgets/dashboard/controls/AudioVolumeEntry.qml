@@ -31,13 +31,11 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 4
-
+        spacing: 6
         // First row: Icon + Slider
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
-
+            spacing: 10
             // Mute button with icon
             Button {
                 id: muteButton
@@ -124,13 +122,12 @@ Item {
         // Second row: Name + Separator + Percentage
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
-
+            spacing: 10
             // Source name
             Text {
                 text: root.isMainDevice ? Audio.friendlyDeviceName(root.node) : Audio.appNodeDisplayName(root.node)
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(-2)
+                font.pixelSize: Styling.settingsFontSize(-2)
                 color: Colors.overSurfaceVariant
             }
 
@@ -163,7 +160,7 @@ Item {
             Text {
                 text: `${Math.round(root.volume * 100)}%`
                 font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(-2)
+                font.pixelSize: Styling.settingsFontSize(-2)
                 color: (!root.isMuted && root.isOutputNode && root.volume > 1)
                     ? Colors.warning
                     : Colors.overSurfaceVariant
