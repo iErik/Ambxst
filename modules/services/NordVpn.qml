@@ -4,9 +4,17 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.config
 
 Singleton {
     id: root
+
+    // Module switch (Ambxst > Modules). Off: no checks, no polling, hidden.
+    readonly property bool enabled: Config.general.moduleNordVpn ?? true
+    // Enabled and installed: what the UI shows.
+    readonly property bool active: enabled && available
+    onEnabledChanged: if (enabled)
+        initialize()
 
     property bool available: false
     property bool busy: false
@@ -47,6 +55,8 @@ Singleton {
     }
 
     function initialize() {
+        if (!root.enabled)
+            return;
         if (_initialized)
             return;
         _initialized = true;
@@ -477,7 +487,7 @@ Singleton {
         id: pollTimer
         interval: 15000
         repeat: true
-        running: root.available && !SuspendManager.isSuspending
+        running: root.enabled && root.available && !SuspendManager.isSuspending
         onTriggered: root.refreshStatus()
     }
 
@@ -485,7 +495,7 @@ Singleton {
     Timer {
         interval: 120000
         repeat: true
-        running: !root.available
+        running: root.enabled && !root.available
         onTriggered: root.checkAvailable()
     }
 

@@ -84,16 +84,23 @@ Item {
 
     // Tabs that can be hidden (their section isn't available).
     function tabShown(index) {
+        if (index === lightsTab)
+            return YeelightService.enabled;
         if (index === firstSettingsTab + 4) // Effects
-            return EasyEffectsService.installed;
+            return EasyEffectsService.active;
         return true;
     }
-    // If the current tab gets hidden, fall back to the Control Center tab.
+    // If the current tab gets hidden (module off / app missing), fall back
+    // to the Control Center tab.
+    readonly property bool currentTabShown: tabShown(currentTab)
+    onCurrentTabShownChanged: if (!currentTabShown)
+        selectTab(0)
+    // Showing/hiding a section shifts the Settings list: re-apply the
+    // current tab's section so the page doesn't change under the user.
     Connections {
         target: EasyEffectsService
-        function onInstalledChanged() {
-            if (!root.tabShown(root.currentTab))
-                root.selectTab(0);
+        function onActiveChanged() {
+            Qt.callLater(root.syncSettings);
         }
     }
 

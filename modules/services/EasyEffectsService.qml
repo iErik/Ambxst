@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.config
 
 Singleton {
     id: root
@@ -67,6 +68,9 @@ Singleton {
     // the Effects settings section can be hidden when it isn't installed;
     // `available` (set by initialize()) also starts polling its state.
     property bool installed: false
+    // Module switch (Ambxst > Modules) and what the UI shows.
+    readonly property bool enabled: Config.general.moduleEasyEffects ?? true
+    readonly property bool active: enabled && installed
 
     property var installCheck: Process {
         command: ["sh", "-c", "command -v easyeffects"]
@@ -228,7 +232,7 @@ Singleton {
     // Periodically poll state
     property var pollTimer: Timer {
         interval: 5000
-        running: root.available && !SuspendManager.isSuspending
+        running: root.enabled && root.available && !SuspendManager.isSuspending
         repeat: true
         onTriggered: {
             bypassStateProcess.running = true;

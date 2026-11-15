@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.config
 
 // Yeelight bulbs over the LAN protocol (no cloud), via scripts/yeelight.py.
 // The helper is started the first time the Lights page is shown and keeps one
@@ -30,9 +31,25 @@ Singleton {
             bulbIps = ips;
     }
 
+    // Groups: [{ id, name, members: [ip, …] }], saved in StateService.
+    property var groups: []
+    // Group ids in order; only reassigned when the set changes, so group
+    // cards aren't rebuilt when a member is added or removed.
+    property var groupIds: []
+    onGroupsChanged: {
+        const ids = groups.map(g => g.id);
+        if (ids.join(",") !== groupIds.join(","))
+            groupIds = ids;
+    }
+    readonly property string groupsKey: "yeelightGroups"
+
     property bool discovering: false
     property string lastError: ""
     readonly property bool running: helper.running
+    // Module switch (Ambxst > Modules). Off stops the helper.
+    readonly property bool enabled: Config.general.moduleYeelight ?? true
+    onEnabledChanged: if (!enabled)
+        helper.running = false
 
     readonly property string stateKey: "yeelightBulbs"
     readonly property string scriptPath: decodeURIComponent(Qt.resolvedUrl("../../scripts/yeelight.py").toString().replace("file://", ""))
@@ -45,9 +62,139 @@ Singleton {
 
     // Start the helper (idempotent), re-add remembered bulbs and scan.
     function start() {
+        if (!enabled)
+            return;
+        loadGroups();
         if (helper.running)
             return;
         helper.running = true;
+    }
+
+    // ── groups ──────────────────────────────────────────────────────────
+    property bool _groupsLoaded: false
+    function loadGroups() {
+        if (_groupsLoaded || !StateService.initialized)
+            return;
+        _groupsLoaded = true;
+        const saved = StateService.get(groupsKey, []) || [];
+        groups = saved.filter(g => g && g.id).map(g => ({
+                    id: g.id,
+                    name: g.name || "",
+                    members: Array.isArray(g.members) ? g.members : []
+                }));
+    }
+
+    function _saveGroups(next) {
+        groups = next;
+        if (StateService.initialized)
+            StateService.set(groupsKey, next);
+    }
+
+    function group(id) {
+        return groups.find(g => g.id === id) ?? null;
+    }
+
+    function groupName(g) {
+        if (!g)
+            return "";
+        return g.name && g.name.length > 0 ? g.name : "Group";
+    }
+
+    function createGroup(name, members) {
+        const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        const n = (name || "").trim() || ("Group " + (groups.length + 1));
+        _saveGroups(groups.concat([{
+                id: id,
+                name: n,
+                members: members || []
+            }]));
+        return id;
+    }
+
+    function renameGroup(id, name) {
+        _saveGroups(groups.map(g => g.id === id ? Object.assign({}, g, {
+                name: (name || "").trim() || g.name
+            }) : g));
+    }
+
+    function deleteGroup(id) {
+        _saveGroups(groups.filter(g => g.id !== id));
+    }
+
+    function toggleMember(id, ip) {
+        _saveGroups(groups.map(g => {
+            if (g.id !== id)
+                return g;
+            const members = g.members.indexOf(ip) >= 0 ? g.members.filter(m => m !== ip) : g.members.concat([ip]);
+            return Object.assign({}, g, {
+                members: members
+            });
+        }));
+    }
+
+    function _members(id) {
+        const g = group(id);
+        return g ? g.members.filter(ip => !!bulbs[ip]) : [];
+    }
+
+    // A group's state, derived from its members: on if any member is on,
+    // brightness averaged over the lit members, colour from the first lit
+    // member (or the first member).
+    function groupState(id) {
+        const members = _members(id).map(ip => bulbs[ip]);
+        if (members.length === 0)
+            return {
+                power: false,
+                bright: 0,
+                ct: 4000,
+                rgb: 0,
+                hue: 0,
+                sat: 0,
+                color_mode: 2,
+                online: false,
+                count: 0
+            };
+        const lit = members.filter(b => b.power);
+        const ref = lit.length > 0 ? lit[0] : members[0];
+        const brightOf = lit.length > 0 ? lit : members;
+        return {
+            power: lit.length > 0,
+            bright: Math.round(brightOf.reduce((a, b) => a + b.bright, 0) / brightOf.length),
+            ct: ref.ct,
+            rgb: ref.rgb,
+            hue: ref.hue,
+            sat: ref.sat,
+            color_mode: ref.color_mode,
+            online: members.some(b => b.online),
+            count: members.length
+        };
+    }
+
+    function setGroupPower(id, on) {
+        for (const ip of _members(id))
+            setPower(ip, on);
+    }
+    function toggleGroupPower(id) {
+        setGroupPower(id, !groupState(id).power);
+    }
+    function setGroupBrightness(id, value) {
+        for (const ip of _members(id))
+            setBrightness(ip, value);
+    }
+    function setGroupColor(id, hue, sat) {
+        for (const ip of _members(id))
+            setColor(ip, hue, sat);
+    }
+    function setGroupTemperature(id, kelvin) {
+        for (const ip of _members(id))
+            setTemperature(ip, kelvin);
+    }
+
+    Connections {
+        target: StateService
+        function onStateLoaded() {
+            root.loadGroups();
+        }
     }
 
     function discover() {
@@ -72,6 +219,9 @@ Singleton {
     }
 
     function forget(ip) {
+        _saveGroups(groups.map(g => Object.assign({}, g, {
+                members: g.members.filter(m => m !== ip)
+            })));
         send({
             cmd: "remove",
             ip: ip

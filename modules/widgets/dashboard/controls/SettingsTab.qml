@@ -25,10 +25,23 @@ Rectangle {
     // false: the section list and search are hidden and the host (the
     // Control Center's side tabs) picks the section with showSection().
     property bool showSidebar: true
-    property int selectedIndex: GlobalStates.settingsCurrentTab
+    // Local to this view. (It used to be mirrored through a global, which
+    // made the per-screen Settings views drag each other to other sections
+    // whenever their section list changed, e.g. a module switched off.)
+    property int selectedIndex: 0
     property string searchQuery: ""
 
-    onFilteredSectionsChanged: selectedIndex = 0
+    // A new search jumps to the top result. Without a search the list only
+    // changes when a section is shown/hidden (e.g. a module switched off):
+    // stay on the current section instead of jumping to the first one.
+    onFilteredSectionsChanged: {
+        if (searchQuery.length > 0) {
+            selectedIndex = 0;
+            return;
+        }
+        const index = getFilteredIndex(currentSection);
+        selectedIndex = index >= 0 ? index : 0;
+    }
 
     // Timer to restore focus after panel transitions
     Timer {
@@ -38,7 +51,6 @@ Rectangle {
     }
 
     onSelectedIndexChanged: {
-        GlobalStates.settingsCurrentTab = selectedIndex;
         if (filteredSections && selectedIndex >= 0 && selectedIndex < filteredSections.length) {
             const item = filteredSections[selectedIndex];
             root.currentSection = item.section;
@@ -50,14 +62,6 @@ Rectangle {
         }
     }
 
-    Connections {
-        target: GlobalStates
-        function onSettingsCurrentTabChanged() {
-            if (root.selectedIndex !== GlobalStates.settingsCurrentTab) {
-                root.selectedIndex = GlobalStates.settingsCurrentTab;
-            }
-        }
-    }
 
     // Focus the search input (called from parent Dashboard)
     function focusSearchInput() {
@@ -284,7 +288,7 @@ Rectangle {
     // Sections whose backing app isn't installed are hidden.
     function sectionShown(sectionId) {
         if (sectionId === 4)
-            return EasyEffectsService.installed;
+            return EasyEffectsService.active;
         return true;
     }
 

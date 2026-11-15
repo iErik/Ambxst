@@ -1244,6 +1244,11 @@ Singleton {
             property string terminal: "kitty"
             property bool terminalAdvanced: false
             property string terminalCommand: "$TERMINAL -e $COMMAND"
+            // Optional integrations (Ambxst > Modules)
+            property bool moduleEasyEffects: true
+            property bool modulePcloud: true
+            property bool moduleNordVpn: true
+            property bool moduleYeelight: true
         }
     }
 

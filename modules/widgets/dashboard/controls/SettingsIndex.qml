@@ -79,7 +79,7 @@ QtObject {
         { label: "Notes Keybind", keywords: "note shortcut super n", section: 5, subSection: "", subLabel: "Binds > Ambxst", icon: Icons.keyboard, isIcon: true },
         { label: "Overview Keybind", keywords: "workspace mission control shortcut super shift tab", section: 5, subSection: "", subLabel: "Binds > Ambxst", icon: Icons.keyboard, isIcon: true },
         { label: "Task Switcher Keybind", keywords: "alt tab window cycle shortcut super tab", section: 5, subSection: "", subLabel: "Binds > Ambxst", icon: Icons.keyboard, isIcon: true },
-        { label: "Powermenu Keybind", keywords: "logout shutdown shortcut super escape", section: 5, subSection: "", subLabel: "Binds > Ambxst", icon: Icons.power, isIcon: true },
+        { label: "Powermenu Keybind", keywords: "logout shutdown shortcut super escape", section: 5, subSection: "", subLabel: "Binds > Ambxst", icon: Icons.shutdown, isIcon: true },
         { label: "Settings Keybind", keywords: "config preferences shortcut", section: 5, subSection: "", subLabel: "Binds > Ambxst", icon: Icons.gear, isIcon: true },
         { label: "Lockscreen Keybind", keywords: "lock security shortcut", section: 5, subSection: "", subLabel: "Binds > Ambxst", icon: Icons.lock, isIcon: true },
         { label: "Tools Keybind", keywords: "utilities tools shortcut", section: 5, subSection: "", subLabel: "Binds > Ambxst", icon: Icons.wrench, isIcon: true },

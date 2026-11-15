@@ -21,6 +21,11 @@ Item {
     // "", "wifi", "bluetooth", "nordvpn" or "pcloud"
     property string detail: ""
 
+    // Close a detail view whose module was switched off (Ambxst > Modules).
+    readonly property bool detailAllowed: (detail !== "nordvpn" || NordVpn.active) && (detail !== "pcloud" || Pcloud.active)
+    onDetailAllowedChanged: if (!detailAllowed)
+        closeDetail()
+
     function openDetail(name) {
         root.detail = name;
     }
@@ -239,7 +244,7 @@ Item {
                     }
 
                     Tile {
-                        visible: NordVpn.available
+                        visible: NordVpn.active
                         label: "NordVPN"
                         detailName: "nordvpn"
                         iconName: NordVpn.connected ? Icons.shieldCheck : Icons.shield
@@ -248,7 +253,7 @@ Item {
                     }
 
                     Tile {
-                        visible: Pcloud.available
+                        visible: Pcloud.active
                         label: "pCloud"
                         detailName: "pcloud"
                         iconName: Pcloud.syncing ? Icons.cloudArrowUp : Icons.cloud

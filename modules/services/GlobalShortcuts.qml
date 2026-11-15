@@ -54,7 +54,7 @@ QtObject {
             case "dashboard-controls": toggleSettings(); break;
             case "controlcenter":
             case "control-center": toggleControlCenter(0); break;
-            case "lights": toggleControlCenter(1); break;
+            case "lights": if (YeelightService.enabled) toggleControlCenter(1); break;
 
             // System
             case "overview": toggleSimpleModule("overview"); break;

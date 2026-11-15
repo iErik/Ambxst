@@ -657,6 +657,10 @@ Item {
                             sectionId: "desktop"
                         }
                         SectionButton {
+                            text: "Modules"
+                            sectionId: "modules"
+                        }
+                        SectionButton {
                             text: "System"
                             sectionId: "system"
                         }
@@ -1862,6 +1866,98 @@ Item {
                                             Config.desktop.textColor = color;
                                         }
                                     });
+                                }
+                            }
+                        }
+                    }
+
+                    Separator {
+                        Layout.fillWidth: true
+                        visible: false
+                    }
+
+                    // ═══════════════════════════════════════════════════════════════
+                    // MODULES SECTION: optional integrations. Turning one off
+                    // hides everything related to it and stops its background
+                    // work (see the `enabled` flag in each service).
+                    // ═══════════════════════════════════════════════════════════════
+                    ColumnLayout {
+                        visible: root.currentSection === "modules"
+                        Layout.fillWidth: true
+                        spacing: 10
+                        property string settingsSection: "modules"
+
+                        Text {
+                            text: "Modules"
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.settingsFontSize(-1)
+                            font.weight: Font.Medium
+                            color: Colors.overSurfaceVariant
+                            Layout.bottomMargin: -4
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
+                            text: "Optional integrations. Turning one off hides everything related to it in the shell."
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.settingsFontSize(-2)
+                            color: Colors.overSurfaceVariant
+                        }
+
+                        Repeater {
+                            model: [
+                                {
+                                    label: "EasyEffects",
+                                    key: "moduleEasyEffects",
+                                    hint: "Effects settings page",
+                                    missing: !EasyEffectsService.installed
+                                },
+                                {
+                                    label: "pCloud",
+                                    key: "modulePcloud",
+                                    hint: "Control Center tile and sync status",
+                                    missing: !Pcloud.available && Pcloud.enabled
+                                },
+                                {
+                                    label: "NordVPN",
+                                    key: "moduleNordVpn",
+                                    hint: "Control Center tile and connection status",
+                                    missing: !NordVpn.available && NordVpn.enabled
+                                },
+                                {
+                                    label: "Lights (Yeelight)",
+                                    key: "moduleYeelight",
+                                    hint: "Lights tab for Yeelight bulbs on the local network",
+                                    missing: false
+                                }
+                            ]
+
+                            ColumnLayout {
+                                id: moduleRow
+                                required property var modelData
+                                Layout.fillWidth: true
+                                spacing: 2
+
+                                ToggleRow {
+                                    Layout.fillWidth: true
+                                    label: moduleRow.modelData.label
+                                    checked: Config.general[moduleRow.modelData.key] ?? true
+                                    onToggled: value => {
+                                        if (value !== Config.general[moduleRow.modelData.key]) {
+                                            GlobalStates.markShellChanged();
+                                            Config.general[moduleRow.modelData.key] = value;
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                    text: moduleRow.modelData.hint + (moduleRow.modelData.missing ? " · not installed" : "")
+                                    font.family: Config.theme.font
+                                    font.pixelSize: Styling.settingsFontSize(-3)
+                                    color: Colors.overSurfaceVariant
                                 }
                             }
                         }
