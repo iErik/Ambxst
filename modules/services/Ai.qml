@@ -10,6 +10,22 @@ import "ai/strategies"
 Singleton {
     id: root
 
+    // Module switch (Ambxst > Modules). Off: no provider requests.
+    readonly property bool enabled: Config.general.moduleAi ?? true
+    property bool _started: false
+    function _startIfEnabled() {
+        if (!enabled || _started)
+            return;
+        _started = true;
+        if (StateService.initialized)
+            restoreModel();
+        if (models.length === 0)
+            fetchAvailableModels();
+        reloadHistory();
+        createNewChat();
+    }
+    onEnabledChanged: _startIfEnabled()
+
     // ============================================
     // PROPERTIES
     // ============================================
@@ -80,16 +96,7 @@ Singleton {
         }
     }
 
-    Component.onCompleted: {
-        if (StateService.initialized)
-            restoreModel();
-
-        if (models.length === 0)
-            fetchAvailableModels();
-
-        reloadHistory();
-        createNewChat();
-    }
+    Component.onCompleted: _startIfEnabled()
 
     // ============================================
     // STRATEGIES
@@ -715,6 +722,8 @@ for f in files:
     property int pendingFetches: 0
 
     function fetchAvailableModels() {
+        if (!root.enabled)
+            return;
         fetchingModels = false; // Force refresh
         if (fetchingModels)
             return;

@@ -65,9 +65,193 @@ Singleton {
         if (!enabled)
             return;
         loadGroups();
+        loadScenes();
         if (helper.running)
             return;
         helper.running = true;
+    }
+
+    // ── scenes ──────────────────────────────────────────────────────────
+    // Built-in scenes. kind: "ct" (white, kelvin), "hsv" (colour) or "flow"
+    // (a looping colour flow). Applied with the bulbs' own set_scene, which
+    // also turns them on.
+    readonly property var builtInScenes: [
+        {
+            id: "bright",
+            name: "Bright",
+            kind: "ct",
+            ct: 6000,
+            bright: 100
+        },
+        {
+            id: "reading",
+            name: "Reading",
+            kind: "ct",
+            ct: 4200,
+            bright: 80
+        },
+        {
+            id: "relax",
+            name: "Relax",
+            kind: "ct",
+            ct: 2700,
+            bright: 45
+        },
+        {
+            id: "sunset",
+            name: "Sunset",
+            kind: "hsv",
+            hue: 22,
+            sat: 90,
+            bright: 60
+        },
+        {
+            id: "movie",
+            name: "Movie",
+            kind: "hsv",
+            hue: 235,
+            sat: 75,
+            bright: 15
+        },
+        {
+            id: "night",
+            name: "Night",
+            kind: "ct",
+            ct: 1700,
+            bright: 3
+        },
+        {
+            id: "party",
+            name: "Party",
+            kind: "flow",
+            // duration ms, mode (1 = colour), rgb, brightness; repeated
+            flow: "1500,1,16711680,100,1500,1,16744192,100,1500,1,65280,100,1500,1,65535,100,1500,1,255,100,1500,1,16711935,100",
+            colors: ["#ff0000", "#ff8000", "#00ff00", "#00ffff", "#0000ff", "#ff00ff"]
+        }
+    ]
+
+    // Custom scenes: [{ id, name, bulbs: { ip: { power, bright, color_mode,
+    // ct, hue, sat, rgb } } }], saved in StateService.
+    property var customScenes: []
+    readonly property string scenesKey: "yeelightScenes"
+    property bool _scenesLoaded: false
+
+    function loadScenes() {
+        if (_scenesLoaded || !StateService.initialized)
+            return;
+        _scenesLoaded = true;
+        const saved = StateService.get(scenesKey, []) || [];
+        customScenes = saved.filter(sc => sc && sc.id && sc.bulbs);
+    }
+
+    function _saveScenes(next) {
+        customScenes = next;
+        if (StateService.initialized)
+            StateService.set(scenesKey, next);
+    }
+
+    // Bulbs a scene applies to: a group's members, or every bulb.
+    function targetIps(groupId) {
+        return groupId ? _members(groupId) : Object.keys(bulbs);
+    }
+
+    function applyScene(scene, groupId) {
+        if (!scene)
+            return;
+        const ips = targetIps(groupId);
+        if (scene.bulbs) {
+            // Custom: restore each bulb it recorded.
+            for (const ip of ips) {
+                const st = scene.bulbs[ip];
+                if (st)
+                    _applyState(ip, st);
+            }
+            return;
+        }
+        for (const ip of ips)
+            _applyState(ip, scene);
+    }
+
+    function _applyState(ip, st) {
+        if (st.power === false) {
+            setPower(ip, false);
+            return;
+        }
+        const kind = st.kind ?? (st.color_mode === 2 ? "ct" : (st.color_mode === 1 ? "rgb" : "hsv"));
+        const bright = Math.max(1, Math.min(100, Math.round(st.bright ?? 100)));
+        if (kind === "flow") {
+            _patch(ip, {
+                power: true
+            });
+            _set(ip, "set_scene", ["cf", 0, 1, st.flow]);
+        } else if (kind === "ct") {
+            _patch(ip, {
+                power: true,
+                color_mode: 2,
+                ct: st.ct,
+                bright: bright
+            });
+            _set(ip, "set_scene", ["ct", Math.round(st.ct), bright]);
+        } else if (kind === "rgb") {
+            _patch(ip, {
+                power: true,
+                color_mode: 1,
+                rgb: st.rgb,
+                bright: bright
+            });
+            _set(ip, "set_scene", ["color", st.rgb, bright]);
+        } else {
+            _patch(ip, {
+                power: true,
+                color_mode: 3,
+                hue: st.hue,
+                sat: st.sat,
+                bright: bright
+            });
+            _set(ip, "set_scene", ["hsv", Math.round(st.hue), Math.round(st.sat), bright]);
+        }
+    }
+
+    // Save the current state of the target bulbs as a new custom scene.
+    function saveScene(name, groupId) {
+        const recorded = {};
+        for (const ip of targetIps(groupId)) {
+            const b = bulbs[ip];
+            if (!b)
+                continue;
+            recorded[ip] = {
+                power: b.power,
+                bright: b.bright,
+                color_mode: b.color_mode,
+                ct: b.ct,
+                hue: b.hue,
+                sat: b.sat,
+                rgb: b.rgb
+            };
+        }
+        if (Object.keys(recorded).length === 0)
+            return "";
+        const id = "s" + Date.now().toString(36);
+        const n = (name || "").trim() || ("Scene " + (customScenes.length + 1));
+        _saveScenes(customScenes.concat([{
+                id: id,
+                name: n,
+                bulbs: recorded
+            }]));
+        return id;
+    }
+
+    function renameScene(id, name) {
+        const n = (name || "").trim();
+        if (!n)
+            return;
+        _saveScenes(customScenes.map(sc => sc.id === id ? Object.assign({}, sc, {
+                name: n
+            }) : sc));
+    }
+
+    function deleteScene(id) {
+        _saveScenes(customScenes.filter(sc => sc.id !== id));
     }
 
     // ── groups ──────────────────────────────────────────────────────────
@@ -194,6 +378,7 @@ Singleton {
         target: StateService
         function onStateLoaded() {
             root.loadGroups();
+            root.loadScenes();
         }
     }
 

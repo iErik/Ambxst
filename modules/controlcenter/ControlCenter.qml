@@ -86,6 +86,8 @@ Item {
     function tabShown(index) {
         if (index === lightsTab)
             return YeelightService.enabled;
+        if (index === firstSettingsTab + 3) // AI
+            return Ai.enabled;
         if (index === firstSettingsTab + 4) // Effects
             return EasyEffectsService.active;
         return true;
@@ -100,6 +102,12 @@ Item {
     Connections {
         target: EasyEffectsService
         function onActiveChanged() {
+            Qt.callLater(root.syncSettings);
+        }
+    }
+    Connections {
+        target: Ai
+        function onEnabledChanged() {
             Qt.callLater(root.syncSettings);
         }
     }
@@ -128,7 +136,17 @@ Item {
 
     // ── Size ────────────────────────────────────────────────────────────
     readonly property int tabSize: 44
-    readonly property int contentWidth: (currentTab === 0 || currentTab === lightsTab) ? 404 : (currentTab === searchTab ? 840 : 620)
+    // Single-column pages (Control Center, Lights, and the Network,
+    // Bluetooth, Mixer and Effects sections) use the narrow width; denser
+    // Settings pages get more room, the search layout the most.
+    readonly property var narrowSections: [0, 1, 2, 4]
+    readonly property int contentWidth: {
+        if (currentTab === 0 || currentTab === lightsTab)
+            return 404;
+        if (currentTab === searchTab)
+            return 840;
+        return narrowSections.indexOf(currentTab - firstSettingsTab) >= 0 ? 404 : 620;
+    }
     readonly property int bodyWidth: tabSize + 2 + 12 + contentWidth + 32
     readonly property int flareSize: Config.roundness > 0 ? Config.roundness + 4 : 0
     readonly property int cornerRadius: Config.roundness > 0 ? Config.roundness + 20 : 0

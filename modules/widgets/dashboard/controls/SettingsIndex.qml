@@ -43,6 +43,7 @@ QtObject {
         { label: "Tint Icons", keywords: "color icons tint monochrome", section: 5, subSection: "icons", subLabel: "Theme > Icons", icon: Icons.palette, isIcon: true },
 
         // Theme > Cursors
+        { label: "Widget Style", keywords: "widgets look appearance style glass liquid design skin", section: 5, subSection: "widgetstyle", subLabel: "Theme > Widget Style", icon: Icons.paintBrush, isIcon: true },
         { label: "Cursor Theme", keywords: "cursors mouse pointer bibata breeze xcursor", section: 5, subSection: "cursors", subLabel: "Theme > Cursors", icon: Icons.cursor, isIcon: true },
         { label: "Cursor Size", keywords: "cursors mouse pointer size big small large xcursor", section: 5, subSection: "cursors", subLabel: "Theme > Cursors", icon: Icons.cursor, isIcon: true },
         

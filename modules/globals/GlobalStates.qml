@@ -269,7 +269,7 @@ Singleton {
 
     readonly property var _simpleThemeProps: [
         "roundness", "oledMode", "lightMode", "font", "fontSize", "monoFont", "monoFontSize",
-        "tintIcons", "iconTheme", "cursorTheme", "cursorSize", "enableCorners", "animDuration",
+        "tintIcons", "iconTheme", "cursorTheme", "cursorSize", "widgetStyle", "enableCorners", "animDuration",
         "shadowOpacity", "shadowColor", "shadowXOffset", "shadowYOffset", "shadowBlur"
     ]
     readonly property var _srVariantProps: [
@@ -610,7 +610,14 @@ Singleton {
 
     signal assistantFocusRequested(bool wasAlreadyOpen)
 
+    // AI module off (Ambxst > Modules): close the assistant.
+    readonly property bool aiModuleEnabled: Config.general.moduleAi ?? true
+    onAiModuleEnabledChanged: if (!aiModuleEnabled)
+        assistantVisible = false
+
     function toggleAssistant() {
+        if (!(Config.general.moduleAi ?? true))
+            return;
         if (assistantVisible) {
             assistantFocusRequested(true);
         } else {

@@ -20,6 +20,32 @@ Item {
     Component.onCompleted: if (visible)
         YeelightService.start()
 
+    // Which lights the scenes apply to: "" = all, else a group id.
+    property string sceneTarget: ""
+    readonly property bool sceneTargetValid: sceneTarget === "" || YeelightService.groupIds.indexOf(sceneTarget) >= 0
+    onSceneTargetValidChanged: if (!sceneTargetValid)
+        sceneTarget = ""
+
+    // Swatch colours for a scene tile.
+    function sceneColors(scene) {
+        if (!scene)
+            return [Colors.outline];
+        if (scene.colors)
+            return scene.colors;
+        if (scene.bulbs) {
+            const list = [];
+            for (const ip in scene.bulbs) {
+                const st = scene.bulbs[ip];
+                if (st.power !== false)
+                    list.push(lightColor(st));
+            }
+            return list.length > 0 ? list.slice(0, 4) : [Colors.outline];
+        }
+        if (scene.kind === "ct")
+            return [kelvinColor(scene.ct)];
+        return [Qt.hsva(scene.hue / 360, scene.sat / 100, 1, 1)];
+    }
+
     readonly property var emptyState: ({
             power: false,
             bright: 0,
@@ -699,6 +725,212 @@ Item {
                         color: Colors.overSurfaceVariant
                     }
                 }
+            }
+
+            // ── Scenes ──────────────────────────────────────────────────
+            SectionLabel {
+                visible: YeelightService.bulbIps.length > 0
+                text: "Scenes"
+            }
+
+            // Target: all lights or one group.
+            Flow {
+                Layout.fillWidth: true
+                spacing: 6
+                visible: YeelightService.bulbIps.length > 0 && YeelightService.groupIds.length > 0
+
+                Repeater {
+                    model: [""].concat(YeelightService.groupIds)
+
+                    StyledRect {
+                        id: targetChip
+                        required property string modelData
+                        readonly property bool selected: root.sceneTarget === modelData
+                        width: targetLabel.implicitWidth + 20
+                        height: 26
+                        variant: selected ? "primary" : (targetArea.containsMouse ? "focus" : "common")
+                        radius: Styling.radius(-4)
+
+                        Text {
+                            id: targetLabel
+                            anchors.centerIn: parent
+                            text: targetChip.modelData === "" ? "All lights" : YeelightService.groupName(YeelightService.group(targetChip.modelData))
+                            font.family: Styling.defaultFont
+                            font.pixelSize: Styling.settingsFontSize(-2)
+                            color: targetChip.item
+                        }
+
+                        MouseArea {
+                            id: targetArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.sceneTarget = targetChip.modelData
+                        }
+                    }
+                }
+            }
+
+            GridLayout {
+                Layout.fillWidth: true
+                visible: YeelightService.bulbIps.length > 0
+                columns: 4
+                rowSpacing: 6
+                columnSpacing: 6
+
+                Repeater {
+                    model: YeelightService.builtInScenes.concat(YeelightService.customScenes).concat([{
+                            id: "__save",
+                            name: "Save current"
+                        }])
+
+                    StyledRect {
+                        id: sceneTile
+                        required property var modelData
+                        readonly property bool isSave: modelData.id === "__save"
+                        readonly property bool isCustom: !!modelData.bulbs
+                        property bool editing: false
+
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        Layout.preferredHeight: 62
+                        variant: sceneArea.containsMouse ? "focus" : "common"
+                        radius: Styling.radius(-2)
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 6
+                            spacing: 4
+
+                            // Swatch: the scene's colour(s), or a plus.
+                            Item {
+                                Layout.alignment: Qt.AlignHCenter
+                                Layout.preferredWidth: 26
+                                Layout.preferredHeight: 26
+
+                                Rectangle {
+                                    id: sceneSwatch
+                                    anchors.fill: parent
+                                    visible: !sceneTile.isSave
+                                    radius: width / 2
+                                    readonly property var cols: root.sceneColors(sceneTile.modelData)
+                                    gradient: Gradient {
+                                        orientation: Gradient.Horizontal
+                                        stops: sceneSwatch.cols.map((c, i) => sceneStop.createObject(sceneSwatch, {
+                                                    position: sceneSwatch.cols.length > 1 ? i / (sceneSwatch.cols.length - 1) : 0,
+                                                    color: c
+                                                }))
+                                    }
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: sceneTile.isSave
+                                    text: Icons.plus
+                                    font.family: Icons.font
+                                    font.pixelSize: 18
+                                    color: sceneTile.item
+                                }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                visible: !sceneTile.editing
+                                horizontalAlignment: Text.AlignHCenter
+                                text: sceneTile.modelData.name
+                                elide: Text.ElideRight
+                                font.family: Styling.defaultFont
+                                font.pixelSize: Styling.settingsFontSize(-3)
+                                color: sceneTile.item
+                            }
+
+                            // Custom scenes: renamed in place (double-click).
+                            TextInput {
+                                id: sceneNameInput
+                                Layout.fillWidth: true
+                                visible: sceneTile.editing
+                                horizontalAlignment: Text.AlignHCenter
+                                font.family: Styling.defaultFont
+                                font.pixelSize: Styling.settingsFontSize(-3)
+                                color: sceneTile.item
+                                selectionColor: Styling.srItem("overprimary")
+                                selectedTextColor: Colors.background
+                                selectByMouse: true
+                                clip: true
+                                onVisibleChanged: if (visible) {
+                                    text = sceneTile.modelData.name;
+                                    selectAll();
+                                    forceActiveFocus();
+                                }
+                                onAccepted: {
+                                    YeelightService.renameScene(sceneTile.modelData.id, text);
+                                    sceneTile.editing = false;
+                                }
+                                Keys.onEscapePressed: event => {
+                                    sceneTile.editing = false;
+                                    event.accepted = true;
+                                }
+                                onActiveFocusChanged: if (!activeFocus)
+                                    sceneTile.editing = false
+                            }
+                        }
+
+                        MouseArea {
+                            id: sceneArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            enabled: !sceneTile.editing
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (sceneTile.isSave)
+                                    YeelightService.saveScene("", root.sceneTarget);
+                                else
+                                    YeelightService.applyScene(sceneTile.modelData, root.sceneTarget);
+                            }
+                            onDoubleClicked: if (sceneTile.isCustom)
+                                sceneTile.editing = true
+                        }
+
+                        // Custom scenes: delete on hover.
+                        StyledRect {
+                            id: sceneDelete
+                            visible: sceneTile.isCustom && !sceneTile.editing && (sceneArea.containsMouse || sceneDeleteArea.containsMouse)
+                            anchors.top: parent.top
+                            anchors.right: parent.right
+                            anchors.margins: 3
+                            width: 18
+                            height: 18
+                            radius: 9
+                            variant: sceneDeleteArea.containsMouse ? "focus" : "internalbg"
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: Icons.cancel
+                                font.family: Icons.font
+                                font.pixelSize: 10
+                                color: sceneDeleteArea.containsMouse ? Colors.error : sceneDelete.item
+                            }
+
+                            MouseArea {
+                                id: sceneDeleteArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: YeelightService.deleteScene(sceneTile.modelData.id)
+                            }
+                        }
+
+                        StyledToolTip {
+                            show: sceneArea.containsMouse && (sceneTile.isSave || sceneTile.isCustom)
+                            tooltipText: sceneTile.isSave ? "Save the current state of " + (root.sceneTarget === "" ? "all lights" : "this group") + " as a scene" : "Double-click to rename"
+                        }
+                    }
+                }
+            }
+
+            Component {
+                id: sceneStop
+                GradientStop {}
             }
 
             // ── Groups ──────────────────────────────────────────────────

@@ -9,5 +9,6 @@ var data = {
     "moduleEasyEffects": true,
     "modulePcloud": true,
     "moduleNordVpn": true,
-    "moduleYeelight": true
+    "moduleYeelight": true,
+    "moduleAi": true
 }

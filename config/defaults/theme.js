@@ -12,6 +12,7 @@ var data = {
     "iconTheme": "",
     "cursorTheme": "",
     "cursorSize": 24,
+    "widgetStyle": "default",
     "enableCorners": true,
     "animDuration": 300,
     "shadowOpacity": 0.5,

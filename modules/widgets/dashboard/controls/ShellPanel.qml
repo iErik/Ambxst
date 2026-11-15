@@ -1926,6 +1926,12 @@ Item {
                                     missing: !NordVpn.available && NordVpn.enabled
                                 },
                                 {
+                                    label: "AI Assistant",
+                                    key: "moduleAi",
+                                    hint: "Assistant sidebar and AI settings",
+                                    missing: false
+                                },
+                                {
                                     label: "Lights (Yeelight)",
                                     key: "moduleYeelight",
                                     hint: "Lights tab for Yeelight bulbs on the local network",

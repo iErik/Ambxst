@@ -18,11 +18,11 @@ Item {
 
     required property var screen
 
-    // "", "wifi", "bluetooth", "nordvpn" or "pcloud"
+    // "", "wifi", "bluetooth" or "nordvpn"
     property string detail: ""
 
     // Close a detail view whose module was switched off (Ambxst > Modules).
-    readonly property bool detailAllowed: (detail !== "nordvpn" || NordVpn.active) && (detail !== "pcloud" || Pcloud.active)
+    readonly property bool detailAllowed: detail !== "nordvpn" || NordVpn.active
     onDetailAllowedChanged: if (!detailAllowed)
         closeDetail()
 
@@ -37,7 +37,7 @@ Item {
         root.detail = "";
     }
 
-    readonly property var detailNames: ["wifi", "bluetooth", "nordvpn", "pcloud"]
+    readonly property var detailNames: ["wifi", "bluetooth", "nordvpn"]
 
     function detailLoaderFor(name) {
         const i = root.detailNames.indexOf(name);
@@ -61,11 +61,12 @@ Item {
     readonly property var detailTitles: ({
             "wifi": "Wi-Fi",
             "bluetooth": "Bluetooth",
-            "nordvpn": "NordVPN",
-            "pcloud": "pCloud"
+            "nordvpn": "NordVPN"
         })
 
     Component.onCompleted: BluetoothService.initialize()
+    onVisibleChanged: if (visible && Pcloud.active)
+        Pcloud.refreshStatus()
 
     // Card helper: a pane with a small title.
     component Card: StyledRect {
@@ -253,15 +254,6 @@ Item {
                     }
 
                     Tile {
-                        visible: Pcloud.active
-                        label: "pCloud"
-                        detailName: "pcloud"
-                        iconName: Pcloud.syncing ? Icons.cloudArrowUp : Icons.cloud
-                        isActive: Pcloud.syncing
-                        onToggled: root.openDetail("pcloud")
-                    }
-
-                    Tile {
                         label: "Night Light"
                         iconName: Icons.nightLight
                         isActive: NightLightService.active
@@ -305,6 +297,18 @@ Item {
                 title: "Power"
 
                 PowerSection {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: implicitHeight
+                }
+            }
+
+            // pCloud: sync status, storage, transfers and the drive folder,
+            // right on the page (only when installed and its module is on).
+            Card {
+                visible: Pcloud.active
+
+                PcloudPanel {
+                    id: pcloudCard
                     Layout.fillWidth: true
                     Layout.preferredHeight: implicitHeight
                 }
@@ -476,10 +480,8 @@ Item {
                                 return wifiComponent;
                             case "bluetooth":
                                 return bluetoothComponent;
-                            case "nordvpn":
-                                return nordVpnComponent;
                             default:
-                                return pcloudComponent;
+                                return nordVpnComponent;
                             }
                         }
                         onLoaded: {
@@ -507,8 +509,4 @@ Item {
         NordVpnPanel {}
     }
 
-    Component {
-        id: pcloudComponent
-        PcloudPanel {}
-    }
 }

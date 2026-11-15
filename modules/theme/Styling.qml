@@ -13,6 +13,21 @@ QtObject {
         return Math.max(Config.theme.fontSize + offset, 8);
     }
 
+    // Widget styles (Theme > Widget Style): the overall look of the shell's
+    // widgets. Components that render differently per style read
+    // Styling.widgetStyle; adding a style means adding an entry here (shown in
+    // the picker automatically) and handling its id where it matters, e.g. in
+    // StyledRect for surfaces.
+    readonly property var widgetStyles: [
+        {
+            id: "default",
+            name: "Ambxst",
+            description: "Solid surfaces with soft shadows and rounded corners. The standard look."
+        }
+    ]
+    // The active style id; unknown ids fall back to the default.
+    readonly property string widgetStyle: widgetStyles.some(s => s.id === Config.widgetStyle) ? Config.widgetStyle : "default"
+
     // Settings pages (Control Center) use text one step larger than the rest
     // of the shell.
     readonly property int settingsFontBoost: 1

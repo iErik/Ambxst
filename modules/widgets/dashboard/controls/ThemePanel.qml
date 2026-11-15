@@ -184,7 +184,7 @@ Item {
                     id: titlebar
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
-                    title: root.currentSection === "" ? "Theme" : (root.currentSection.charAt(0).toUpperCase() + root.currentSection.slice(1))
+                    title: root.currentSection === "" ? "Theme" : (root.currentSection === "widgetstyle" ? "Widget Style" : (root.currentSection.charAt(0).toUpperCase() + root.currentSection.slice(1)))
                     statusText: GlobalStates.themeHasChanges ? "Unsaved changes" : ""
                     statusColor: Colors.error
 
@@ -246,6 +246,10 @@ Item {
                         SectionButton {
                             text: "General"
                             sectionId: "general"
+                        }
+                        SectionButton {
+                            text: "Widget Style"
+                            sectionId: "widgetstyle"
                         }
                         SectionButton {
                             text: "Icons"
@@ -828,6 +832,158 @@ Item {
 
                             IconThemeSelector {
                                 Layout.fillWidth: true
+                            }
+                        }
+                    }
+
+                    // Widget Style section: pick the overall look of the widgets.
+                    Item {
+                        visible: root.currentSection === "widgetstyle"
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: widgetStyleContent.implicitHeight
+                        property string settingsSection: "widgetstyle"
+
+                        ColumnLayout {
+                            id: widgetStyleContent
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            spacing: 10
+
+                            Text {
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
+                                text: "The overall look of the shell's widgets: surfaces, borders and depth."
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.settingsFontSize(-2)
+                                color: Colors.overSurfaceVariant
+                            }
+
+                            Repeater {
+                                model: Styling.widgetStyles
+
+                                StyledRect {
+                                    id: styleCard
+                                    required property var modelData
+                                    readonly property bool selected: Styling.widgetStyle === modelData.id
+
+                                    Layout.fillWidth: true
+                                    implicitHeight: styleRow.implicitHeight + 24
+                                    variant: selected ? "focus" : (styleArea.containsMouse ? "focus" : "pane")
+                                    radius: Styling.radius(4)
+                                    enableBorder: true
+
+                                    RowLayout {
+                                        id: styleRow
+                                        anchors.fill: parent
+                                        anchors.margins: 12
+                                        spacing: 14
+
+                                        // Live mini-preview built from the style's own surfaces.
+                                        StyledRect {
+                                            Layout.preferredWidth: 120
+                                            Layout.preferredHeight: 76
+                                            variant: "bg"
+                                            radius: Styling.radius(0)
+
+                                            ColumnLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 8
+                                                spacing: 6
+
+                                                StyledRect {
+                                                    Layout.fillWidth: true
+                                                    Layout.preferredHeight: 20
+                                                    variant: "pane"
+                                                    radius: Styling.radius(-4)
+
+                                                    StyledRect {
+                                                        anchors.left: parent.left
+                                                        anchors.verticalCenter: parent.verticalCenter
+                                                        anchors.leftMargin: 4
+                                                        width: 34
+                                                        height: 12
+                                                        variant: "primary"
+                                                        radius: 6
+                                                    }
+                                                }
+
+                                                RowLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: 6
+
+                                                    Repeater {
+                                                        model: 3
+                                                        StyledRect {
+                                                            required property int index
+                                                            Layout.fillWidth: true
+                                                            Layout.preferredHeight: 24
+                                                            variant: index === 0 ? "primary" : "common"
+                                                            radius: Styling.radius(-4)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 4
+
+                                            RowLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 6
+
+                                                Text {
+                                                    text: styleCard.modelData.name
+                                                    font.family: Config.theme.font
+                                                    font.pixelSize: Styling.settingsFontSize(0)
+                                                    font.weight: Font.Medium
+                                                    color: Colors.overBackground
+                                                }
+
+                                                Text {
+                                                    visible: styleCard.selected
+                                                    text: Icons.accept
+                                                    font.family: Icons.font
+                                                    font.pixelSize: 14
+                                                    color: Styling.srItem("overprimary")
+                                                }
+                                            }
+
+                                            Text {
+                                                Layout.fillWidth: true
+                                                wrapMode: Text.WordWrap
+                                                text: styleCard.modelData.description
+                                                font.family: Config.theme.font
+                                                font.pixelSize: Styling.settingsFontSize(-2)
+                                                color: Colors.overSurfaceVariant
+                                            }
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: styleArea
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            if (Config.theme.widgetStyle !== styleCard.modelData.id) {
+                                                GlobalStates.markThemeChanged();
+                                                Config.theme.widgetStyle = styleCard.modelData.id;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
+                                text: "More styles will appear here."
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.settingsFontSize(-3)
+                                color: Colors.overSurfaceVariant
                             }
                         }
                     }

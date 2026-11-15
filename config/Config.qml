@@ -147,6 +147,7 @@ Singleton {
             property string iconTheme: ""
             property string cursorTheme: ""
             property int cursorSize: 24
+            property string widgetStyle: "default"
             property bool enableCorners: true
             property int animDuration: 300
             property real shadowOpacity: 0.5
@@ -1249,6 +1250,7 @@ Singleton {
             property bool modulePcloud: true
             property bool moduleNordVpn: true
             property bool moduleYeelight: true
+            property bool moduleAi: true
         }
     }
 
@@ -3511,6 +3513,7 @@ Singleton {
     property string iconTheme: theme.iconTheme
     property string cursorTheme: theme.cursorTheme
     property int cursorSize: theme.cursorSize > 0 ? theme.cursorSize : 24
+    property string widgetStyle: theme.widgetStyle || "default"
 
     // Handle lightMode changes
     onLightModeChanged: {

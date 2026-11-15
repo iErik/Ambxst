@@ -287,6 +287,8 @@ Rectangle {
 
     // Sections whose backing app isn't installed are hidden.
     function sectionShown(sectionId) {
+        if (sectionId === 3)
+            return Ai.enabled;
         if (sectionId === 4)
             return EasyEffectsService.active;
         return true;
