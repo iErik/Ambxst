@@ -16,6 +16,11 @@ Singleton {
     property var _waitingOn: null
     property bool _started: false
 
+    // AMBXST_INSPECT=1 (nix run .#inspect): don't pre-build anything. Under
+    // GammaRay every object is tracked, and pre-building every page on every
+    // screen gave it more than it could keep up with (the shell pinned a core).
+    readonly property bool disabled: Quickshell.env("AMBXST_INSPECT") === "1"
+
     readonly property bool idle: Visibilities.currentActiveModule === ""
 
     function enqueue(job, first) {
@@ -64,7 +69,7 @@ Singleton {
     Timer {
         id: startTimer
         interval: 4000
-        running: true
+        running: !root.disabled
         onTriggered: {
             root._started = true;
             root._kick(0);
