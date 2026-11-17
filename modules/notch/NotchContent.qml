@@ -22,6 +22,20 @@ Item {
     required property ShellScreen screen
     property bool unifiedEffectActive: false
 
+    // This screen's BarContent (a sibling in UnifiedShellPanel), or null when
+    // the bar is disabled on this screen. Passed in directly rather than looked
+    // up in Visibilities, so the notch never loses track of its own bar.
+    property Item bar: null
+
+    // The notch grows out of the bar (see Notch.mergedWithBar).
+    readonly property bool mergedWithBar: (
+        (Config.bar?.mergeNotch ?? false) &&
+        Config.notchTheme === "default" &&
+        barPosition === notchPosition &&
+        (barPosition === "top" || barPosition === "bottom") &&
+        bar !== null &&
+        !GlobalStates.barForceHidden)
+
     // Get this screen's visibility state
     readonly property var screenVisibilities: Visibilities.getForScreen(screen.name)
     readonly property bool isScreenFocused: AxctlService.focusedMonitor && AxctlService.focusedMonitor.name === screen.name
@@ -102,6 +116,12 @@ Item {
 
     // Reveal logic:
     readonly property bool reveal: {
+        // Merged into the bar: it is part of the bar, so it shows exactly when
+        // the bar does (the bar in turn reveals for the notch's hover, open
+        // modules and notification popups).
+        if (mergedWithBar)
+            return bar.reveal;
+
         // Match bar force-hide: stay hidden (no hover) until SUPER+SHIFT+B again.
         // Still allow open modules / notification popups so keybinds remain usable.
         if (GlobalStates.barForceHidden) {
@@ -347,9 +367,8 @@ Item {
                 parentHovered: root.isMouseOverNotch
 
                 // Grow out of the bar instead of sitting on the edge on its own.
-                readonly property var screenBar: Visibilities.bars[root.screen.name] ?? null
-                mergedWithBar: (Config.bar?.mergeNotch ?? false) && Config.notchTheme === "default" && root.barPosition === root.notchPosition && (root.barPosition === "top" || root.barPosition === "bottom") && screenBar !== null && !root.activeWindowFullscreen
-                barThickness: mergedWithBar ? (screenBar.totalBarHeight ?? 0) : 0
+                mergedWithBar: root.mergedWithBar
+                barThickness: mergedWithBar ? (root.bar.totalBarHeight ?? 0) : 0
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: root.notchPosition === "top" ? parent.top : undefined
                 anchors.bottom: root.notchPosition === "bottom" ? parent.bottom : undefined

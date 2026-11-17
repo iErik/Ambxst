@@ -21,9 +21,13 @@ Item {
     property int barThickness: 0
     readonly property int flareFullSize: Config.roundness > 0 ? Config.roundness + 4 : 0
     readonly property int flareOffset: mergedWithBar ? barThickness : 0
+
     // How far the notch reaches past the bar bounds the curve, so it grows in
     // as the notch opens instead of popping in.
-    readonly property real flareSize: mergedWithBar ? Math.max(0, Math.min(flareFullSize, implicitHeight - barThickness)) : flareFullSize
+    readonly property real flareSize: (mergedWithBar
+        ? Math.max(0, Math.min(flareFullSize, implicitHeight - barThickness))
+        : (flareFullSize + 16))
+
     z: 1000
 
     property Component defaultViewComponent
@@ -32,6 +36,7 @@ Item {
     property Component powermenuViewComponent
     property Component toolsMenuViewComponent
     property Component notificationViewComponent
+
     property var stackView: stackViewInternal
     property bool isExpanded: stackViewInternal.depth > 1
     property bool parentHovered: false
@@ -43,9 +48,11 @@ Item {
     function updateChildHover() {
         if (stackViewInternal.currentItem) {
             const h = isHovered || parentHovered;
+
             if (stackViewInternal.currentItem.hasOwnProperty("notchHovered")) {
                 stackViewInternal.currentItem.notchHovered = h;
             }
+
             if (stackViewInternal.currentItem.hasOwnProperty("parentHoverActive")) {
                 stackViewInternal.currentItem.parentHoverActive = h;
             }
@@ -54,7 +61,14 @@ Item {
 
     // Screen-specific visibility properties passed from parent
     property var visibilities
-    readonly property bool screenNotchOpen: visibilities ? (visibilities.launcher || visibilities.dashboard || visibilities.powermenu || visibilities.tools) : false
+    readonly property bool screenNotchOpen: (visibilities
+        ? (visibilities.launcher ||
+           visibilities.dashboard ||
+           visibilities.powermenu ||
+           visibilities.tools
+          )
+        : false)
+
     readonly property bool hasActiveNotifications: Notifications.popupList.length > 0
 
     readonly property int baseDefaultHeight: Math.max(Config.showBackground ? 44 : 40, mergedWithBar ? barThickness : 0)

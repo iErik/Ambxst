@@ -80,6 +80,7 @@ PanelWindow {
     readonly property alias notchHoverActive: notchContent.hoverActive
     readonly property alias notchOpen: notchContent.screenNotchOpen
     readonly property alias notchReveal: notchContent.reveal
+    readonly property alias notchMergedWithBar: notchContent.mergedWithBar
 
     // Generic names for external compatibility (Visibilities expects these on the panel object)
     readonly property alias pinned: barContent.pinned
@@ -131,12 +132,12 @@ PanelWindow {
     }
 
     Component.onDestruction: {
-        Visibilities.unregisterBarPanel(screen.name);
-        Visibilities.unregisterNotchPanel(screen.name);
-        Visibilities.unregisterDockPanel(screen.name);
-        Visibilities.unregisterBar(screen.name);
-        Visibilities.unregisterNotch(screen.name);
-        Visibilities.unregisterDock(screen.name);
+        Visibilities.unregisterBarPanel(screen.name, unifiedPanel);
+        Visibilities.unregisterNotchPanel(screen.name, unifiedPanel);
+        Visibilities.unregisterDockPanel(screen.name, dockContent);
+        Visibilities.unregisterBar(screen.name, barContent);
+        Visibilities.unregisterNotch(screen.name, notchContent.notchContainerRef);
+        Visibilities.unregisterDock(screen.name, dockContent);
     }
 
     // Full-screen mask item (used when modules/popups are open)
@@ -254,6 +255,7 @@ PanelWindow {
             unifiedEffectActive: unifiedPanel.unifiedEffectActive
             anchors.fill: parent
             screen: unifiedPanel.targetScreen
+            bar: unifiedPanel.barEnabled ? barContent : null
             z: 4
         }
 

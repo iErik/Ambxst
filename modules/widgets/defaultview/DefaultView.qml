@@ -137,7 +137,7 @@ Item {
             anchors.bottom: isBottom ? parent.bottom : undefined
             width: parent.width - mainRowMargin
             height: mainRowHeight
-            spacing: 4
+            spacing: 16 
             z: 2 // Ensure it stays above notifications if overlap occurs (though they shouldn't)
 
             UserInfo {

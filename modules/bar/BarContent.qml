@@ -179,8 +179,12 @@ Item {
         // Plain hover over the hidden strip is not enough: hoverActive is only
         // raised through the edge-pressure gate below (or by hovering the bar
         // once it is already revealed).
-        return hoverActive || notchHoverActive || notchOpen || popupOpen;
+        return hoverActive || notchHoverActive || notchOpen || popupOpen || notchMergedPopup;
     }
+
+    // The notch is merged into this bar and showing a notification popup:
+    // reveal with it, since it cannot show without the bar.
+    readonly property bool notchMergedPopup: (notchPanelRef?.notchMergedWithBar ?? false) && Notifications.popupList.length > 0
 
     // One of this bar's popups (sound, wifi, tray menu, …) is open: keep the
     // bar revealed until it closes, even though the pointer has left the bar.
@@ -861,7 +865,7 @@ Item {
                             Bar.IntegratedDock {
                                 bar: root
                                 orientation: root.orientation
-                                visible: integratedDockEnabled
+                                visible: false //integratedDockEnabled
                                 Layout.fillHeight: true
                                 Layout.fillWidth: true
                                 enableShadow: root.shadowsEnabled

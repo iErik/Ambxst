@@ -42,6 +42,15 @@ Singleton {
     }
 
     // Helper to clone map and trigger update
+    // Drop `key`, unless it now belongs to someone other than `owner`: a panel
+    // being torn down (screen re-added, reload) must not remove the entry its
+    // replacement already registered.
+    function _removeFromMap(map, key, owner) {
+        if (owner !== undefined && map[key] !== owner)
+            return map;
+        return _updateMap(map, key, null);
+    }
+
     function _updateMap(map, key, value) {
         var newMap = {};
         for (var k in map) {
@@ -59,16 +68,16 @@ Singleton {
         panels = _updateMap(panels, screenName, panel);
     }
 
-    function unregisterPanel(screenName) {
-        panels = _updateMap(panels, screenName, null);
+    function unregisterPanel(screenName, owner) {
+        panels = _removeFromMap(panels, screenName, owner);
     }
 
     function registerBar(screenName, barContainer) {
         bars = _updateMap(bars, screenName, barContainer);
     }
 
-    function unregisterBar(screenName) {
-        bars = _updateMap(bars, screenName, null);
+    function unregisterBar(screenName, owner) {
+        bars = _removeFromMap(bars, screenName, owner);
     }
 
     function getBarForScreen(screenName) {
@@ -79,8 +88,8 @@ Singleton {
         barPanels = _updateMap(barPanels, screenName, barPanel);
     }
 
-    function unregisterBarPanel(screenName) {
-        barPanels = _updateMap(barPanels, screenName, null);
+    function unregisterBarPanel(screenName, owner) {
+        barPanels = _removeFromMap(barPanels, screenName, owner);
     }
 
     function getBarPanelForScreen(screenName) {
@@ -91,8 +100,8 @@ Singleton {
         notches = _updateMap(notches, screenName, notchContainer);
     }
 
-    function unregisterNotch(screenName) {
-        notches = _updateMap(notches, screenName, null);
+    function unregisterNotch(screenName, owner) {
+        notches = _removeFromMap(notches, screenName, owner);
     }
 
     function getNotchForScreen(screenName) {
@@ -103,8 +112,8 @@ Singleton {
         notchPanels = _updateMap(notchPanels, screenName, notchPanel);
     }
 
-    function unregisterNotchPanel(screenName) {
-        notchPanels = _updateMap(notchPanels, screenName, null);
+    function unregisterNotchPanel(screenName, owner) {
+        notchPanels = _removeFromMap(notchPanels, screenName, owner);
     }
 
     function getNotchPanelForScreen(screenName) {
@@ -115,8 +124,8 @@ Singleton {
         docks = _updateMap(docks, screenName, dockContainer);
     }
 
-    function unregisterDock(screenName) {
-        docks = _updateMap(docks, screenName, null);
+    function unregisterDock(screenName, owner) {
+        docks = _removeFromMap(docks, screenName, owner);
     }
 
     function getDockForScreen(screenName) {
@@ -127,8 +136,8 @@ Singleton {
         dockPanels = _updateMap(dockPanels, screenName, dockPanel);
     }
 
-    function unregisterDockPanel(screenName) {
-        dockPanels = _updateMap(dockPanels, screenName, null);
+    function unregisterDockPanel(screenName, owner) {
+        dockPanels = _removeFromMap(dockPanels, screenName, owner);
     }
 
     function getDockPanelForScreen(screenName) {
